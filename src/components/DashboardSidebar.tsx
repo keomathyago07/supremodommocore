@@ -11,6 +11,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 const menuItems = [
   { id: 'dashboard', label: 'Painel Principal', icon: LayoutDashboard, path: '/dashboard' },
   { id: 'evolution', label: 'Neural Evolution', icon: Activity, path: '/dashboard/evolution' },
+  { id: 'livepanel', label: 'Painel Neural Live', icon: Eye, path: '/dashboard/livepanel' },
   { id: 'analysis', label: 'Análise de Loterias', icon: Brain, path: '/dashboard/analysis' },
   { id: 'bets', label: 'Minhas Apostas', icon: Ticket, path: '/dashboard/bets' },
   { id: 'history', label: 'Histórico de Gates', icon: History, path: '/dashboard/history' },
