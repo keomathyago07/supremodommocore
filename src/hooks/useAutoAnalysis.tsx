@@ -98,7 +98,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
 
       if (user && confidence >= GATE_THRESHOLD) {
         setGatesFound(g => g + 1);
-        await supabase.from('gate_history').insert({
+        // Save gate to history
+        const { error: gateErr } = await supabase.from('gate_history').insert({
           user_id: user.id,
           lottery: lottery.id,
           concurso,
@@ -107,7 +108,23 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           gate_status: 'APPROVED',
           found_at: new Date().toISOString(),
         } as any);
-        toast.success(`🎯 AUTO GATE 100% — ${lottery.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+        if (gateErr) {
+          console.error('Erro ao salvar gate:', gateErr);
+        }
+        // Also auto-save as confirmed bet for automatic result checking
+        const { error: betErr } = await supabase.from('bets').insert({
+          user_id: user.id,
+          lottery: lottery.id,
+          concurso,
+          numbers,
+          confidence: parseFloat(confidence.toFixed(3)),
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+        } as any);
+        if (betErr) {
+          console.error('Erro ao salvar aposta automática:', betErr);
+        }
+        toast.success(`🎯 AUTO GATE 100% — ${lottery.name} — Aposta salva automaticamente!`, { duration: 8000 });
         onGateFound.current?.();
       }
 

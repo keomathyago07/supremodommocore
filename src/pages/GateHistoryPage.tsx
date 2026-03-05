@@ -57,6 +57,24 @@ const GateHistoryPage = () => {
   const confirmBet = async (entry: GateEntry) => {
     if (!user) return;
     setConfirming(entry.id);
+    
+    // Check if already exists to avoid duplicates
+    const { data: existing } = await supabase
+      .from('bets')
+      .select('id')
+      .eq('lottery', entry.lottery)
+      .eq('concurso', entry.concurso)
+      .eq('user_id', user.id)
+      .eq('status', 'confirmed') as any;
+
+    if (existing && existing.length > 0) {
+      toast.info('Aposta já confirmada anteriormente!');
+      setConfirmed(prev => new Set(prev).add(`${entry.lottery}-${entry.concurso}`));
+      setConfirming(null);
+      setTimeout(() => navigate('/dashboard/results'), 1000);
+      return;
+    }
+
     const { error } = await supabase.from('bets').insert({
       user_id: user.id,
       lottery: entry.lottery,
@@ -70,10 +88,9 @@ const GateHistoryPage = () => {
     if (error) {
       toast.error('Erro ao confirmar aposta: ' + error.message);
     } else {
-      toast.success(`✅ Aposta confirmada! Aguardando resultado para conferência automática.`);
+      toast.success(`✅ Aposta confirmada e salva no banco! Indo para conferência de resultados...`);
       setConfirmed(prev => new Set(prev).add(`${entry.lottery}-${entry.concurso}`));
-      // Navigate to results page for auto-checking
-      setTimeout(() => navigate('/dashboard/results'), 2000);
+      setTimeout(() => navigate('/dashboard/results'), 1500);
     }
     setConfirming(null);
   };

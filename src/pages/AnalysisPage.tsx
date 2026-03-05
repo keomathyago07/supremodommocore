@@ -86,8 +86,13 @@ const AnalysisPage = () => {
       status: 'confirmed',
       confirmed_at: new Date().toISOString(),
     } as any);
-    if (error) toast.error('Erro ao confirmar aposta: ' + error.message);
-    else toast.success('✅ Aposta confirmada e salva!');
+    if (error) {
+      toast.error('Erro ao confirmar aposta: ' + error.message);
+    } else {
+      toast.success('✅ Aposta confirmada e salva no banco! Aguardando resultado para conferência automática.');
+      setResult(null);
+      setTimeout(() => navigate('/dashboard/results'), 1500);
+    }
     setConfirming(false);
   };
 
