@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
 import { useAuth } from '@/hooks/useAuth';
