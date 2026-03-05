@@ -33,6 +33,7 @@ interface AutoAnalysisContextType {
   lastResults: AnalysisResult[];
   cycleCount: number;
   gatesFound: number;
+  onGateFound: React.MutableRefObject<(() => void) | null>;
 }
 
 const AutoAnalysisContext = createContext<AutoAnalysisContextType | null>(null);
