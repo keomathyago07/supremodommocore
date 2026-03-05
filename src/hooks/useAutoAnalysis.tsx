@@ -33,6 +33,7 @@ interface AutoAnalysisContextType {
   lastResults: AnalysisResult[];
   cycleCount: number;
   gatesFound: number;
+  onGateFound: React.MutableRefObject<(() => void) | null>;
 }
 
 const AutoAnalysisContext = createContext<AutoAnalysisContextType | null>(null);
@@ -52,6 +53,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   const [gatesFound, setGatesFound] = useState(0);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
+  const onGateFound = useRef<(() => void) | null>(null);
 
   // Persist settings
   useEffect(() => {
@@ -106,6 +108,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           found_at: new Date().toISOString(),
         } as any);
         toast.success(`🎯 AUTO GATE 100% — ${lottery.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+        onGateFound.current?.();
       }
 
       await new Promise(r => setTimeout(r, 3000));
@@ -133,7 +136,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   return (
     <AutoAnalysisContext.Provider value={{
       autoMode, setAutoMode, todayOnly, setTodayOnly,
-      currentLottery, isAnalyzing, lastResults, cycleCount, gatesFound
+      currentLottery, isAnalyzing, lastResults, cycleCount, gatesFound, onGateFound
     }}>
       {children}
     </AutoAnalysisContext.Provider>

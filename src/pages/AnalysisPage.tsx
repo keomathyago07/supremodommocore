@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
 import { useAuth } from '@/hooks/useAuth';
@@ -20,6 +21,15 @@ const GATE_THRESHOLD = 100;
 const AnalysisPage = () => {
   const { user } = useAuth();
   const auto = useAutoAnalysis();
+  const navigate = useNavigate();
+
+  // Auto-navigate to gate history when a 100% gate is found
+  useEffect(() => {
+    auto.onGateFound.current = () => {
+      navigate('/dashboard/history');
+    };
+    return () => { auto.onGateFound.current = null; };
+  }, [auto.onGateFound, navigate]);
   const [selectedLottery, setSelectedLottery] = useState<LotteryConfig>(LOTTERIES[0]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<{ numbers: number[]; confidence: number; concurso: number; specialists: string[] } | null>(null);
@@ -57,6 +67,8 @@ const AnalysisPage = () => {
         found_at: new Date().toISOString(),
       } as any);
       toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+      // Auto-navigate to gate history
+      setTimeout(() => navigate('/dashboard/history'), 1500);
     }
 
     return res;

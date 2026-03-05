@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { LOTTERIES, formatBrasiliaTime, formatBrasiliaHour } from '@/lib/lotteryConstants';
-import { History, Zap, Shield } from 'lucide-react';
+import { History, Zap, Shield, CheckCircle, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface GateEntry {
   id: string;
@@ -17,25 +19,71 @@ interface GateEntry {
 
 const GateHistoryPage = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [entries, setEntries] = useState<GateEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState<string | null>(null);
+  const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('gate_history')
-      .select('*')
-      .order('found_at', { ascending: false })
-      .then(({ data }: any) => {
-        setEntries(data || []);
-        setLoading(false);
-      });
+    const load = async () => {
+      const { data } = await supabase
+        .from('gate_history')
+        .select('*')
+        .order('found_at', { ascending: false }) as any;
+
+      const gates: GateEntry[] = data || [];
+      setEntries(gates);
+
+      // Check which gates already have confirmed bets
+      if (gates.length > 0) {
+        const { data: bets } = await supabase
+          .from('bets')
+          .select('concurso, lottery')
+          .eq('status', 'confirmed') as any;
+        
+        const confirmedSet = new Set<string>();
+        (bets || []).forEach((b: any) => {
+          confirmedSet.add(`${b.lottery}-${b.concurso}`);
+        });
+        setConfirmed(confirmedSet);
+      }
+      setLoading(false);
+    };
+    load();
   }, [user]);
+
+  const confirmBet = async (entry: GateEntry) => {
+    if (!user) return;
+    setConfirming(entry.id);
+    const { error } = await supabase.from('bets').insert({
+      user_id: user.id,
+      lottery: entry.lottery,
+      concurso: entry.concurso,
+      numbers: entry.numbers,
+      confidence: entry.confidence,
+      status: 'confirmed',
+      confirmed_at: new Date().toISOString(),
+    } as any);
+
+    if (error) {
+      toast.error('Erro ao confirmar aposta: ' + error.message);
+    } else {
+      toast.success(`✅ Aposta confirmada! Aguardando resultado para conferência automática.`);
+      setConfirmed(prev => new Set(prev).add(`${entry.lottery}-${entry.concurso}`));
+      // Navigate to results page for auto-checking
+      setTimeout(() => navigate('/dashboard/results'), 2000);
+    }
+    setConfirming(null);
+  };
+
+  const isConfirmed = (entry: GateEntry) => confirmed.has(`${entry.lottery}-${entry.concurso}`);
 
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-display font-bold">Histórico de Gates</h1>
-      <p className="text-muted-foreground text-sm">Gates encontrados automaticamente pelas IAs — Horário de Brasília</p>
+      <p className="text-muted-foreground text-sm">Gates encontrados automaticamente pelas IAs — Confirme para conferência automática de resultados</p>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -51,6 +99,7 @@ const GateHistoryPage = () => {
         <div className="space-y-3">
           {entries.map((entry, i) => {
             const lottery = LOTTERIES.find((l) => l.id === entry.lottery);
+            const alreadyConfirmed = isConfirmed(entry);
             return (
               <motion.div
                 key={entry.id}
@@ -86,9 +135,29 @@ const GateHistoryPage = () => {
                     </span>
                   ))}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Encontrado: {formatBrasiliaTime(new Date(entry.found_at))} — {formatBrasiliaHour(new Date(entry.found_at))}
-                </p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-muted-foreground">
+                    Encontrado: {formatBrasiliaTime(new Date(entry.found_at))} — {formatBrasiliaHour(new Date(entry.found_at))}
+                  </p>
+                  {alreadyConfirmed ? (
+                    <span className="flex items-center gap-1.5 text-xs font-display font-semibold text-success bg-success/10 px-3 py-1.5 rounded-lg">
+                      <CheckCircle className="w-4 h-4" /> APOSTA CONFIRMADA
+                    </span>
+                  ) : (
+                    <button
+                      onClick={() => confirmBet(entry)}
+                      disabled={confirming === entry.id}
+                      className="flex items-center gap-2 bg-gradient-to-r from-secondary to-warning text-background font-display font-bold px-4 py-2 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 text-sm"
+                    >
+                      {confirming === entry.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Zap className="w-4 h-4" />
+                      )}
+                      {confirming === entry.id ? 'SALVANDO...' : 'CONFIRMAR APOSTA'}
+                    </button>
+                  )}
+                </div>
               </motion.div>
             );
           })}
