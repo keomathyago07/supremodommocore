@@ -4,31 +4,42 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import robotHero from '@/assets/robot-hero.png';
 import { Eye, EyeOff, Zap, Shield, Brain } from 'lucide-react';
+import { AI_SPECIALISTS } from '@/lib/lotteryConstants';
+
+const VALID_EMAIL = 'keomatiago@gmail.com';
+const VALID_PIN = '834589';
 
 const LoginPage = () => {
   const { signIn, signUp } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [isSignUp, setIsSignUp] = useState(false);
+  const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [pin, setPin] = useState('');
-  const [usePin, setUsePin] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+
+    if (email !== VALID_EMAIL) {
+      setError('Acesso negado — email não autorizado');
+      return;
+    }
+    if (pin !== VALID_PIN) {
+      setError('PIN incorreto');
+      return;
+    }
+
     setLoading(true);
     try {
-      if (isSignUp) {
-        await signUp(email, password);
-        setError('Conta criada! Verifique seu email.');
-      } else {
-        await signIn(email, password);
-        navigate('/dashboard');
+      // Try sign in first, if fails try sign up then sign in
+      try {
+        await signIn(email, pin);
+      } catch {
+        await signUp(email, pin);
+        await signIn(email, pin);
       }
+      navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Erro ao autenticar');
     } finally {
@@ -95,7 +106,7 @@ const LoginPage = () => {
             <div className="flex justify-center gap-6 mt-4">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Zap className="w-4 h-4 text-secondary" />
-                <span>155+ IAs</span>
+                <span>{AI_SPECIALISTS.length}+ IAs</span>
               </div>
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Shield className="w-4 h-4 text-success" />
@@ -123,51 +134,29 @@ const LoginPage = () => {
                   required
                 />
               </div>
+
+              {/* PIN */}
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1.5">Senha</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? 'text' : 'password'}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-muted/50 border border-border rounded-lg px-4 py-3 pr-12 text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
-                    placeholder="••••••••"
-                    required
-                    minLength={6}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
+                <label className="block text-sm font-medium text-muted-foreground mb-1.5">PIN de Acesso</label>
+                <div className="flex gap-2 justify-center mb-3">
+                  {[0, 1, 2, 3, 4, 5].map((i) => (
+                    <div key={i} className={`pin-dot ${pin.length > i ? 'filled' : ''}`} />
+                  ))}
                 </div>
+                <input
+                  type="password"
+                  maxLength={6}
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
+                  className="w-full bg-muted/50 border border-border rounded-lg px-4 py-3 text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                  style={{ color: 'transparent', textShadow: 'none', caretColor: 'transparent' }}
+                  placeholder="••••••"
+                  required
+                />
               </div>
 
-              {/* PIN section */}
-              {usePin && (
-                <div>
-                  <label className="block text-sm font-medium text-muted-foreground mb-1.5">PIN de Acesso</label>
-                  <div className="flex gap-3 justify-center">
-                    {[0, 1, 2, 3].map((i) => (
-                      <div key={i} className={`pin-dot ${pin.length > i ? 'filled' : ''}`} />
-                    ))}
-                  </div>
-                  <input
-                    type="password"
-                    maxLength={4}
-                    value={pin}
-                    onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                    className="w-full mt-2 bg-muted/50 border border-border rounded-lg px-4 py-2 text-foreground text-center tracking-[1em] focus:outline-none focus:ring-2 focus:ring-primary/50 text-transparent selection:text-transparent caret-transparent"
-                    placeholder=""
-                    style={{ color: 'transparent', textShadow: 'none' }}
-                  />
-                </div>
-              )}
-
               {error && (
-                <div className={`text-sm p-3 rounded-lg ${error.includes('criada') ? 'bg-success/10 text-success' : 'bg-destructive/10 text-destructive'}`}>
+                <div className="text-sm p-3 rounded-lg bg-destructive/10 text-destructive">
                   {error}
                 </div>
               )}
@@ -177,37 +166,22 @@ const LoginPage = () => {
                 disabled={loading}
                 className="w-full gradient-primary text-primary-foreground font-display font-semibold py-3 rounded-lg glow-primary hover:opacity-90 transition-all disabled:opacity-50 text-lg tracking-wider"
               >
-                {loading ? 'Processando...' : isSignUp ? 'CRIAR CONTA' : 'ACESSAR SISTEMA'}
+                {loading ? 'Processando...' : 'ACESSAR SISTEMA'}
               </button>
 
-              <div className="flex items-center justify-between text-sm">
-                <button
-                  type="button"
-                  onClick={() => setUsePin(!usePin)}
-                  className="text-muted-foreground hover:text-primary transition-colors"
-                >
-                  {usePin ? 'Ocultar PIN' : 'Usar PIN'}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => { setIsSignUp(!isSignUp); setError(''); }}
-                  className="text-primary hover:text-primary/80 transition-colors"
-                >
-                  {isSignUp ? 'Já tenho conta' : 'Criar conta'}
-                </button>
-              </div>
+              <p className="text-xs text-center text-muted-foreground/50">
+                Acesso restrito — Sistema privado
+              </p>
             </form>
           </div>
 
           <p className="text-center text-xs text-muted-foreground/50 mt-6">
-            DommoSupremo v3.0 — {AI_SPECIALISTS_COUNT} IAs Ativas — Horário de Brasília
+            DommoSupremo v3.0 — {AI_SPECIALISTS.length} IAs Ativas — Horário de Brasília
           </p>
         </motion.div>
       </div>
     </div>
   );
 };
-
-const AI_SPECIALISTS_COUNT = 155;
 
 export default LoginPage;

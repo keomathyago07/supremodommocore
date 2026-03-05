@@ -1,0 +1,17 @@
+{
+  "name": "DommoSupremo",
+  "short_name": "DommoSupremo",
+  "description": "Sistema Avançado de Inteligência para Loterias",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0d1117",
+  "theme_color": "#00bfff",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}

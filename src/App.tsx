@@ -7,11 +7,13 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardHome from "./pages/DashboardHome";
+import NeuralEvolutionPage from "./pages/NeuralEvolutionPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import BetsPage from "./pages/BetsPage";
 import GateHistoryPage from "./pages/GateHistoryPage";
 import ResultsPage from "./pages/ResultsPage";
 import AISpecialistsPage from "./pages/AISpecialistsPage";
+import AIAdvancedConfigPage from "./pages/AIAdvancedConfigPage";
 import GateConfigPage from "./pages/GateConfigPage";
 import ApiConfigPage from "./pages/ApiConfigPage";
 import SettingsPage from "./pages/SettingsPage";
@@ -48,11 +50,13 @@ const App = () => (
             <Route path="/" element={<PublicRoute><LoginPage /></PublicRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}>
               <Route index element={<DashboardHome />} />
+              <Route path="evolution" element={<NeuralEvolutionPage />} />
               <Route path="analysis" element={<AnalysisPage />} />
               <Route path="bets" element={<BetsPage />} />
               <Route path="history" element={<GateHistoryPage />} />
               <Route path="results" element={<ResultsPage />} />
               <Route path="ai" element={<AISpecialistsPage />} />
+              <Route path="aiconfig" element={<AIAdvancedConfigPage />} />
               <Route path="gates" element={<GateConfigPage />} />
               <Route path="api" element={<ApiConfigPage />} />
               <Route path="settings" element={<SettingsPage />} />
