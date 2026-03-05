@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, type LotteryConfig } from '@/lib/lotteryConstants';
+import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Bell, Repeat } from 'lucide-react';
+import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
 function generateNumbers(config: LotteryConfig): number[] {
@@ -14,6 +14,8 @@ function generateNumbers(config: LotteryConfig): number[] {
   return Array.from(nums).sort((a, b) => a - b);
 }
 
+const GATE_THRESHOLD = 100;
+
 const AnalysisPage = () => {
   const { user } = useAuth();
   const [selectedLottery, setSelectedLottery] = useState<LotteryConfig>(LOTTERIES[0]);
@@ -22,7 +24,11 @@ const AnalysisPage = () => {
   const [time, setTime] = useState(getBrasiliaTime());
   const [confirming, setConfirming] = useState(false);
   const [autoMode, setAutoMode] = useState(false);
+  const [todayOnly, setTodayOnly] = useState(true);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const todaysLotteries = getTodaysLotteries();
+  const activeLotteries = todayOnly ? todaysLotteries : LOTTERIES;
 
   useEffect(() => {
     const interval = setInterval(() => setTime(getBrasiliaTime()), 1000);
@@ -42,8 +48,7 @@ const AnalysisPage = () => {
     setResult(res);
     setIsAnalyzing(false);
 
-    // Auto-save gate if confidence >= 100
-    if (user && confidence >= 99.9) {
+    if (user && confidence >= GATE_THRESHOLD) {
       await supabase.from('gate_history').insert({
         user_id: user.id,
         lottery: target.id,
@@ -53,32 +58,38 @@ const AnalysisPage = () => {
         gate_status: 'APPROVED',
         found_at: new Date().toISOString(),
       } as any);
-      toast.success(`🎯 GATE APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+      toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
     }
 
     return res;
   };
 
-  // Auto-analysis mode
+  // Auto-analysis: only today's lotteries
   useEffect(() => {
     if (autoMode) {
       const runAuto = async () => {
-        for (const lottery of LOTTERIES) {
+        const lotteries = todayOnly ? todaysLotteries : LOTTERIES;
+        if (lotteries.length === 0) {
+          toast.info('Nenhuma loteria sorteada hoje. Auto-análise pausada.');
+          setAutoMode(false);
+          return;
+        }
+        for (const lottery of lotteries) {
           setSelectedLottery(lottery);
           const res = await runAnalysis(lottery);
-          if (res && res.confidence >= 99.9) {
-            toast.success(`🔔 Notificação: ${lottery.name} atingiu gate de confiança — ${res.confidence.toFixed(3)}%`, { duration: 10000 });
+          if (res && res.confidence >= GATE_THRESHOLD) {
+            toast.success(`🔔 GATE 100% — ${lottery.name} — ${res.confidence.toFixed(3)}%`, { duration: 10000 });
           }
           await new Promise(r => setTimeout(r, 3000));
         }
       };
       runAuto();
-      autoRef.current = setInterval(runAuto, LOTTERIES.length * 6000);
+      autoRef.current = setInterval(runAuto, activeLotteries.length * 6000);
     } else {
       if (autoRef.current) clearInterval(autoRef.current);
     }
     return () => { if (autoRef.current) clearInterval(autoRef.current); };
-  }, [autoMode, user]);
+  }, [autoMode, todayOnly, user]);
 
   const confirmBet = async () => {
     if (!result || !user) return;
@@ -92,11 +103,8 @@ const AnalysisPage = () => {
       status: 'confirmed',
       confirmed_at: new Date().toISOString(),
     } as any);
-    if (error) {
-      toast.error('Erro ao confirmar aposta: ' + error.message);
-    } else {
-      toast.success('✅ Aposta confirmada e salva no banco de dados!');
-    }
+    if (error) toast.error('Erro ao confirmar aposta: ' + error.message);
+    else toast.success('✅ Aposta confirmada e salva!');
     setConfirming(false);
   };
 
@@ -104,12 +112,21 @@ const AnalysisPage = () => {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl font-display font-bold">Análise de Loterias</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 glass px-3 py-1.5 rounded-lg">
             <Clock className="w-4 h-4 text-primary" />
             <span className="font-mono text-sm text-primary">{formatBrasiliaHour(time)}</span>
           </div>
-          {/* Auto-analysis toggle */}
+          {/* Today Only Toggle */}
+          <button
+            onClick={() => setTodayOnly(!todayOnly)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg font-display font-semibold text-xs transition-all ${
+              todayOnly ? 'bg-secondary/20 text-secondary border border-secondary/30' : 'glass text-muted-foreground'
+            }`}
+          >
+            <CalendarDays className="w-4 h-4" />
+            {todayOnly ? 'SÓ HOJE' : 'TODAS'}
+          </button>
           <button
             onClick={() => setAutoMode(!autoMode)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-semibold text-sm transition-all ${
@@ -122,19 +139,39 @@ const AnalysisPage = () => {
         </div>
       </div>
 
+      {/* Today's lotteries info */}
+      {todayOnly && (
+        <div className="glass rounded-lg p-3 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-secondary shrink-0" />
+          <p className="text-xs text-muted-foreground">
+            <span className="text-secondary font-semibold">Loterias de hoje: </span>
+            {todaysLotteries.length > 0
+              ? todaysLotteries.map(l => l.name).join(', ')
+              : 'Nenhuma loteria sorteada hoje'
+            }
+          </p>
+        </div>
+      )}
+
       {/* Lottery Selector */}
       <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
-        {LOTTERIES.map((l) => (
-          <button
-            key={l.id}
-            onClick={() => { setSelectedLottery(l); setResult(null); }}
-            className={`px-3 py-2 rounded-lg text-xs font-display font-semibold transition-all
-              ${selectedLottery.id === l.id ? 'text-primary-foreground' : 'glass text-foreground hover:border-primary/30'}`}
-            style={selectedLottery.id === l.id ? { background: l.color } : {}}
-          >
-            {l.name}
-          </button>
-        ))}
+        {LOTTERIES.map((l) => {
+          const isToday = todaysLotteries.some(t => t.id === l.id);
+          return (
+            <button
+              key={l.id}
+              onClick={() => { setSelectedLottery(l); setResult(null); }}
+              className={`px-3 py-2 rounded-lg text-xs font-display font-semibold transition-all relative
+                ${selectedLottery.id === l.id ? 'text-primary-foreground' : 'glass text-foreground hover:border-primary/30'}
+                ${todayOnly && !isToday ? 'opacity-30' : ''}`}
+              style={selectedLottery.id === l.id ? { background: l.color } : {}}
+              disabled={todayOnly && !isToday}
+            >
+              {l.name}
+              {isToday && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-success animate-pulse" />}
+            </button>
+          );
+        })}
       </div>
 
       {/* Analysis Panel */}
@@ -147,6 +184,9 @@ const AnalysisPage = () => {
             <p className="text-sm text-muted-foreground">
               {selectedLottery.numbersCount} números · Máx {selectedLottery.maxNumber} · Sorteio {selectedLottery.drawTime}h
             </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              📅 Dias: {getDrawDayNames(selectedLottery)}
+            </p>
           </div>
           <button
             onClick={() => runAnalysis()}
@@ -158,7 +198,6 @@ const AnalysisPage = () => {
           </button>
         </div>
 
-        {/* Locked Patterns */}
         <div className="mb-6">
           <h3 className="text-sm font-display text-muted-foreground mb-2">Padrões Travados (IA) — Gate: 100%</h3>
           <div className="flex flex-wrap gap-2">
@@ -168,99 +207,59 @@ const AnalysisPage = () => {
               </span>
             ))}
           </div>
-          <p className="text-xs text-muted-foreground/60 mt-1">
-            Estes padrões NÃO podem ser alterados. As IAs trabalham exclusivamente com eles.
-          </p>
         </div>
 
-        {/* Analysis Progress */}
         {isAnalyzing && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="space-y-3"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-3">
             <div className="flex items-center gap-2 text-primary">
               <Brain className="w-5 h-5 animate-pulse" />
               <span className="font-display text-sm">{AI_SPECIALISTS.length} IAs processando dados...</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <motion.div
-                className="h-full gradient-primary"
-                initial={{ width: '0%' }}
-                animate={{ width: '100%' }}
-                transition={{ duration: 2.5 }}
-              />
+              <motion.div className="h-full gradient-primary" initial={{ width: '0%' }} animate={{ width: '100%' }} transition={{ duration: 2.5 }} />
             </div>
             <div className="flex flex-wrap gap-1">
               {AI_SPECIALISTS.slice(0, 15).map((ai, i) => (
-                <motion.span
-                  key={ai}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: i * 0.15 }}
-                  className="text-[10px] px-1.5 py-0.5 rounded bg-primary/5 text-primary/60 font-mono"
-                >
-                  {ai}
-                </motion.span>
+                <motion.span key={ai} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.15 }} className="text-[10px] px-1.5 py-0.5 rounded bg-primary/5 text-primary/60 font-mono">{ai}</motion.span>
               ))}
             </div>
           </motion.div>
         )}
 
-        {/* Result */}
         {result && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-success" />
               <span className="font-display font-bold text-success">GATE APPROVED — {selectedLottery.name}</span>
             </div>
-
             <div className="glass rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm text-muted-foreground font-mono">Concurso #{result.concurso}</span>
-                <span className="text-lg font-display font-bold text-secondary glow-text-secondary">
-                  {result.confidence.toFixed(3)}%
-                </span>
+                <span className="text-lg font-display font-bold text-secondary glow-text-secondary">{result.confidence.toFixed(3)}%</span>
               </div>
-
               <div className="mb-3">
                 <p className="text-sm text-muted-foreground mb-2">Números Sugeridos:</p>
                 <div className="flex flex-wrap gap-2">
                   {result.numbers.map((n) => (
-                    <span
-                      key={n}
-                      className="w-10 h-10 rounded-full flex items-center justify-center font-mono font-bold text-sm border-2"
-                      style={{ borderColor: selectedLottery.color, color: selectedLottery.color }}
-                    >
+                    <span key={n} className="w-10 h-10 rounded-full flex items-center justify-center font-mono font-bold text-sm border-2" style={{ borderColor: selectedLottery.color, color: selectedLottery.color }}>
                       {n.toString().padStart(2, '0')}
                     </span>
                   ))}
                 </div>
               </div>
-
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span>{formatBrasiliaDate(time)}</span>
                 <span>{formatBrasiliaHour(time)}</span>
               </div>
             </div>
-
             <div>
               <p className="text-xs text-muted-foreground mb-1">IAs utilizadas ({result.specialists.length}):</p>
               <div className="flex flex-wrap gap-1">
                 {result.specialists.map((ai) => (
-                  <span key={ai} className="text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success/70 font-mono">
-                    {ai}
-                  </span>
+                  <span key={ai} className="text-[10px] px-1.5 py-0.5 rounded bg-success/10 text-success/70 font-mono">{ai}</span>
                 ))}
               </div>
             </div>
-
-            {/* Confirm Bet Button */}
             <button
               onClick={confirmBet}
               disabled={confirming}

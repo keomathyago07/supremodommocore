@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { LOTTERIES } from '@/lib/lotteryConstants';
-import { Target, Save, Loader2, Lock } from 'lucide-react';
+import { LOTTERIES, getDrawDayNames } from '@/lib/lotteryConstants';
+import { Target, Save, Loader2, Lock, ShieldCheck } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -56,6 +56,17 @@ const GateConfigPage = () => {
         Defina os critérios de confiança. As IAs trabalham, estudam e se aperfeiçoam continuamente para atingir 100%.
       </p>
 
+      {/* Gate = 100% highlight */}
+      <div className="glass rounded-xl p-5 border border-success/30 bg-success/5">
+        <div className="flex items-center gap-3">
+          <ShieldCheck className="w-7 h-7 text-success" />
+          <div>
+            <h2 className="text-lg font-display font-bold text-success">Gate de Confiança: 100%</h2>
+            <p className="text-xs text-muted-foreground">O sistema opera exclusivamente com critério de confiança máxima de 100%. Apenas combinações que atingem esse patamar são aprovadas.</p>
+          </div>
+        </div>
+      </div>
+
       <div className="glass rounded-xl p-6 space-y-6">
         <div className="flex items-center gap-3">
           <Target className="w-6 h-6 text-primary" />
@@ -68,7 +79,7 @@ const GateConfigPage = () => {
           </label>
           <input
             type="range"
-            min={95}
+            min={99}
             max={100}
             step={0.1}
             value={minConfidence}
@@ -76,13 +87,13 @@ const GateConfigPage = () => {
             className="w-full accent-primary"
           />
           <div className="flex justify-between text-xs text-muted-foreground mt-1">
-            <span>95%</span>
-            <span>100%</span>
+            <span>99%</span>
+            <span className="text-success font-bold">100%</span>
           </div>
         </div>
 
         {[
-          { label: 'Auto-aprovação de gates', desc: 'Gates que atingem o padrão são salvos automaticamente', value: autoApprove, set: setAutoApprove },
+          { label: 'Auto-aprovação de gates', desc: 'Gates que atingem 100% são salvos automaticamente', value: autoApprove, set: setAutoApprove },
           { label: 'Notificar ao encontrar gate', desc: 'Notificação instantânea quando um gate é encontrado', value: notifyOnGate, set: setNotifyOnGate },
         ].map((toggle) => (
           <div key={toggle.label} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
@@ -109,7 +120,7 @@ const GateConfigPage = () => {
         </button>
       </div>
 
-      {/* Locked Patterns */}
+      {/* Locked Patterns with Draw Days */}
       <div className="glass rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <Lock className="w-5 h-5 text-secondary" />
@@ -127,9 +138,12 @@ const GateConfigPage = () => {
               transition={{ delay: i * 0.05 }}
               className="p-4 bg-muted/20 rounded-lg"
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lottery.color }} />
-                <span className="font-display font-semibold text-sm">{lottery.name}</span>
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lottery.color }} />
+                  <span className="font-display font-semibold text-sm">{lottery.name}</span>
+                </div>
+                <span className="text-[10px] text-muted-foreground font-mono">📅 {getDrawDayNames(lottery)}</span>
               </div>
               <div className="flex flex-wrap gap-1.5">
                 {lottery.lockedPatterns.map((p) => (
