@@ -108,6 +108,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           found_at: new Date().toISOString(),
         } as any);
         toast.success(`🎯 AUTO GATE 100% — ${lottery.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+        onGateFound.current?.();
       }
 
       await new Promise(r => setTimeout(r, 3000));
