@@ -32,12 +32,15 @@ const LoginPage = () => {
 
     setLoading(true);
     try {
-      // Try sign in first, if fails try sign up then sign in
+      // Use PIN as part of a longer password to meet Supabase requirements
+      const password = `DommoSupremo#${pin}#2026`;
       try {
-        await signIn(email, pin);
+        await signIn(email, password);
       } catch {
-        await signUp(email, pin);
-        await signIn(email, pin);
+        await signUp(email, password);
+        // Wait briefly for auto-confirm
+        await new Promise(r => setTimeout(r, 1000));
+        await signIn(email, password);
       }
       navigate('/dashboard');
     } catch (err: any) {
@@ -140,7 +143,14 @@ const LoginPage = () => {
                 <label className="block text-sm font-medium text-muted-foreground mb-1.5">PIN de Acesso</label>
                 <div className="flex gap-2 justify-center mb-3">
                   {[0, 1, 2, 3, 4, 5].map((i) => (
-                    <div key={i} className={`pin-dot ${pin.length > i ? 'filled' : ''}`} />
+                    <div
+                      key={i}
+                      className={`w-3.5 h-3.5 rounded-full border-2 transition-all duration-200 ${
+                        pin.length > i
+                          ? 'bg-primary border-primary shadow-[0_0_8px_hsl(var(--primary)/0.5)]'
+                          : 'border-muted-foreground/30 bg-transparent'
+                      }`}
+                    />
                   ))}
                 </div>
                 <input
@@ -148,8 +158,7 @@ const LoginPage = () => {
                   maxLength={6}
                   value={pin}
                   onChange={(e) => setPin(e.target.value.replace(/\D/g, ''))}
-                  className="w-full bg-muted/50 border border-border rounded-lg px-4 py-3 text-center tracking-[0.5em] focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
-                  style={{ color: 'transparent', textShadow: 'none', caretColor: 'transparent' }}
+                  className="w-full bg-muted/50 border border-border rounded-lg px-4 py-3 text-center tracking-[0.5em] text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all caret-transparent"
                   placeholder="••••••"
                   required
                 />
