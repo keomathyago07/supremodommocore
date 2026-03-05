@@ -21,6 +21,15 @@ const GATE_THRESHOLD = 100;
 const AnalysisPage = () => {
   const { user } = useAuth();
   const auto = useAutoAnalysis();
+  const navigate = useNavigate();
+
+  // Auto-navigate to gate history when a 100% gate is found
+  useEffect(() => {
+    auto.onGateFound.current = () => {
+      navigate('/dashboard/history');
+    };
+    return () => { auto.onGateFound.current = null; };
+  }, [auto.onGateFound, navigate]);
   const [selectedLottery, setSelectedLottery] = useState<LotteryConfig>(LOTTERIES[0]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<{ numbers: number[]; confidence: number; concurso: number; specialists: string[] } | null>(null);
