@@ -136,7 +136,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   return (
     <AutoAnalysisContext.Provider value={{
       autoMode, setAutoMode, todayOnly, setTodayOnly,
-      currentLottery, isAnalyzing, lastResults, cycleCount, gatesFound
+      currentLottery, isAnalyzing, lastResults, cycleCount, gatesFound, onGateFound
     }}>
       {children}
     </AutoAnalysisContext.Provider>
