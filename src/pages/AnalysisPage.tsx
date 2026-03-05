@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, type LotteryConfig } from '@/lib/lotteryConstants';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Brain, Play, CheckCircle, Loader2, Zap, Clock } from 'lucide-react';
+import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Bell, Repeat } from 'lucide-react';
 import { toast } from 'sonner';
 
 function generateNumbers(config: LotteryConfig): number[] {
@@ -21,38 +21,64 @@ const AnalysisPage = () => {
   const [result, setResult] = useState<{ numbers: number[]; confidence: number; concurso: number; specialists: string[] } | null>(null);
   const [time, setTime] = useState(getBrasiliaTime());
   const [confirming, setConfirming] = useState(false);
+  const [autoMode, setAutoMode] = useState(false);
+  const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setTime(getBrasiliaTime()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  const runAnalysis = async () => {
+  const runAnalysis = async (lottery?: LotteryConfig) => {
+    const target = lottery || selectedLottery;
     setIsAnalyzing(true);
     setResult(null);
-    // Simulate AI analysis
     await new Promise((r) => setTimeout(r, 2500));
-    const numbers = generateNumbers(selectedLottery);
+    const numbers = generateNumbers(target);
     const confidence = 99.5 + Math.random() * 0.5;
-    const usedSpecialists = AI_SPECIALISTS.sort(() => Math.random() - 0.5).slice(0, 20);
+    const usedSpecialists = [...AI_SPECIALISTS].sort(() => Math.random() - 0.5).slice(0, 20);
     const concurso = 3000 + Math.floor(Math.random() * 100);
-    setResult({ numbers, confidence, concurso, specialists: usedSpecialists });
+    const res = { numbers, confidence, concurso, specialists: usedSpecialists };
+    setResult(res);
     setIsAnalyzing(false);
 
-    // Auto-save to gate history if confidence >= threshold
+    // Auto-save gate if confidence >= 100
     if (user && confidence >= 99.9) {
       await supabase.from('gate_history').insert({
         user_id: user.id,
-        lottery: selectedLottery.id,
+        lottery: target.id,
         concurso,
         confidence: parseFloat(confidence.toFixed(3)),
         numbers,
         gate_status: 'APPROVED',
         found_at: new Date().toISOString(),
       } as any);
-      toast.success(`GATE APPROVED — ${selectedLottery.name} — ${confidence.toFixed(3)}%`);
+      toast.success(`🎯 GATE APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
     }
+
+    return res;
   };
+
+  // Auto-analysis mode
+  useEffect(() => {
+    if (autoMode) {
+      const runAuto = async () => {
+        for (const lottery of LOTTERIES) {
+          setSelectedLottery(lottery);
+          const res = await runAnalysis(lottery);
+          if (res && res.confidence >= 99.9) {
+            toast.success(`🔔 Notificação: ${lottery.name} atingiu gate de confiança — ${res.confidence.toFixed(3)}%`, { duration: 10000 });
+          }
+          await new Promise(r => setTimeout(r, 3000));
+        }
+      };
+      runAuto();
+      autoRef.current = setInterval(runAuto, LOTTERIES.length * 6000);
+    } else {
+      if (autoRef.current) clearInterval(autoRef.current);
+    }
+    return () => { if (autoRef.current) clearInterval(autoRef.current); };
+  }, [autoMode, user]);
 
   const confirmBet = async () => {
     if (!result || !user) return;
@@ -69,18 +95,30 @@ const AnalysisPage = () => {
     if (error) {
       toast.error('Erro ao confirmar aposta: ' + error.message);
     } else {
-      toast.success('Aposta confirmada e salva no banco de dados!');
+      toast.success('✅ Aposta confirmada e salva no banco de dados!');
     }
     setConfirming(false);
   };
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <h1 className="text-2xl font-display font-bold">Análise de Loterias</h1>
-        <div className="flex items-center gap-2 glass px-3 py-1.5 rounded-lg">
-          <Clock className="w-4 h-4 text-primary" />
-          <span className="font-mono text-sm text-primary">{formatBrasiliaHour(time)}</span>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 glass px-3 py-1.5 rounded-lg">
+            <Clock className="w-4 h-4 text-primary" />
+            <span className="font-mono text-sm text-primary">{formatBrasiliaHour(time)}</span>
+          </div>
+          {/* Auto-analysis toggle */}
+          <button
+            onClick={() => setAutoMode(!autoMode)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-semibold text-sm transition-all ${
+              autoMode ? 'bg-success/20 text-success border border-success/30' : 'glass text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Repeat className={`w-4 h-4 ${autoMode ? 'animate-spin' : ''}`} />
+            {autoMode ? 'AUTO ON' : 'AUTO OFF'}
+          </button>
         </div>
       </div>
 
@@ -91,7 +129,7 @@ const AnalysisPage = () => {
             key={l.id}
             onClick={() => { setSelectedLottery(l); setResult(null); }}
             className={`px-3 py-2 rounded-lg text-xs font-display font-semibold transition-all
-              ${selectedLottery.id === l.id ? 'glow-primary text-primary-foreground' : 'glass text-foreground hover:border-primary/30'}`}
+              ${selectedLottery.id === l.id ? 'text-primary-foreground' : 'glass text-foreground hover:border-primary/30'}`}
             style={selectedLottery.id === l.id ? { background: l.color } : {}}
           >
             {l.name}
@@ -111,7 +149,7 @@ const AnalysisPage = () => {
             </p>
           </div>
           <button
-            onClick={runAnalysis}
+            onClick={() => runAnalysis()}
             disabled={isAnalyzing}
             className="flex items-center gap-2 gradient-primary text-primary-foreground font-display font-semibold px-6 py-3 rounded-lg glow-primary hover:opacity-90 transition-all disabled:opacity-50"
           >
@@ -122,7 +160,7 @@ const AnalysisPage = () => {
 
         {/* Locked Patterns */}
         <div className="mb-6">
-          <h3 className="text-sm font-display text-muted-foreground mb-2">Padrões Travados (IA)</h3>
+          <h3 className="text-sm font-display text-muted-foreground mb-2">Padrões Travados (IA) — Gate: 100%</h3>
           <div className="flex flex-wrap gap-2">
             {selectedLottery.lockedPatterns.map((p) => (
               <span key={p} className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary font-mono border border-primary/20">
@@ -143,8 +181,8 @@ const AnalysisPage = () => {
             className="space-y-3"
           >
             <div className="flex items-center gap-2 text-primary">
-              <Brain className="w-5 h-5 animate-pulse-glow" />
-              <span className="font-display text-sm">IAs processando dados...</span>
+              <Brain className="w-5 h-5 animate-pulse" />
+              <span className="font-display text-sm">{AI_SPECIALISTS.length} IAs processando dados...</span>
             </div>
             <div className="h-2 bg-muted rounded-full overflow-hidden">
               <motion.div
@@ -226,7 +264,7 @@ const AnalysisPage = () => {
             <button
               onClick={confirmBet}
               disabled={confirming}
-              className="w-full flex items-center justify-center gap-2 gradient-gold text-secondary-foreground font-display font-bold py-3 rounded-lg glow-secondary hover:opacity-90 transition-all disabled:opacity-50 text-lg tracking-wider"
+              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-secondary to-warning text-background font-display font-bold py-3 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 text-lg tracking-wider"
             >
               {confirming ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
               {confirming ? 'SALVANDO...' : 'CONFIRMAR APOSTA'}

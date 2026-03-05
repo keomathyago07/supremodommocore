@@ -8,7 +8,7 @@ import { motion } from 'framer-motion';
 
 const GateConfigPage = () => {
   const { user } = useAuth();
-  const [minConfidence, setMinConfidence] = useState(99.9);
+  const [minConfidence, setMinConfidence] = useState(100);
   const [autoApprove, setAutoApprove] = useState(true);
   const [notifyOnGate, setNotifyOnGate] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -50,10 +50,10 @@ const GateConfigPage = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-display font-bold">Configuração de Gates</h1>
       <p className="text-muted-foreground text-sm">
-        Defina os critérios de confiança. As IAs trabalham, estudam e se aperfeiçoam continuamente para atingir esses gates.
+        Defina os critérios de confiança. As IAs trabalham, estudam e se aperfeiçoam continuamente para atingir 100%.
       </p>
 
       <div className="glass rounded-xl p-6 space-y-6">
@@ -62,7 +62,6 @@ const GateConfigPage = () => {
           <h2 className="text-lg font-display font-semibold">Critérios de Confiança</h2>
         </div>
 
-        {/* Min Confidence Slider */}
         <div>
           <label className="block text-sm text-muted-foreground mb-2">
             Confiança Mínima para Gate: <span className="text-primary font-display font-bold">{minConfidence.toFixed(1)}%</span>
@@ -82,10 +81,9 @@ const GateConfigPage = () => {
           </div>
         </div>
 
-        {/* Toggles */}
         {[
           { label: 'Auto-aprovação de gates', desc: 'Gates que atingem o padrão são salvos automaticamente', value: autoApprove, set: setAutoApprove },
-          { label: 'Notificar ao encontrar gate', desc: 'Receba notificação instantânea quando um gate é encontrado', value: notifyOnGate, set: setNotifyOnGate },
+          { label: 'Notificar ao encontrar gate', desc: 'Notificação instantânea quando um gate é encontrado', value: notifyOnGate, set: setNotifyOnGate },
         ].map((toggle) => (
           <div key={toggle.label} className="flex items-center justify-between p-4 bg-muted/30 rounded-lg">
             <div>
@@ -111,7 +109,7 @@ const GateConfigPage = () => {
         </button>
       </div>
 
-      {/* Locked Patterns per Lottery */}
+      {/* Locked Patterns */}
       <div className="glass rounded-xl p-6">
         <div className="flex items-center gap-3 mb-4">
           <Lock className="w-5 h-5 text-secondary" />

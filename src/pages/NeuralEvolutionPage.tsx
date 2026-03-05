@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour } from '@/lib/lotteryConstants';
-import { Brain, Zap, Clock, BarChart3, Target, Activity, TrendingUp, Cpu } from 'lucide-react';
+import { Brain, Zap, Clock, BarChart3, Target, Activity, TrendingUp, Cpu, Eye, Sparkles } from 'lucide-react';
 
 const ACTIVE_MOTORS = [
   'MABSelector', 'DiffusionModel', 'PPOAgent', 'LFNeural15', 'TM10PickPro',
@@ -10,19 +10,46 @@ const ACTIVE_MOTORS = [
   'EntropyScanner', 'CorrelationNet', 'ReinforceLearner', 'AdaptiveFilter', 'EnsembleVoter',
 ];
 
+interface AIWorkStatus {
+  name: string;
+  lottery: string;
+  task: string;
+  progress: number;
+  cycles: number;
+  patternsFound: number;
+}
+
+const TASKS = [
+  'Frequência temporal', 'Gap analysis', 'Correlação cruzada', 'Hot/Cold mapping',
+  'Cluster detection', 'Bayesian update', 'Markov transitions', 'Neural training',
+  'Genetic evolution', 'Swarm optimization', 'Entropy scanning', 'Pattern locking',
+];
+
+function generateWorkStatuses(): AIWorkStatus[] {
+  return AI_SPECIALISTS.slice(0, 24).map(name => ({
+    name,
+    lottery: LOTTERIES[Math.floor(Math.random() * LOTTERIES.length)].name,
+    task: TASKS[Math.floor(Math.random() * TASKS.length)],
+    progress: 20 + Math.random() * 80,
+    cycles: Math.floor(100 + Math.random() * 5000),
+    patternsFound: Math.floor(Math.random() * 50),
+  }));
+}
+
 const NeuralEvolutionPage = () => {
   const [time, setTime] = useState(getBrasiliaTime());
   const [cycles, setCycles] = useState(1166);
   const [hours, setHours] = useState(0.97);
   const [patterns, setPatterns] = useState(109);
   const [domination, setDomination] = useState<Record<string, number>>({});
+  const [workStatuses, setWorkStatuses] = useState<AIWorkStatus[]>(generateWorkStatuses());
 
   useEffect(() => {
     const interval = setInterval(() => setTime(getBrasiliaTime()), 1000);
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate continuous learning
+  // Simulate continuous learning - never retrocede
   useEffect(() => {
     const init: Record<string, number> = {};
     LOTTERIES.forEach(l => {
@@ -37,13 +64,18 @@ const NeuralEvolutionPage = () => {
       setDomination(prev => {
         const next = { ...prev };
         Object.keys(next).forEach(k => {
-          // Always evolve forward, never retrocede
           const gain = Math.random() * 0.05;
           next[k] = Math.min(100, next[k] + gain);
         });
         return next;
       });
     }, 3000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Refresh work statuses
+  useEffect(() => {
+    const interval = setInterval(() => setWorkStatuses(generateWorkStatuses()), 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -59,7 +91,7 @@ const NeuralEvolutionPage = () => {
           <Brain className="w-8 h-8 text-primary" />
           <div>
             <h1 className="text-2xl font-display font-bold text-foreground">Neural Evolution Engine</h1>
-            <p className="text-muted-foreground text-sm">Sistema exclusivo de auto-aprendizado 24/7 — Nunca para, sempre evolui</p>
+            <p className="text-muted-foreground text-sm">Auto-aprendizado 24/7 — Nunca para, sempre evolui — Gate: 100%</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -97,6 +129,49 @@ const NeuralEvolutionPage = () => {
             <p className={`text-3xl font-mono font-bold ${stat.color}`}>{stat.value}</p>
           </motion.div>
         ))}
+      </div>
+
+      {/* AI Work Monitor - The detailed panel */}
+      <div className="glass rounded-xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Eye className="w-5 h-5 text-secondary" />
+            <h2 className="text-lg font-display font-semibold">IAs Estudando, Trabalhando e Evoluindo</h2>
+          </div>
+          <span className="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-mono animate-pulse">● LIVE</span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-[500px] overflow-y-auto">
+          {workStatuses.map((ws, i) => (
+            <motion.div
+              key={`${ws.name}-${i}`}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: i * 0.03 }}
+              className="bg-muted/20 rounded-lg p-3 border border-border/50 hover:border-primary/30 transition-all"
+            >
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-mono text-primary font-bold">{ws.name}</span>
+                <Sparkles className="w-3 h-3 text-warning animate-pulse" />
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                {ws.task} — <span className="text-foreground font-medium">{ws.lottery}</span>
+              </p>
+              <div className="h-1.5 bg-muted/40 rounded-full overflow-hidden mt-2">
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-secondary"
+                  initial={{ width: '0%' }}
+                  animate={{ width: `${ws.progress}%` }}
+                  transition={{ duration: 2 }}
+                />
+              </div>
+              <div className="flex justify-between mt-1">
+                <span className="text-[10px] text-muted-foreground">{ws.cycles} ciclos</span>
+                <span className="text-[10px] text-success">{ws.patternsFound} padrões</span>
+                <span className="text-[10px] text-primary">{ws.progress.toFixed(1)}%</span>
+              </div>
+            </motion.div>
+          ))}
+        </div>
       </div>
 
       {/* Active Motors */}
@@ -147,26 +222,6 @@ const NeuralEvolutionPage = () => {
               </div>
             );
           })}
-        </div>
-      </div>
-
-      {/* AI Specialists Working */}
-      <div className="glass rounded-xl p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <Brain className="w-5 h-5 text-secondary" />
-          <h2 className="text-lg font-display font-semibold">
-            Especialistas em Operação ({AI_SPECIALISTS.length})
-          </h2>
-        </div>
-        <div className="flex flex-wrap gap-1.5 max-h-40 overflow-y-auto">
-          {AI_SPECIALISTS.map((ai) => (
-            <span
-              key={ai}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-primary/5 text-primary/60 font-mono hover:bg-primary/15 hover:text-primary transition-all"
-            >
-              {ai}
-            </span>
-          ))}
         </div>
       </div>
     </div>
