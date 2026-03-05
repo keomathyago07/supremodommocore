@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
-  Zap, Database, Target, Activity, Cpu, MessageSquare, Download
+  Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
