@@ -49,7 +49,7 @@ const AnalysisPage = () => {
     setResult(null);
     await new Promise((r) => setTimeout(r, 2500));
     const numbers = generateNumbers(target);
-    const confidence = 99.5 + Math.random() * 0.5;
+    const confidence = Number((99.5 + Math.random() * 0.5).toFixed(3));
     const usedSpecialists = [...AI_SPECIALISTS].sort(() => Math.random() - 0.5).slice(0, 20);
     const concurso = 3000 + Math.floor(Math.random() * 100);
     const res = { numbers, confidence, concurso, specialists: usedSpecialists };
@@ -57,18 +57,28 @@ const AnalysisPage = () => {
     setIsAnalyzing(false);
 
     if (user && confidence >= GATE_THRESHOLD) {
-      await supabase.from('gate_history').insert({
-        user_id: user.id,
-        lottery: target.id,
-        concurso,
-        confidence: parseFloat(confidence.toFixed(3)),
-        numbers,
-        gate_status: 'APPROVED',
-        found_at: new Date().toISOString(),
-      } as any);
-      toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
-      // Auto-navigate to gate history
-      setTimeout(() => navigate('/dashboard/history'), 1500);
+      try {
+        const { error } = await supabase.from('gate_history').insert({
+          user_id: user.id,
+          lottery: target.id,
+          concurso,
+          confidence,
+          numbers,
+          gate_status: 'APPROVED',
+          found_at: new Date().toISOString(),
+        } as any);
+
+        if (error) {
+          console.error('Erro ao salvar gate 100%:', error);
+          toast.error(`Falha ao salvar gate 100%: ${error.message}`);
+        } else {
+          toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+          setTimeout(() => navigate('/dashboard/history'), 1500);
+        }
+      } catch (error) {
+        console.error('Erro inesperado no salvamento do gate 100%:', error);
+        toast.error('Erro inesperado ao salvar gate 100%.');
+      }
     }
 
     return res;
