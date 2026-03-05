@@ -7,6 +7,7 @@ export interface LotteryConfig {
   color: string;
   lockedPatterns: string[];
   drawTime: string;
+  drawDays: number[]; // 0=Sunday, 1=Monday...6=Saturday
   hasSpecial?: boolean;
   specialName?: string;
   specialCount?: number;
@@ -19,57 +20,77 @@ export const LOTTERIES: LotteryConfig[] = [
     numbersCount: 6, maxNumber: 60, color: '#209869',
     lockedPatterns: ['6 acertos', '5 acertos', '4 acertos'],
     drawTime: '21:00',
+    drawDays: [2, 4, 6], // Terça, Quinta, Sábado
   },
   {
     id: 'lotofacil', name: 'Lotofácil', apiName: 'lotofacil',
     numbersCount: 15, maxNumber: 25, color: '#930089',
     lockedPatterns: ['15 acertos', '14 acertos'],
     drawTime: '21:00',
+    drawDays: [1, 2, 3, 4, 5, 6], // Seg a Sáb
   },
   {
     id: 'quina', name: 'Quina', apiName: 'quina',
     numbersCount: 5, maxNumber: 80, color: '#260085',
     lockedPatterns: ['5 acertos', '4 acertos'],
     drawTime: '21:00',
+    drawDays: [1, 2, 3, 4, 5, 6], // Seg a Sáb
   },
   {
     id: 'lotomania', name: 'Lotomania', apiName: 'lotomania',
     numbersCount: 20, maxNumber: 100, color: '#F78100',
     lockedPatterns: ['20 acertos', '19 acertos', '18 acertos', '0 acertos'],
     drawTime: '21:00',
+    drawDays: [1, 3, 5], // Seg, Qua, Sex
   },
   {
     id: 'timemania', name: 'Timemania', apiName: 'timemania',
     numbersCount: 7, maxNumber: 80, color: '#00FF48',
     lockedPatterns: ['7 acertos', '6 acertos', '5 acertos'],
     drawTime: '21:00',
+    drawDays: [2, 4, 6], // Ter, Qui, Sáb
   },
   {
     id: 'duplasena', name: 'Dupla Sena', apiName: 'dupla-sena',
     numbersCount: 6, maxNumber: 50, color: '#A61324',
     lockedPatterns: ['1º Sorteio - 6 acertos', '1º Sorteio - 5 acertos', '2º Sorteio - 6 acertos', '2º Sorteio - 5 acertos'],
     drawTime: '21:00',
+    drawDays: [1, 3, 5], // Seg, Qua, Sex
   },
   {
     id: 'diadesorte', name: 'Dia de Sorte', apiName: 'dia-de-sorte',
     numbersCount: 7, maxNumber: 31, color: '#CB852B',
     lockedPatterns: ['7 acertos', '6 acertos'],
     drawTime: '21:00',
+    drawDays: [2, 4, 6], // Ter, Qui, Sáb
   },
   {
     id: 'supersete', name: 'Super Sete', apiName: 'super-sete',
     numbersCount: 7, maxNumber: 9, color: '#A8CF45',
     lockedPatterns: ['7 acertos', '6 acertos', '5 acertos'],
     drawTime: '21:00',
+    drawDays: [1, 3, 5], // Seg, Qua, Sex
   },
   {
     id: 'maismilionaria', name: '+Milionária', apiName: 'mais-milionaria',
     numbersCount: 6, maxNumber: 50, color: '#0D2C6C',
     lockedPatterns: ['6 acertos + 2 trevos', '6 acertos + 1 ou 0 trevos', '5 acertos + 2 trevos', '5 acertos + 1 ou 0 trevos', '4 acertos + 2 trevos'],
     drawTime: '21:00',
+    drawDays: [3, 6], // Qua, Sáb
     hasSpecial: true, specialName: 'Trevos', specialCount: 2, specialMax: 6,
   },
 ];
+
+const DAY_NAMES = ['Domingo', 'Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado'];
+
+export function getDrawDayNames(lottery: LotteryConfig): string {
+  return lottery.drawDays.map(d => DAY_NAMES[d]).join(', ');
+}
+
+export function getTodaysLotteries(): LotteryConfig[] {
+  const today = getBrasiliaTime().getDay();
+  return LOTTERIES.filter(l => l.drawDays.includes(today));
+}
 
 export const AI_SPECIALISTS = [
   'NeuralFreq', 'PatternMaster', 'DeepProb', 'QuantumPredict', 'StatEngine',

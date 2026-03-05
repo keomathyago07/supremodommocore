@@ -17,6 +17,8 @@ import AIAdvancedConfigPage from "./pages/AIAdvancedConfigPage";
 import GateConfigPage from "./pages/GateConfigPage";
 import ApiConfigPage from "./pages/ApiConfigPage";
 import SettingsPage from "./pages/SettingsPage";
+import AIChatPage from "./pages/AIChatPage";
+import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -57,8 +59,10 @@ const App = () => (
               <Route path="results" element={<ResultsPage />} />
               <Route path="ai" element={<AISpecialistsPage />} />
               <Route path="aiconfig" element={<AIAdvancedConfigPage />} />
+              <Route path="chat" element={<AIChatPage />} />
               <Route path="gates" element={<GateConfigPage />} />
               <Route path="api" element={<ApiConfigPage />} />
+              <Route path="install" element={<InstallPage />} />
               <Route path="settings" element={<SettingsPage />} />
             </Route>
             <Route path="*" element={<NotFound />} />

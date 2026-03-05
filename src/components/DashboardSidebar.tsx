@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
-  Zap, Database, Target, Activity, Cpu
+  Zap, Database, Target, Activity, Cpu, MessageSquare, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,8 +17,10 @@ const menuItems = [
   { id: 'results', label: 'Resultados', icon: Trophy, path: '/dashboard/results' },
   { id: 'ai', label: 'IAs Especialistas', icon: Bot, path: '/dashboard/ai' },
   { id: 'aiconfig', label: 'Config. Avançada IA', icon: Cpu, path: '/dashboard/aiconfig' },
+  { id: 'chat', label: 'Chat Assistente', icon: MessageSquare, path: '/dashboard/chat' },
   { id: 'gates', label: 'Config. Gates', icon: Target, path: '/dashboard/gates' },
   { id: 'api', label: 'API & Sincronização', icon: Database, path: '/dashboard/api' },
+  { id: 'install', label: 'Instalar App', icon: Download, path: '/dashboard/install' },
   { id: 'settings', label: 'Configurações', icon: Settings, path: '/dashboard/settings' },
 ];
 
@@ -34,24 +36,17 @@ const DashboardSidebar = () => {
       transition={{ duration: 0.3 }}
       className="h-screen bg-sidebar border-r border-sidebar-border flex flex-col sticky top-0 z-30"
     >
-      {/* Header */}
       <div className="p-4 flex items-center gap-3 border-b border-sidebar-border">
         <Zap className="w-7 h-7 text-primary shrink-0" />
         <AnimatePresence>
           {!collapsed && (
-            <motion.span
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="font-display font-bold text-primary text-sm tracking-wider glow-text-primary whitespace-nowrap"
-            >
+            <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="font-display font-bold text-primary text-sm tracking-wider glow-text-primary whitespace-nowrap">
               DOMMO SUPREMO
             </motion.span>
           )}
         </AnimatePresence>
       </div>
 
-      {/* Menu */}
       <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.path;
@@ -69,12 +64,7 @@ const DashboardSidebar = () => {
               <item.icon className="w-5 h-5 shrink-0" />
               <AnimatePresence>
                 {!collapsed && (
-                  <motion.span
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="whitespace-nowrap"
-                  >
+                  <motion.span initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="whitespace-nowrap">
                     {item.label}
                   </motion.span>
                 )}
@@ -84,7 +74,6 @@ const DashboardSidebar = () => {
         })}
       </nav>
 
-      {/* Footer */}
       <div className="p-2 border-t border-sidebar-border space-y-1">
         <button
           onClick={() => setCollapsed(!collapsed)}
