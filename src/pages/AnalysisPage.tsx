@@ -87,23 +87,33 @@ const AnalysisPage = () => {
   const confirmBet = async () => {
     if (!result || !user) return;
     setConfirming(true);
-    const { error } = await supabase.from('bets').insert({
-      user_id: user.id,
-      lottery: selectedLottery.id,
-      concurso: result.concurso,
-      numbers: result.numbers,
-      confidence: parseFloat(result.confidence.toFixed(3)),
-      status: 'confirmed',
-      confirmed_at: new Date().toISOString(),
-    } as any);
-    if (error) {
-      toast.error('Erro ao confirmar aposta: ' + error.message);
-    } else {
+
+    try {
+      const { error } = await supabase.from('bets').insert({
+        user_id: user.id,
+        lottery: selectedLottery.id,
+        concurso: result.concurso,
+        numbers: result.numbers,
+        confidence: parseFloat(result.confidence.toFixed(3)),
+        status: 'confirmed',
+        confirmed_at: new Date().toISOString(),
+      } as any);
+
+      if (error) {
+        console.error('Erro ao confirmar aposta:', error);
+        toast.error('Erro ao confirmar aposta: ' + error.message);
+        return;
+      }
+
       toast.success('✅ Aposta confirmada e salva no banco! Aguardando resultado para conferência automática.');
       setResult(null);
       setTimeout(() => navigate('/dashboard/results'), 1500);
+    } catch (error) {
+      console.error('Erro inesperado ao confirmar aposta:', error);
+      toast.error('Erro inesperado ao confirmar aposta.');
+    } finally {
+      setConfirming(false);
     }
-    setConfirming(false);
   };
 
   return (
