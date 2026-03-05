@@ -67,6 +67,8 @@ const AnalysisPage = () => {
         found_at: new Date().toISOString(),
       } as any);
       toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+      // Auto-navigate to gate history
+      setTimeout(() => navigate('/dashboard/history'), 1500);
     }
 
     return res;
