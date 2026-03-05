@@ -21,30 +21,65 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
 
-    if (email !== VALID_EMAIL) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedPin = pin.replace(/\D/g, '');
+
+    if (normalizedEmail !== VALID_EMAIL.toLowerCase()) {
       setError('Acesso negado — email não autorizado');
       return;
     }
-    if (pin !== VALID_PIN) {
+
+    if (normalizedPin !== VALID_PIN) {
       setError('PIN incorreto');
       return;
     }
 
+    const canonicalPassword = `DommoSupremo#${normalizedPin}#2026`;
+    const passwordsToTry = [canonicalPassword, normalizedPin];
+
     setLoading(true);
     try {
-      // Use PIN as part of a longer password to meet Supabase requirements
-      const password = `DommoSupremo#${pin}#2026`;
-      try {
-        await signIn(email, password);
-      } catch {
-        await signUp(email, password);
-        // Wait briefly for auto-confirm
-        await new Promise(r => setTimeout(r, 1000));
-        await signIn(email, password);
+      let authenticated = false;
+      let lastSignInError: any = null;
+
+      for (const password of passwordsToTry) {
+        try {
+          await signIn(normalizedEmail, password);
+          authenticated = true;
+          break;
+        } catch (err) {
+          lastSignInError = err;
+        }
       }
+
+      if (!authenticated) {
+        try {
+          await signUp(normalizedEmail, canonicalPassword);
+          await new Promise((r) => setTimeout(r, 1000));
+          await signIn(normalizedEmail, canonicalPassword);
+          authenticated = true;
+        } catch (err: any) {
+          const message = String(err?.message || '').toLowerCase();
+          if (message.includes('already registered')) {
+            setError('Conta já existe, mas o PIN não confere. Use o PIN atualizado em Configurações.');
+            return;
+          }
+          throw err;
+        }
+      }
+
+      if (!authenticated && lastSignInError) {
+        throw lastSignInError;
+      }
+
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.message || 'Erro ao autenticar');
+      const message = String(err?.message || '').toLowerCase();
+      if (message.includes('invalid login credentials')) {
+        setError('Credenciais inválidas. Verifique email e PIN.');
+      } else {
+        setError(err?.message || 'Erro ao autenticar');
+      }
     } finally {
       setLoading(false);
     }
