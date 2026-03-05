@@ -8,6 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardHome from "./pages/DashboardHome";
 import NeuralEvolutionPage from "./pages/NeuralEvolutionPage";
+import AILiveDashboardPage from "./pages/AILiveDashboardPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import BetsPage from "./pages/BetsPage";
 import GateHistoryPage from "./pages/GateHistoryPage";
