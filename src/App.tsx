@@ -8,6 +8,7 @@ import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardHome from "./pages/DashboardHome";
 import NeuralEvolutionPage from "./pages/NeuralEvolutionPage";
+import AILiveDashboardPage from "./pages/AILiveDashboardPage";
 import AnalysisPage from "./pages/AnalysisPage";
 import BetsPage from "./pages/BetsPage";
 import GateHistoryPage from "./pages/GateHistoryPage";
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}>
               <Route index element={<DashboardHome />} />
               <Route path="evolution" element={<NeuralEvolutionPage />} />
+              <Route path="livepanel" element={<AILiveDashboardPage />} />
               <Route path="analysis" element={<AnalysisPage />} />
               <Route path="bets" element={<BetsPage />} />
               <Route path="history" element={<GateHistoryPage />} />
