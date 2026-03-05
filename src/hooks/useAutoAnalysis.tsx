@@ -53,6 +53,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   const [gatesFound, setGatesFound] = useState(0);
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
+  const onGateFound = useRef<(() => void) | null>(null);
 
   // Persist settings
   useEffect(() => {
