@@ -4,17 +4,19 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
-  Zap, Database, Target
+  Zap, Database, Target, Activity, Cpu
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const menuItems = [
   { id: 'dashboard', label: 'Painel Principal', icon: LayoutDashboard, path: '/dashboard' },
+  { id: 'evolution', label: 'Neural Evolution', icon: Activity, path: '/dashboard/evolution' },
   { id: 'analysis', label: 'Análise de Loterias', icon: Brain, path: '/dashboard/analysis' },
   { id: 'bets', label: 'Minhas Apostas', icon: Ticket, path: '/dashboard/bets' },
   { id: 'history', label: 'Histórico de Gates', icon: History, path: '/dashboard/history' },
   { id: 'results', label: 'Resultados', icon: Trophy, path: '/dashboard/results' },
   { id: 'ai', label: 'IAs Especialistas', icon: Bot, path: '/dashboard/ai' },
+  { id: 'aiconfig', label: 'Config. Avançada IA', icon: Cpu, path: '/dashboard/aiconfig' },
   { id: 'gates', label: 'Config. Gates', icon: Target, path: '/dashboard/gates' },
   { id: 'api', label: 'API & Sincronização', icon: Database, path: '/dashboard/api' },
   { id: 'settings', label: 'Configurações', icon: Settings, path: '/dashboard/settings' },
