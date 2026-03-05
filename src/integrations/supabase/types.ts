@@ -14,7 +14,189 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      ai_memory: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          lottery: string
+          memory_type: string
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          created_at?: string
+          data?: Json
+          id?: string
+          lottery: string
+          memory_type: string
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          lottery?: string
+          memory_type?: string
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      api_tokens: {
+        Row: {
+          created_at: string
+          id: string
+          is_valid: boolean | null
+          last_sync_at: string | null
+          provider: string
+          token: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_valid?: boolean | null
+          last_sync_at?: string | null
+          provider?: string
+          token: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_valid?: boolean | null
+          last_sync_at?: string | null
+          provider?: string
+          token?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bets: {
+        Row: {
+          checked_at: string | null
+          concurso: number
+          confidence: number
+          confirmed_at: string | null
+          created_at: string
+          draw_numbers: number[] | null
+          hits: number | null
+          id: string
+          lottery: string
+          numbers: number[]
+          prize_amount: number | null
+          status: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          checked_at?: string | null
+          concurso: number
+          confidence?: number
+          confirmed_at?: string | null
+          created_at?: string
+          draw_numbers?: number[] | null
+          hits?: number | null
+          id?: string
+          lottery: string
+          numbers: number[]
+          prize_amount?: number | null
+          status?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          checked_at?: string | null
+          concurso?: number
+          confidence?: number
+          confirmed_at?: string | null
+          created_at?: string
+          draw_numbers?: number[] | null
+          hits?: number | null
+          id?: string
+          lottery?: string
+          numbers?: number[]
+          prize_amount?: number | null
+          status?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gate_config: {
+        Row: {
+          auto_approve: boolean
+          created_at: string
+          id: string
+          min_confidence: number
+          notify_on_gate: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auto_approve?: boolean
+          created_at?: string
+          id?: string
+          min_confidence?: number
+          notify_on_gate?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auto_approve?: boolean
+          created_at?: string
+          id?: string
+          min_confidence?: number
+          notify_on_gate?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      gate_history: {
+        Row: {
+          concurso: number
+          confidence: number
+          created_at: string
+          found_at: string
+          gate_status: string
+          id: string
+          lottery: string
+          numbers: number[]
+          user_id: string
+        }
+        Insert: {
+          concurso: number
+          confidence: number
+          created_at?: string
+          found_at?: string
+          gate_status?: string
+          id?: string
+          lottery: string
+          numbers: number[]
+          user_id: string
+        }
+        Update: {
+          concurso?: number
+          confidence?: number
+          created_at?: string
+          found_at?: string
+          gate_status?: string
+          id?: string
+          lottery?: string
+          numbers?: number[]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
