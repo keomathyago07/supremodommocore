@@ -3,8 +3,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import robotHero from '@/assets/robot-hero.png';
-import { Eye, EyeOff, Zap, Shield, Brain } from 'lucide-react';
+import { Zap, Shield, Brain } from 'lucide-react';
 import { AI_SPECIALISTS } from '@/lib/lotteryConstants';
+import { supabase } from '@/integrations/supabase/client';
 
 const VALID_EMAIL = 'keomatiago@gmail.com';
 const VALID_PIN = '834589';
@@ -16,6 +17,17 @@ const LoginPage = () => {
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const recoverPrivateAccess = async (normalizedEmail: string, normalizedPin: string) => {
+    const { data, error } = await supabase.functions.invoke('recover-private-access', {
+      body: { email: normalizedEmail, pin: normalizedPin },
+    });
+
+    if (error) throw error;
+    if (!data?.ok) {
+      throw new Error(data?.message || 'Falha ao recuperar acesso privado');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,11 +72,14 @@ const LoginPage = () => {
           authenticated = true;
         } catch (err: any) {
           const message = String(err?.message || '').toLowerCase();
+
           if (message.includes('already registered')) {
-            setError('Conta já existe, mas o PIN não confere. Use o PIN atualizado em Configurações.');
-            return;
+            await recoverPrivateAccess(normalizedEmail, normalizedPin);
+            await signIn(normalizedEmail, canonicalPassword);
+            authenticated = true;
+          } else {
+            throw err;
           }
-          throw err;
         }
       }
 
@@ -76,7 +91,7 @@ const LoginPage = () => {
     } catch (err: any) {
       const message = String(err?.message || '').toLowerCase();
       if (message.includes('invalid login credentials')) {
-        setError('Credenciais inválidas. Verifique email e PIN.');
+        setError('Credenciais inválidas. Tente novamente em alguns segundos.');
       } else {
         setError(err?.message || 'Erro ao autenticar');
       }
