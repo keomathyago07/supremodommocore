@@ -1,9 +1,10 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
 import { useAuth } from '@/hooks/useAuth';
+import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { supabase } from '@/integrations/supabase/client';
-import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle } from 'lucide-react';
+import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle, Activity } from 'lucide-react';
 import { toast } from 'sonner';
 
 function generateNumbers(config: LotteryConfig): number[] {
@@ -18,17 +19,14 @@ const GATE_THRESHOLD = 100;
 
 const AnalysisPage = () => {
   const { user } = useAuth();
+  const auto = useAutoAnalysis();
   const [selectedLottery, setSelectedLottery] = useState<LotteryConfig>(LOTTERIES[0]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<{ numbers: number[]; confidence: number; concurso: number; specialists: string[] } | null>(null);
   const [time, setTime] = useState(getBrasiliaTime());
   const [confirming, setConfirming] = useState(false);
-  const [autoMode, setAutoMode] = useState(false);
-  const [todayOnly, setTodayOnly] = useState(true);
-  const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const todaysLotteries = getTodaysLotteries();
-  const activeLotteries = todayOnly ? todaysLotteries : LOTTERIES;
 
   useEffect(() => {
     const interval = setInterval(() => setTime(getBrasiliaTime()), 1000);
@@ -64,33 +62,6 @@ const AnalysisPage = () => {
     return res;
   };
 
-  // Auto-analysis: only today's lotteries
-  useEffect(() => {
-    if (autoMode) {
-      const runAuto = async () => {
-        const lotteries = todayOnly ? todaysLotteries : LOTTERIES;
-        if (lotteries.length === 0) {
-          toast.info('Nenhuma loteria sorteada hoje. Auto-análise pausada.');
-          setAutoMode(false);
-          return;
-        }
-        for (const lottery of lotteries) {
-          setSelectedLottery(lottery);
-          const res = await runAnalysis(lottery);
-          if (res && res.confidence >= GATE_THRESHOLD) {
-            toast.success(`🔔 GATE 100% — ${lottery.name} — ${res.confidence.toFixed(3)}%`, { duration: 10000 });
-          }
-          await new Promise(r => setTimeout(r, 3000));
-        }
-      };
-      runAuto();
-      autoRef.current = setInterval(runAuto, activeLotteries.length * 6000);
-    } else {
-      if (autoRef.current) clearInterval(autoRef.current);
-    }
-    return () => { if (autoRef.current) clearInterval(autoRef.current); };
-  }, [autoMode, todayOnly, user]);
-
   const confirmBet = async () => {
     if (!result || !user) return;
     setConfirming(true);
@@ -119,28 +90,60 @@ const AnalysisPage = () => {
           </div>
           {/* Today Only Toggle */}
           <button
-            onClick={() => setTodayOnly(!todayOnly)}
+            onClick={() => auto.setTodayOnly(!auto.todayOnly)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg font-display font-semibold text-xs transition-all ${
-              todayOnly ? 'bg-secondary/20 text-secondary border border-secondary/30' : 'glass text-muted-foreground'
+              auto.todayOnly ? 'bg-secondary/20 text-secondary border border-secondary/30' : 'glass text-muted-foreground'
             }`}
           >
             <CalendarDays className="w-4 h-4" />
-            {todayOnly ? 'SÓ HOJE' : 'TODAS'}
+            {auto.todayOnly ? 'SÓ HOJE' : 'TODAS'}
           </button>
           <button
-            onClick={() => setAutoMode(!autoMode)}
+            onClick={() => auto.setAutoMode(!auto.autoMode)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-display font-semibold text-sm transition-all ${
-              autoMode ? 'bg-success/20 text-success border border-success/30' : 'glass text-muted-foreground hover:text-foreground'
+              auto.autoMode ? 'bg-success/20 text-success border border-success/30 shadow-[0_0_15px_rgba(0,255,136,0.2)]' : 'glass text-muted-foreground hover:text-foreground'
             }`}
           >
-            <Repeat className={`w-4 h-4 ${autoMode ? 'animate-spin' : ''}`} />
-            {autoMode ? 'AUTO ON' : 'AUTO OFF'}
+            <Repeat className={`w-4 h-4 ${auto.autoMode ? 'animate-spin' : ''}`} />
+            {auto.autoMode ? 'AUTO ON' : 'AUTO OFF'}
           </button>
         </div>
       </div>
 
+      {/* Auto-analysis global status bar */}
+      {auto.autoMode && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass rounded-lg p-3 border border-success/20 bg-success/5"
+        >
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-2">
+              <Activity className="w-4 h-4 text-success animate-pulse" />
+              <span className="text-xs font-display font-semibold text-success">ANÁLISE GLOBAL ATIVA — SEMPRE LIGADA</span>
+            </div>
+            <div className="flex items-center gap-4 text-xs text-muted-foreground font-mono">
+              <span>Ciclos: {auto.cycleCount}</span>
+              <span>Gates: {auto.gatesFound}</span>
+              {auto.currentLottery && auto.isAnalyzing && (
+                <span className="text-primary">Analisando: {auto.currentLottery.name}</span>
+              )}
+            </div>
+          </div>
+          {auto.lastResults.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {auto.lastResults.slice(0, 5).map((r, i) => (
+                <span key={i} className="text-[10px] px-2 py-0.5 rounded bg-muted/50 text-muted-foreground font-mono">
+                  {r.lottery.name}: {r.confidence.toFixed(1)}%
+                </span>
+              ))}
+            </div>
+          )}
+        </motion.div>
+      )}
+
       {/* Today's lotteries info */}
-      {todayOnly && (
+      {auto.todayOnly && (
         <div className="glass rounded-lg p-3 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-secondary shrink-0" />
           <p className="text-xs text-muted-foreground">
@@ -163,9 +166,9 @@ const AnalysisPage = () => {
               onClick={() => { setSelectedLottery(l); setResult(null); }}
               className={`px-3 py-2 rounded-lg text-xs font-display font-semibold transition-all relative
                 ${selectedLottery.id === l.id ? 'text-primary-foreground' : 'glass text-foreground hover:border-primary/30'}
-                ${todayOnly && !isToday ? 'opacity-30' : ''}`}
+                ${auto.todayOnly && !isToday ? 'opacity-30' : ''}`}
               style={selectedLottery.id === l.id ? { background: l.color } : {}}
-              disabled={todayOnly && !isToday}
+              disabled={auto.todayOnly && !isToday}
             >
               {l.name}
               {isToday && <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-success animate-pulse" />}
