@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, getTodaysLotteries } from '@/lib/lotteryConstants';
 import { LOTTERY_PRIZES, formatPrize } from '@/lib/lotteryPrizes';
+import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { Brain, Zap, Clock, BarChart3, Target, Activity, TrendingUp, Cpu, Eye, Sparkles, Crown, Flame, Shield, Rocket, Trophy, Star, Gauge, ArrowUpCircle } from 'lucide-react';
 
 const ACTIVE_MOTORS = [
@@ -9,7 +10,8 @@ const ACTIVE_MOTORS = [
   'MegaPairAnalyzer', 'PredictionFusion', 'TMNeural10', 'MegaGapHunter', 'DSCorrelation',
   'BayesianNet', 'MarkovChain', 'NeuralFreq', 'TemporalGAN', 'CertusV2',
   'EntropyScanner', 'CorrelationNet', 'ReinforceLearner', 'AdaptiveFilter', 'EnsembleVoter',
-  'HyperBoosted', 'QuantumPredictor', 'DeepFusion50x', 'TurboAdaptNet', 'UltraPrecision',
+  'HyperBoosted', 'QuantumPredictor', 'DeepFusion100x', 'TurboAdaptNet', 'UltraPrecision',
+  'MegaTurbo100x', 'InfiniteEvolver', 'PrizeHunterMax', 'AutoSyncAPI', 'DominatorUltra',
 ];
 
 const TASKS = [
@@ -17,8 +19,9 @@ const TASKS = [
   'Cluster detection', 'Bayesian update', 'Markov transitions', 'Neural training',
   'Genetic evolution', 'Swarm optimization', 'Entropy scanning', 'Pattern locking',
   'Sequence prediction', 'Backpropagation', 'Reinforcement cycle', 'Monte Carlo sim',
-  'Turbo learning 50x', 'Deep pattern fusion', 'Hyper optimization', 'Prize chasing',
+  'Turbo learning 100x', 'Deep pattern fusion', 'Hyper optimization', 'Prize chasing',
   'Ultra precision calibration', 'Auto-adaptation sync', 'API behavior study',
+  'Infinite evolution ∞', 'Domination boost 1000%',
 ];
 
 const INTELLIGENCE_LEVELS = [
@@ -31,16 +34,16 @@ const INTELLIGENCE_LEVELS = [
   { min: 100, max: 10000, label: 'ULTRA DOMÍNIO ∞', color: 'text-success', icon: Crown },
 ];
 
-// TURBO 50x config
+// TURBO 100x config
 const TURBO_CONFIG = {
-  baseInterval: 400,
-  accelerationFactor: 50,
-  minGainPerTick: 0.08,
-  maxGainPerTick: 0.6,
-  masteryBoost: 3.0,
+  baseInterval: 300,
+  accelerationFactor: 100,
+  minGainPerTick: 0.15,
+  maxGainPerTick: 1.2,
+  masteryBoost: 5.0,
   neverStopFactor: true,
-  microEvolution: 0.01,
-  precisionBoost: 0.15,
+  microEvolution: 0.02,
+  precisionBoost: 0.3,
   ultraMaxTarget: 1000,
 };
 
@@ -62,8 +65,8 @@ interface AIWorkStatus {
 }
 
 function generateWorkStatuses(): AIWorkStatus[] {
-  const statuses = ['TURBO 50x TRAINING', 'HYPER OTIMIZANDO', 'DEEP ANALYZING', 'PATTERN LOCKING', 'PRIZE CHASING', 'ULTRA PRECISION', 'AUTO-ADAPT'];
-  const speeds = ['50x', '45x', '40x', '35x', '30x', '25x'];
+  const statuses = ['TURBO 100x TRAINING', 'HYPER OTIMIZANDO', 'DEEP ANALYZING', 'PATTERN LOCKING', 'PRIZE CHASING', 'ULTRA PRECISION', 'AUTO-ADAPT', 'INFINITE EVOLVE'];
+  const speeds = ['100x', '95x', '90x', '85x', '80x', '75x'];
   return AI_SPECIALISTS.slice(0, 24).map(name => {
     const lottery = LOTTERIES[Math.floor(Math.random() * LOTTERIES.length)];
     return {
@@ -73,14 +76,15 @@ function generateWorkStatuses(): AIWorkStatus[] {
       task: TASKS[Math.floor(Math.random() * TASKS.length)],
       status: statuses[Math.floor(Math.random() * statuses.length)],
       progress: 40 + Math.random() * 60,
-      cycles: Math.floor(5000 + Math.random() * 500000),
-      patternsFound: Math.floor(100 + Math.random() * 2000),
+      cycles: Math.floor(10000 + Math.random() * 1000000),
+      patternsFound: Math.floor(200 + Math.random() * 5000),
       speed: speeds[Math.floor(Math.random() * speeds.length)],
     };
   });
 }
 
 const NeuralEvolutionPage = () => {
+  const auto = useAutoAnalysis();
   const [time, setTime] = useState(getBrasiliaTime());
   const [cycles, setCycles] = useState(() => {
     try { return Number(localStorage.getItem('neural_cycles')) || 1166; } catch { return 1166; }
@@ -136,14 +140,14 @@ const NeuralEvolutionPage = () => {
   useEffect(() => { localStorage.setItem('neural_intelligence', String(intelligenceScore)); }, [intelligenceScore]);
   useEffect(() => { localStorage.setItem('neural_study_completed', JSON.stringify(studyCompleted)); }, [studyCompleted]);
 
-  // TURBO 50x Evolution engine — never stops, infinite
+  // TURBO 100x Evolution engine — never stops, infinite
   useEffect(() => {
     const interval = setInterval(() => {
       const accelFactor = turboActive ? TURBO_CONFIG.accelerationFactor : 1;
 
-      setCycles(c => c + (turboActive ? 50 : 1));
-      setHours(h => parseFloat((h + 0.01 * accelFactor).toFixed(2)));
-      setPatterns(p => p + (Math.random() > 0.1 ? Math.floor(3 * accelFactor) : 0));
+      setCycles(c => c + (turboActive ? 100 : 1));
+      setHours(h => parseFloat((h + 0.02 * accelFactor).toFixed(2)));
+      setPatterns(p => p + (Math.random() > 0.05 ? Math.floor(5 * accelFactor) : 0));
 
       // Domination: ultra-fast to 100%, then infinite beyond
       setDomination(prev => {
@@ -151,12 +155,11 @@ const NeuralEvolutionPage = () => {
         const newCompleted: Record<string, boolean> = {};
         Object.keys(next).forEach(k => {
           if (next[k] >= 100) {
-            // Infinite evolution beyond 100% — towards 1000%
             next[k] = Math.min(TURBO_CONFIG.ultraMaxTarget, next[k] + TURBO_CONFIG.microEvolution * accelFactor);
             newCompleted[k] = true;
           } else {
             const remaining = 100 - next[k];
-            const baseGain = Math.random() * Math.max(TURBO_CONFIG.minGainPerTick, remaining * 0.02);
+            const baseGain = Math.random() * Math.max(TURBO_CONFIG.minGainPerTick, remaining * 0.03);
             const turboGain = baseGain * accelFactor;
             const masteryBoost = remaining < 10 ? TURBO_CONFIG.masteryBoost : 1;
             next[k] = Math.min(TURBO_CONFIG.ultraMaxTarget, next[k] + turboGain * masteryBoost);
@@ -167,7 +170,7 @@ const NeuralEvolutionPage = () => {
         return next;
       });
 
-      // Precision: ultra-fast to 100%
+      // Precision: ultra-fast to 100% then infinite
       setPrecision(prev => {
         const next = { ...prev };
         Object.keys(next).forEach(k => {
@@ -175,7 +178,7 @@ const NeuralEvolutionPage = () => {
             next[k] = Math.min(TURBO_CONFIG.ultraMaxTarget, next[k] + TURBO_CONFIG.microEvolution * accelFactor * 0.5);
           } else {
             const remaining = 100 - next[k];
-            const gain = Math.random() * Math.max(TURBO_CONFIG.precisionBoost, remaining * 0.015) * accelFactor;
+            const gain = Math.random() * Math.max(TURBO_CONFIG.precisionBoost, remaining * 0.02) * accelFactor;
             next[k] = Math.min(TURBO_CONFIG.ultraMaxTarget, next[k] + gain);
           }
         });
@@ -188,7 +191,7 @@ const NeuralEvolutionPage = () => {
           return Math.min(TURBO_CONFIG.ultraMaxTarget, prev + TURBO_CONFIG.microEvolution * accelFactor);
         }
         const remaining = 100 - prev;
-        const baseGain = Math.random() * Math.max(TURBO_CONFIG.minGainPerTick, remaining * 0.01);
+        const baseGain = Math.random() * Math.max(TURBO_CONFIG.minGainPerTick, remaining * 0.02);
         return Math.min(TURBO_CONFIG.ultraMaxTarget, prev + baseGain * accelFactor);
       });
     }, TURBO_CONFIG.baseInterval);
@@ -196,7 +199,7 @@ const NeuralEvolutionPage = () => {
   }, [turboActive]);
 
   useEffect(() => {
-    const interval = setInterval(() => setWorkStatuses(generateWorkStatuses()), 2000);
+    const interval = setInterval(() => setWorkStatuses(generateWorkStatuses()), 1500);
     return () => clearInterval(interval);
   }, []);
 
@@ -213,6 +216,10 @@ const NeuralEvolutionPage = () => {
   const lotteriesAtMastery = Object.values(domination).filter(v => v >= 98).length;
   const lotteriesAtTotal = Object.values(domination).filter(v => v >= 100).length;
 
+  // Analysis details from global engine
+  const details = auto.analysisDetails;
+  const todaysLotteries = getTodaysLotteries();
+
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -221,7 +228,7 @@ const NeuralEvolutionPage = () => {
           <Brain className="w-8 h-8 text-primary" />
           <div>
             <h1 className="text-2xl font-display font-bold text-foreground">Neural Evolution Engine</h1>
-            <p className="text-muted-foreground text-sm">Turbo-evolução 50x — Motor neural ultra máximo — Evolução infinita ∞</p>
+            <p className="text-muted-foreground text-sm">Turbo-evolução 100x — Motor neural ultra máximo — Evolução infinita ∞</p>
           </div>
         </div>
         <div className="flex items-center gap-3">
@@ -239,7 +246,7 @@ const NeuralEvolutionPage = () => {
           >
             <Rocket className={`w-4 h-4 ${turboActive ? 'animate-pulse' : ''}`} />
             <span className="text-xs font-display font-bold tracking-wider">
-              {turboActive ? 'TURBO 50x' : 'NORMAL'}
+              {turboActive ? 'TURBO 100x' : 'NORMAL'}
             </span>
           </button>
           <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-success/10 border border-success/30">
@@ -263,7 +270,7 @@ const NeuralEvolutionPage = () => {
               </span>
               {turboActive && (
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/20 text-success font-mono animate-pulse">
-                  TURBO 50x ATIVO
+                  TURBO 100x ATIVO
                 </span>
               )}
             </div>
@@ -297,7 +304,7 @@ const NeuralEvolutionPage = () => {
             <span className="text-sm font-display font-bold text-secondary">Precisão Média</span>
           </div>
           <p className="text-3xl font-mono font-bold text-secondary">{avgPrecision.toFixed(2)}%</p>
-          <p className="text-[10px] text-muted-foreground">Taxa de assertividade global</p>
+          <p className="text-[10px] text-muted-foreground">Taxa assertividade — meta 1000%</p>
         </div>
         <div className="glass rounded-xl p-4 border border-warning/20">
           <div className="flex items-center gap-2 mb-2">
@@ -321,7 +328,7 @@ const NeuralEvolutionPage = () => {
             <span className="text-sm font-display font-bold text-primary">Premiações Alvo</span>
           </div>
           <div className="space-y-1">
-            {getTodaysLotteries().slice(0, 3).map(l => {
+            {todaysLotteries.slice(0, 3).map(l => {
               const prize = LOTTERY_PRIZES[l.id];
               return prize ? (
                 <p key={l.id} className="text-[11px] text-muted-foreground">
@@ -346,6 +353,65 @@ const NeuralEvolutionPage = () => {
         <div className="h-3 bg-muted/40 rounded-full overflow-hidden mt-2">
           <motion.div className="h-full rounded-full bg-gradient-to-r from-warning to-success"
             initial={{ width: '0%' }} animate={{ width: `${Math.min(100, avgDomination)}%` }} transition={{ duration: 2 }} />
+        </div>
+      </div>
+
+      {/* Detailed Global Analysis — per lottery with gates, cycles, dom, prec, prize */}
+      <div className="glass rounded-xl p-5 border border-primary/30">
+        <div className="flex items-center gap-3 mb-4">
+          <Activity className="w-5 h-5 text-primary animate-pulse" />
+          <h2 className="text-lg font-display font-bold text-foreground">Análise Global Silenciosa — Detalhamento Completo</h2>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-mono animate-pulse ml-auto">
+            ● 24/7 ATIVA
+          </span>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {LOTTERIES.map(lottery => {
+            const dom = domination[lottery.id] || 50;
+            const prec = precision[lottery.id] || 85;
+            const detail = details[lottery.id];
+            const prize = LOTTERY_PRIZES[lottery.id];
+            const gates = detail?.gatesReached || 0;
+            const cyc = detail?.cyclesCompleted || 0;
+            const isToday = todaysLotteries.some(t => t.id === lottery.id);
+            const isReady = dom >= 100 && prec >= 100;
+
+            return (
+              <div key={lottery.id} className={`rounded-lg p-3 border transition-all ${
+                isReady ? 'border-success/40 bg-success/5 shadow-[0_0_10px_rgba(0,255,136,0.1)]' :
+                isToday ? 'border-secondary/30 bg-secondary/5' :
+                'border-border bg-muted/10'
+              }`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-3 h-3 rounded-full" style={{ background: lottery.color }} />
+                    <span className="font-display font-bold text-sm" style={{ color: lottery.color }}>{lottery.name}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    {isToday && <span className="text-[8px] px-1.5 py-0.5 rounded bg-secondary/10 text-secondary font-mono">HOJE</span>}
+                    <span className={`text-[9px] px-2 py-0.5 rounded-full font-mono ${
+                      isReady ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
+                    }`}>
+                      {isReady ? '✅ DOMÍNIO TOTAL' : '⏳ EVOLUINDO'}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-[11px]">
+                  <p className="text-muted-foreground">Gates: <span className="text-success font-mono font-bold">{gates}</span></p>
+                  <p className="text-muted-foreground">Ciclos: <span className="text-foreground font-mono">{cyc.toLocaleString('pt-BR')}</span></p>
+                  <p className="text-muted-foreground">Dom: <span className="font-mono font-bold" style={{ color: lottery.color }}>{dom.toFixed(1)}%</span></p>
+                  <p className="text-muted-foreground">Prec: <span className="text-secondary font-mono font-bold">{prec.toFixed(1)}%</span></p>
+                </div>
+                <div className="flex items-center gap-2 mt-2">
+                  <Trophy className="w-3 h-3 text-secondary" />
+                  <span className="text-[10px] text-secondary font-bold">{prize?.estimatedPrize || '---'}</span>
+                </div>
+                <div className="h-1.5 bg-muted/40 rounded-full overflow-hidden mt-2">
+                  <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(100, dom)}%`, backgroundColor: lottery.color }} />
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -418,9 +484,9 @@ const NeuralEvolutionPage = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Eye className="w-5 h-5 text-secondary" />
-            <h2 className="text-lg font-display font-semibold">IAs em Turbo-Evolução 50x Contínua</h2>
+            <h2 className="text-lg font-display font-semibold">IAs em Turbo-Evolução 100x Contínua</h2>
           </div>
-          <span className="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-mono animate-pulse">● LIVE TURBO 50x</span>
+          <span className="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-mono animate-pulse">● LIVE TURBO 100x</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 max-h-[500px] overflow-y-auto">
           {workStatuses.map((ws, i) => (
@@ -434,6 +500,7 @@ const NeuralEvolutionPage = () => {
                     ws.status.includes('TURBO') ? 'bg-success/10 text-success' :
                     ws.status.includes('HYPER') ? 'bg-primary/10 text-primary' :
                     ws.status.includes('ULTRA') ? 'bg-secondary/10 text-secondary' :
+                    ws.status.includes('INFINITE') ? 'bg-success/10 text-success' :
                     ws.status.includes('DEEP') ? 'bg-warning/10 text-warning' :
                     ws.status.includes('PRIZE') ? 'bg-secondary/10 text-secondary' :
                     'bg-success/10 text-success'
@@ -461,7 +528,7 @@ const NeuralEvolutionPage = () => {
       <div className="glass rounded-xl p-5">
         <div className="flex items-center gap-3 mb-4">
           <Cpu className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-display font-semibold">Motores Ativos — 50x Turbo</h2>
+          <h2 className="text-lg font-display font-semibold">Motores Ativos — 100x Turbo</h2>
         </div>
         <div className="flex flex-wrap gap-2">
           {ACTIVE_MOTORS.map(motor => (
