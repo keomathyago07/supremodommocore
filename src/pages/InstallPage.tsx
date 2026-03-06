@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Download, Smartphone, Monitor, CheckCircle, Layers, Wifi, WifiOff, Shield, Zap, Activity } from 'lucide-react';
+import { Download, Smartphone, Monitor, CheckCircle, Layers, Wifi, WifiOff, Shield, Zap, Activity, Chrome, Apple, Globe, Laptop } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const InstallPage = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [platform, setPlatform] = useState<'windows' | 'mac' | 'linux' | 'android' | 'ios' | 'unknown'>('unknown');
 
   useEffect(() => {
     const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
@@ -16,6 +17,14 @@ const InstallPage = () => {
     const onOffline = () => setIsOnline(false);
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
+
+    // Detect platform
+    const ua = navigator.userAgent.toLowerCase();
+    if (/iphone|ipad|ipod/.test(ua)) setPlatform('ios');
+    else if (/android/.test(ua)) setPlatform('android');
+    else if (/mac/.test(ua)) setPlatform('mac');
+    else if (/linux/.test(ua)) setPlatform('linux');
+    else if (/win/.test(ua)) setPlatform('windows');
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
@@ -39,17 +48,102 @@ const InstallPage = () => {
     { icon: Shield, label: 'Offline Ready', desc: 'O app funciona mesmo sem internet, sincroniza ao reconectar' },
   ];
 
+  const platformInstructions = [
+    {
+      id: 'windows',
+      title: 'Windows (Chrome / Edge)',
+      icon: Laptop,
+      color: 'text-primary',
+      steps: [
+        'Abra o DommoSupremo no Google Chrome ou Microsoft Edge',
+        'Clique no ícone de instalação (⊕) na barra de endereços, à direita',
+        'Ou vá em Menu (⋮) → "Instalar DommoSupremo"',
+        'Clique em "Instalar" na janela de confirmação',
+        'O app será instalado e aparecerá no Menu Iniciar e na Área de Trabalho',
+      ],
+    },
+    {
+      id: 'linux',
+      title: 'Linux (Chrome / Chromium / Edge)',
+      icon: Globe,
+      color: 'text-success',
+      steps: [
+        'Abra o DommoSupremo no Chrome, Chromium ou Edge',
+        'Clique no ícone de instalação na barra de endereços',
+        'Ou vá em Menu (⋮) → "Instalar DommoSupremo"',
+        'Confirme a instalação',
+        'O app ficará disponível no launcher do sistema como aplicativo nativo',
+      ],
+    },
+    {
+      id: 'mac',
+      title: 'macOS (Chrome / Edge / Arc)',
+      icon: Apple,
+      color: 'text-muted-foreground',
+      steps: [
+        'Abra o DommoSupremo no Chrome, Edge ou Arc',
+        'Clique no ícone de instalação na barra de endereços',
+        'Ou vá em Menu (⋮) → "Instalar DommoSupremo"',
+        'Confirme a instalação',
+        'O app aparecerá no Launchpad e na pasta Aplicativos',
+      ],
+    },
+    {
+      id: 'android',
+      title: 'Android (Chrome)',
+      icon: Smartphone,
+      color: 'text-secondary',
+      steps: [
+        'Abra o DommoSupremo no Chrome',
+        'Toque no menu (⋮) no canto superior direito',
+        'Selecione "Instalar app" ou "Adicionar à tela inicial"',
+        'Toque em "Instalar" na janela de confirmação',
+        'O app abre em modo standalone (tela cheia) como um app nativo',
+      ],
+    },
+    {
+      id: 'ios',
+      title: 'iPhone / iPad (Safari)',
+      icon: Apple,
+      color: 'text-warning',
+      steps: [
+        'Abra o DommoSupremo no Safari (obrigatório ser Safari)',
+        'Toque no botão Compartilhar (📤) na barra inferior',
+        'Role a lista e toque "Adicionar à Tela de Início"',
+        'Dê o nome "DommoSupremo" e toque "Adicionar"',
+        'O app aparecerá na tela inicial como um ícone nativo',
+      ],
+    },
+  ];
+
+  // Sort: detected platform first
+  const sortedInstructions = [...platformInstructions].sort((a, b) => {
+    if (a.id === platform) return -1;
+    if (b.id === platform) return 1;
+    return 0;
+  });
+
   return (
     <div className="p-6 space-y-6 max-w-3xl mx-auto">
       <div className="text-center">
         <h1 className="text-2xl font-display font-bold mb-2">Instalar DommoSupremo</h1>
-        <p className="text-muted-foreground text-sm">Desktop + Mobile — Sempre ligado, sempre sincronizado</p>
-        <div className="flex items-center justify-center gap-2 mt-2">
+        <p className="text-muted-foreground text-sm">
+          Instale direto do navegador — Windows, Linux, macOS, Android e iOS
+        </p>
+        <div className="flex items-center justify-center gap-4 mt-3">
           {isOnline ? (
             <span className="flex items-center gap-1 text-xs text-success"><Wifi className="w-3 h-3" /> Online</span>
           ) : (
             <span className="flex items-center gap-1 text-xs text-destructive"><WifiOff className="w-3 h-3" /> Offline</span>
           )}
+          <span className="flex items-center gap-1 text-xs text-primary">
+            <Globe className="w-3 h-3" />
+            {platform === 'windows' ? 'Windows detectado' :
+             platform === 'mac' ? 'macOS detectado' :
+             platform === 'linux' ? 'Linux detectado' :
+             platform === 'android' ? 'Android detectado' :
+             platform === 'ios' ? 'iOS detectado' : 'Plataforma detectada'}
+          </span>
         </div>
       </div>
 
@@ -60,55 +154,56 @@ const InstallPage = () => {
           <p className="text-muted-foreground text-sm">O DommoSupremo está rodando neste dispositivo.</p>
         </motion.div>
       ) : (
-        <div className="space-y-4">
+        <>
           {deferredPrompt && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 text-center">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 text-center border border-primary/30">
               <Download className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h2 className="text-lg font-display font-bold mb-3">Instalar Agora</h2>
+              <h2 className="text-lg font-display font-bold mb-3">Instalação Rápida Disponível!</h2>
+              <p className="text-sm text-muted-foreground mb-4">Seu navegador suporta instalação direta. Clique para instalar agora.</p>
               <button onClick={handleInstall} className="gradient-primary text-primary-foreground font-display font-bold px-8 py-3 rounded-lg glow-primary hover:opacity-90 transition-all text-lg">
-                <Download className="w-5 h-5 inline mr-2" /> INSTALAR
+                <Download className="w-5 h-5 inline mr-2" /> INSTALAR AGORA
               </button>
             </motion.div>
           )}
-
-          <div className="glass rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Monitor className="w-6 h-6 text-primary" />
-              <h3 className="font-display font-semibold">Desktop (Chrome/Edge)</h3>
-            </div>
-            <ol className="space-y-2 text-sm text-muted-foreground">
-              <li className="flex items-start gap-2"><span className="text-primary font-bold">1.</span> Clique no ícone de instalação na barra de endereços (🔽)</li>
-              <li className="flex items-start gap-2"><span className="text-primary font-bold">2.</span> Clique em "Instalar" na janela que aparecer</li>
-              <li className="flex items-start gap-2"><span className="text-primary font-bold">3.</span> O DommoSupremo aparecerá como um app no seu computador</li>
-            </ol>
-          </div>
-
-          <div className="glass rounded-xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Smartphone className="w-6 h-6 text-secondary" />
-              <h3 className="font-display font-semibold">Mobile (iOS/Android)</h3>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-2">Android (Chrome):</p>
-                <ol className="space-y-1 text-sm text-muted-foreground">
-                  <li>1. Toque no menu (⋮) do Chrome</li>
-                  <li>2. Selecione "Instalar app" ou "Adicionar à tela inicial"</li>
-                  <li>3. O app abre em modo standalone (tela cheia)</li>
-                </ol>
-              </div>
-              <div>
-                <p className="text-sm font-semibold text-foreground mb-2">iPhone (Safari):</p>
-                <ol className="space-y-1 text-sm text-muted-foreground">
-                  <li>1. Toque no botão Compartilhar (📤)</li>
-                  <li>2. Role e toque "Adicionar à Tela de Início"</li>
-                  <li>3. Toque "Adicionar"</li>
-                </ol>
-              </div>
-            </div>
-          </div>
-        </div>
+        </>
       )}
+
+      {/* Platform-specific instructions */}
+      <div className="space-y-4">
+        <h2 className="text-sm font-display font-bold text-muted-foreground tracking-wider">
+          INSTRUÇÕES POR PLATAFORMA
+        </h2>
+        {sortedInstructions.map((p, idx) => {
+          const isDetected = p.id === platform;
+          return (
+            <motion.div
+              key={p.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.1 }}
+              className={`glass rounded-xl p-6 ${isDetected ? 'border-2 border-primary/40 ring-1 ring-primary/20' : ''}`}
+            >
+              <div className="flex items-center gap-3 mb-4">
+                <p.icon className={`w-6 h-6 ${p.color}`} />
+                <h3 className="font-display font-semibold">{p.title}</h3>
+                {isDetected && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-mono">
+                    SEU DISPOSITIVO
+                  </span>
+                )}
+              </div>
+              <ol className="space-y-2 text-sm text-muted-foreground">
+                {p.steps.map((step, si) => (
+                  <li key={si} className="flex items-start gap-2">
+                    <span className="text-primary font-bold shrink-0">{si + 1}.</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </motion.div>
+          );
+        })}
+      </div>
 
       {/* Features */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
