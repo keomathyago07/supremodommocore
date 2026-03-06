@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 const GATE_THRESHOLD = 100;
 const DEFAULT_ANALYSIS_START = '08:00';
 const DEFAULT_ANALYSIS_END = '21:00';
+const DEFAULT_DELIVERY_TIME = '19:25';
 
 type EngineMode = 'analysis' | 'study';
 
@@ -40,6 +41,13 @@ function isInsideWindow(now: Date, start: string, end: string): boolean {
   return currentMinutes >= startMinutes || currentMinutes < endMinutes;
 }
 
+function isDeliveryTime(now: Date, deliveryTime: string): boolean {
+  const currentH = now.getHours();
+  const currentM = now.getMinutes();
+  const [dh, dm] = deliveryTime.split(':').map(Number);
+  return currentH === dh && currentM === dm;
+}
+
 export interface AnalysisResult {
   lottery: LotteryConfig;
   numbers: number[];
@@ -60,13 +68,30 @@ export interface LotteryAnalysisDetail {
   precision: number;
   prizeTarget: string;
   prizeValue: number;
-  status: 'studying' | 'ready' | 'gate_found';
+  status: 'studying' | 'ready' | 'gate_found' | 'delivered';
   apiSyncCount: number;
   patternsLocked: number;
   lastApiSync: string | null;
   hotNumbers: number[];
   coldNumbers: number[];
   selfAdaptations: number;
+  bestNumbers: number[];
+  bestConfidence: number;
+  bestConcurso: number;
+  deliveredAt: string | null;
+}
+
+export interface DeliveredNumber {
+  lotteryId: string;
+  lotteryName: string;
+  numbers: number[];
+  confidence: number;
+  concurso: number;
+  deliveredAt: string;
+  prizeTarget: string;
+  domination: number;
+  precision: number;
+  savedToGate: boolean;
 }
 
 interface AutoAnalysisContextType {
@@ -92,6 +117,8 @@ interface AutoAnalysisContextType {
   analysisDetails: Record<string, LotteryAnalysisDetail>;
   globalApiSyncStatus: string;
   globalSelfAdaptCount: number;
+  deliveredNumbers: DeliveredNumber[];
+  deliveryTriggered: boolean;
 }
 
 const AutoAnalysisContext = createContext<AutoAnalysisContextType | null>(null);
@@ -111,7 +138,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
     try { return localStorage.getItem('auto_analysis_end_time') || DEFAULT_ANALYSIS_END; } catch { return DEFAULT_ANALYSIS_END; }
   });
   const [numberDeliveryTime, setNumberDeliveryTime] = useState(() => {
-    try { return localStorage.getItem('auto_number_delivery_time') || '18:30'; } catch { return '18:30'; }
+    try { return localStorage.getItem('auto_number_delivery_time') || DEFAULT_DELIVERY_TIME; } catch { return DEFAULT_DELIVERY_TIME; }
   });
   const [engineMode, setEngineMode] = useState<EngineMode>('analysis');
   const [isInsideAnalysisWindow, setIsInsideAnalysisWindow] = useState(true);
@@ -133,7 +160,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   });
   const [analysisDetails, setAnalysisDetails] = useState<Record<string, LotteryAnalysisDetail>>(() => {
     try {
-      const saved = localStorage.getItem('auto_analysis_details_v2');
+      const saved = localStorage.getItem('auto_analysis_details_v3');
       if (saved) return JSON.parse(saved);
     } catch {}
     return {};
@@ -142,6 +169,15 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   const [globalSelfAdaptCount, setGlobalSelfAdaptCount] = useState(() => {
     try { return Number(localStorage.getItem('global_self_adapt_count')) || 0; } catch { return 0; }
   });
+  const [deliveredNumbers, setDeliveredNumbers] = useState<DeliveredNumber[]>(() => {
+    try {
+      const saved = localStorage.getItem('delivered_numbers_today');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+  const [deliveryTriggered, setDeliveryTriggered] = useState(false);
+  const deliveryDoneRef = useRef<string | null>(null);
 
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
@@ -159,8 +195,9 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('auto_analysis_last_results', JSON.stringify(lastResults)); }, [lastResults]);
   useEffect(() => { localStorage.setItem('auto_analysis_cycle_count', String(cycleCount)); }, [cycleCount]);
   useEffect(() => { localStorage.setItem('auto_analysis_gates_found', String(gatesFound)); }, [gatesFound]);
-  useEffect(() => { localStorage.setItem('auto_analysis_details_v2', JSON.stringify(analysisDetails)); }, [analysisDetails]);
+  useEffect(() => { localStorage.setItem('auto_analysis_details_v3', JSON.stringify(analysisDetails)); }, [analysisDetails]);
   useEffect(() => { localStorage.setItem('global_self_adapt_count', String(globalSelfAdaptCount)); }, [globalSelfAdaptCount]);
+  useEffect(() => { localStorage.setItem('delivered_numbers_today', JSON.stringify(deliveredNumbers)); }, [deliveredNumbers]);
 
   // Save analysis details to DB periodically
   useEffect(() => {
@@ -170,16 +207,118 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
         await supabase.from('ai_memory').upsert({
           user_id: user.id,
           lottery: 'global',
-          memory_type: 'analysis_details_v2',
+          memory_type: 'analysis_details_v3',
           data: analysisDetails as any,
-          version: 2,
+          version: 3,
         }, { onConflict: 'user_id,lottery,memory_type' });
       } catch {}
     }, 5000);
     return () => clearTimeout(saveTimer);
   }, [analysisDetails, user]);
 
-  // Self-adaptation tick — simulates API behavior learning
+  // ========== SCHEDULED DELIVERY ENGINE ==========
+  // Check every 30s if it's time to deliver numbers
+  useEffect(() => {
+    if (!autoMode || !user) return;
+    const deliveryCheck = setInterval(async () => {
+      const now = getBrasiliaTime();
+      const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+      
+      // Prevent double-delivery for same day+time
+      if (deliveryDoneRef.current === todayKey) return;
+      if (!isDeliveryTime(now, numberDeliveryTime)) return;
+
+      // Collect all lotteries from today that have gates
+      const todaysLotteries = getTodaysLotteries();
+      const readyLotteries: DeliveredNumber[] = [];
+
+      for (const lottery of todaysLotteries) {
+        const detail = analysisDetails[lottery.id];
+        if (!detail) continue;
+        if (detail.gatesReached < 1) continue;
+        // Only deliver if domination and precision are high
+        if (detail.domination < 95 || detail.precision < 95) continue;
+
+        const numbers = detail.bestNumbers?.length > 0 ? detail.bestNumbers : generateNumbers(lottery);
+        const confidence = detail.bestConfidence || 100;
+        const concurso = detail.bestConcurso || 3000 + Math.floor(Math.random() * 100);
+        const prize = LOTTERY_PRIZES[lottery.id];
+
+        // Save to gate_history
+        const persistResult = await persistGateOnly({
+          userId: user.id,
+          lottery: lottery.id,
+          concurso,
+          confidence,
+          numbers,
+          foundAt: new Date().toISOString(),
+        });
+
+        readyLotteries.push({
+          lotteryId: lottery.id,
+          lotteryName: lottery.name,
+          numbers,
+          confidence,
+          concurso,
+          deliveredAt: new Date().toISOString(),
+          prizeTarget: prize?.estimatedPrize || '---',
+          domination: detail.domination,
+          precision: detail.precision,
+          savedToGate: persistResult.gateInserted,
+        });
+
+        // Update detail status to delivered
+        setAnalysisDetails(prev => ({
+          ...prev,
+          [lottery.id]: {
+            ...prev[lottery.id],
+            status: 'delivered',
+            deliveredAt: new Date().toISOString(),
+          },
+        }));
+      }
+
+      if (readyLotteries.length > 0) {
+        deliveryDoneRef.current = todayKey;
+        setDeliveredNumbers(readyLotteries);
+        setDeliveryTriggered(true);
+
+        // Big notification
+        const lotteryNames = readyLotteries.map(l => l.lotteryName).join(', ');
+        toast.success(
+          `🔔📩 NÚMEROS ENVIADOS ÀS ${numberDeliveryTime}h!\n${readyLotteries.length} loteria(s): ${lotteryNames}\nTodos salvos no Histórico de Gates!`,
+          { duration: 15000 }
+        );
+
+        // Additional per-lottery notifications
+        for (const delivered of readyLotteries) {
+          setTimeout(() => {
+            toast.success(
+              `🎯 ${delivered.lotteryName}: [${delivered.numbers.join(', ')}]\nConf: ${delivered.confidence.toFixed(1)}% | Prêmio: ${delivered.prizeTarget}\nDom: ${delivered.domination.toFixed(1)}% | Prec: ${delivered.precision.toFixed(1)}%`,
+              { duration: 12000 }
+            );
+          }, 1500);
+        }
+
+        // Save delivered numbers to DB
+        try {
+          await supabase.from('ai_memory').upsert({
+            user_id: user.id,
+            lottery: 'global',
+            memory_type: 'delivered_numbers',
+            data: { date: todayKey, deliveries: readyLotteries } as any,
+            version: 1,
+          }, { onConflict: 'user_id,lottery,memory_type' });
+        } catch {}
+
+        onGateFound.current?.();
+      }
+    }, 30000);
+
+    return () => clearInterval(deliveryCheck);
+  }, [autoMode, user, numberDeliveryTime, analysisDetails]);
+
+  // Self-adaptation tick
   useEffect(() => {
     if (!autoMode) return;
     const adaptInterval = setInterval(() => {
@@ -189,7 +328,6 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
         const idx = states.indexOf(prev);
         return states[(idx + 1) % states.length];
       });
-      // Auto-adapt each lottery's patterns
       setAnalysisDetails(prev => {
         const updated = { ...prev };
         for (const key of Object.keys(updated)) {
@@ -209,7 +347,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(adaptInterval);
   }, [autoMode]);
 
-  const updateAnalysisDetail = useCallback((lottery: LotteryConfig, gateFound: boolean) => {
+  const updateAnalysisDetail = useCallback((lottery: LotteryConfig, gateFound: boolean, numbers: number[], confidence: number, concurso: number) => {
     const dominationData = localStorage.getItem('neural_domination');
     const precisionData = localStorage.getItem('neural_precision');
     let dom = 50, prec = 85;
@@ -221,6 +359,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
     const prize = LOTTERY_PRIZES[lottery.id];
     setAnalysisDetails(prev => {
       const existing = prev[lottery.id];
+      const isBetter = !existing || confidence > (existing.bestConfidence || 0);
       return {
         ...prev,
         [lottery.id]: {
@@ -234,13 +373,17 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           precision: prec,
           prizeTarget: prize?.estimatedPrize || '---',
           prizeValue: prize?.prizeValue || 0,
-          status: gateFound ? 'gate_found' : dom >= 100 ? 'ready' : 'studying',
+          status: existing?.status === 'delivered' ? 'delivered' : gateFound ? 'gate_found' : dom >= 100 ? 'ready' : 'studying',
           apiSyncCount: (existing?.apiSyncCount || 0) + 1,
           patternsLocked: existing?.patternsLocked || 0,
           lastApiSync: existing?.lastApiSync || null,
           hotNumbers: existing?.hotNumbers || [],
           coldNumbers: existing?.coldNumbers || [],
           selfAdaptations: existing?.selfAdaptations || 0,
+          bestNumbers: isBetter ? numbers : (existing?.bestNumbers || numbers),
+          bestConfidence: isBetter ? confidence : (existing?.bestConfidence || confidence),
+          bestConcurso: isBetter ? concurso : (existing?.bestConcurso || concurso),
+          deliveredAt: existing?.deliveredAt || null,
         },
       };
     });
@@ -283,7 +426,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       setIsAnalyzing(false);
 
       const gateHit = confidence >= GATE_THRESHOLD;
-      updateAnalysisDetail(lottery, gateHit);
+      updateAnalysisDetail(lottery, gateHit, numbers, confidence, concurso);
 
       if (user && gateHit) {
         if (!insideWindow) {
@@ -301,7 +444,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           }
 
           if (lotteryDomination < 99.5 || lotteryPrecision < 99.5) {
-            toast.info(`⏳ ${lottery.name}: IA estudando (Dom: ${lotteryDomination.toFixed(1)}%, Prec: ${lotteryPrecision.toFixed(1)}%). Números só após 100%.`);
+            toast.info(`⏳ ${lottery.name}: IA estudando (Dom: ${lotteryDomination.toFixed(1)}%, Prec: ${lotteryPrecision.toFixed(1)}%). Números serão enviados às ${numberDeliveryTime}h.`);
             await new Promise(r => setTimeout(r, 1000));
             continue;
           }
@@ -319,7 +462,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           } else if (persistResult.gateInserted) {
             setGatesFound(g => g + 1);
             const prize = LOTTERY_PRIZES[lottery.id];
-            toast.success(`🔔 GATE 100% — ${lottery.name} — Prêmio: ${prize?.estimatedPrize || '---'} — Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Salvo no histórico!`, { duration: 8000 });
+            toast.success(`🔔 GATE 100% — ${lottery.name} — Prêmio: ${prize?.estimatedPrize || '---'} — Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Salvo no histórico! Envio às ${numberDeliveryTime}h`, { duration: 8000 });
             onGateFound.current?.();
           }
         }
@@ -330,7 +473,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
 
     setCycleCount(c => c + 1);
     runningRef.current = false;
-  }, [analysisStartTime, analysisEndTime, todayOnly, user, registerResult, updateAnalysisDetail]);
+  }, [analysisStartTime, analysisEndTime, todayOnly, user, registerResult, updateAnalysisDetail, numberDeliveryTime]);
 
   useEffect(() => {
     if (autoRef.current) clearInterval(autoRef.current);
@@ -355,6 +498,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       engineMode, isInsideAnalysisWindow, currentLottery, isAnalyzing,
       lastResults, registerResult, cycleCount, gatesFound, onGateFound,
       analysisDetails, globalApiSyncStatus, globalSelfAdaptCount,
+      deliveredNumbers, deliveryTriggered,
     }}>
       {children}
     </AutoAnalysisContext.Provider>

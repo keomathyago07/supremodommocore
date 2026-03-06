@@ -37,7 +37,7 @@ const SettingsPage = () => {
       const newPassword = `DommoSupremo#${newPin}#2026`;
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
-      toast.success('PIN alterado com sucesso! Use o novo PIN no próximo login.');
+      toast.success('PIN alterado com sucesso!');
       setCurrentPin('');
       setNewPin('');
       setConfirmPin('');
@@ -77,31 +77,46 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Number Delivery Time */}
-      <div className="glass rounded-xl p-6 space-y-4">
+      {/* Number Delivery Time — ENHANCED */}
+      <div className="glass rounded-xl p-6 space-y-4 border border-secondary/30">
         <div className="flex items-center gap-3">
           <Send className="w-5 h-5 text-secondary" />
-          <h2 className="font-display font-semibold">Horário de Envio dos Números</h2>
+          <h2 className="font-display font-semibold">📩 Horário de Envio dos Números</h2>
         </div>
         <p className="text-xs text-muted-foreground">
-          Defina o horário para o programa enviar os números das loterias quando estiver 100% de certeza.
+          Defina o horário exato para o programa enviar os números das loterias do dia. 
+          Os números só serão enviados se TODOS os critérios forem atendidos (gate 100%, domínio ≥99.5%, precisão ≥99.5%).
         </p>
         <div className="flex items-center gap-3">
+          <label className="text-sm font-display font-semibold text-secondary">Enviar números às:</label>
           <input
             type="time"
             value={auto.numberDeliveryTime}
             onChange={e => auto.setNumberDeliveryTime(e.target.value)}
-            className="bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
+            className="bg-muted/50 border border-secondary/30 rounded-lg px-4 py-2.5 text-lg font-mono font-bold text-secondary focus:outline-none focus:ring-2 focus:ring-secondary/50"
           />
-          <span className="text-sm text-muted-foreground">Horário de Brasília</span>
-          <span className="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-mono">
-            ✅ Ativo
-          </span>
+          <span className="text-sm text-muted-foreground">(Brasília)</span>
         </div>
-        <div className="bg-muted/20 rounded-lg p-3 text-xs text-muted-foreground">
-          <Zap className="w-3 h-3 inline mr-1 text-secondary" />
-          O programa enviará os números automaticamente às <span className="text-secondary font-bold">{auto.numberDeliveryTime}h</span> somente 
-          se todos os critérios estiverem 100%: domínio ≥99.5%, precisão ≥99.5%, gate 100%, e padrões travados atendidos.
+        <div className="bg-secondary/10 rounded-lg p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Zap className="w-4 h-4 text-secondary" />
+            <span className="text-sm font-display font-semibold text-secondary">
+              Programado: {auto.numberDeliveryTime}h
+            </span>
+            <span className="text-xs px-2 py-1 rounded-full bg-success/20 text-success font-mono">✅ ATIVO</span>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            O programa analisará todas as loterias do dia em silêncio. Às <strong className="text-secondary">{auto.numberDeliveryTime}h</strong>, 
+            enviará os números de TODAS as loterias que atingiram gate 100% e atenderam todos os critérios. 
+            Os números serão salvos automaticamente no Histórico de Gates e você será notificado.
+          </p>
+          <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Gate 100%</span>
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Domínio ≥99.5%</span>
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Precisão ≥99.5%</span>
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Padrões travados</span>
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Prêmio máximo</span>
+          </div>
         </div>
       </div>
 
@@ -114,25 +129,11 @@ const SettingsPage = () => {
         <div className="space-y-3">
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">PIN Atual</label>
-            <input
-              type="password"
-              maxLength={6}
-              value={currentPin}
-              onChange={e => setCurrentPin(e.target.value.replace(/\D/g, ''))}
-              className="w-full bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-center tracking-[0.5em] text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 caret-transparent"
-              placeholder="••••••"
-            />
+            <input type="password" maxLength={6} value={currentPin} onChange={e => setCurrentPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-center tracking-[0.5em] text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 caret-transparent" placeholder="••••••" />
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Novo PIN (6 dígitos)</label>
-            <input
-              type="password"
-              maxLength={6}
-              value={newPin}
-              onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))}
-              className="w-full bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-center tracking-[0.5em] text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 caret-transparent"
-              placeholder="••••••"
-            />
+            <input type="password" maxLength={6} value={newPin} onChange={e => setNewPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-center tracking-[0.5em] text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 caret-transparent" placeholder="••••••" />
             <div className="flex gap-1.5 justify-center mt-1.5">
               {[0,1,2,3,4,5].map(i => (
                 <div key={i} className={`w-2.5 h-2.5 rounded-full transition-all ${newPin.length > i ? 'bg-primary shadow-[0_0_6px_hsl(var(--primary)/0.5)]' : 'border border-muted-foreground/30'}`} />
@@ -141,20 +142,9 @@ const SettingsPage = () => {
           </div>
           <div>
             <label className="text-xs text-muted-foreground mb-1 block">Confirmar Novo PIN</label>
-            <input
-              type="password"
-              maxLength={6}
-              value={confirmPin}
-              onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))}
-              className="w-full bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-center tracking-[0.5em] text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 caret-transparent"
-              placeholder="••••••"
-            />
+            <input type="password" maxLength={6} value={confirmPin} onChange={e => setConfirmPin(e.target.value.replace(/\D/g, ''))} className="w-full bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-center tracking-[0.5em] text-transparent focus:outline-none focus:ring-2 focus:ring-primary/50 caret-transparent" placeholder="••••••" />
           </div>
-          <button
-            onClick={handleChangePin}
-            disabled={changingPin || !newPin || !confirmPin}
-            className="w-full flex items-center justify-center gap-2 gradient-primary text-primary-foreground font-display font-semibold py-2.5 rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
-          >
+          <button onClick={handleChangePin} disabled={changingPin || !newPin || !confirmPin} className="w-full flex items-center justify-center gap-2 gradient-primary text-primary-foreground font-display font-semibold py-2.5 rounded-lg hover:opacity-90 transition-all disabled:opacity-50">
             {changingPin ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lock className="w-4 h-4" />}
             Alterar PIN
           </button>
@@ -167,10 +157,7 @@ const SettingsPage = () => {
           <Bell className="w-5 h-5 text-secondary" />
           <h2 className="font-display font-semibold">Horários de Notificação</h2>
         </div>
-        <p className="text-xs text-muted-foreground">
-          Defina os horários em que o programa enviará notificações com números das loterias do dia.
-        </p>
-
+        <p className="text-xs text-muted-foreground">Horários adicionais para notificações de status.</p>
         <div className="flex flex-wrap gap-2">
           {notifTimes.map(t => (
             <div key={t} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-primary/10 border border-primary/20">
@@ -180,40 +167,24 @@ const SettingsPage = () => {
             </div>
           ))}
         </div>
-
         <div className="flex gap-2">
-          <input
-            type="time"
-            value={newTime}
-            onChange={e => setNewTime(e.target.value)}
-            className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-          />
-          <button
-            onClick={addNotifTime}
-            disabled={!newTime}
-            className="px-4 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-display font-semibold disabled:opacity-50"
-          >
-            Adicionar
-          </button>
+          <input type="time" value={newTime} onChange={e => setNewTime(e.target.value)} className="flex-1 bg-muted/50 border border-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50" />
+          <button onClick={addNotifTime} disabled={!newTime} className="px-4 py-2 rounded-lg gradient-primary text-primary-foreground text-sm font-display font-semibold disabled:opacity-50">Adicionar</button>
         </div>
 
-        {/* Notification Toggles */}
         <div className="space-y-2 mt-4">
           {[
             { key: 'gates' as const, label: 'Notificar gates encontrados', desc: 'Alerta quando confiança atinge o gate' },
             { key: 'results' as const, label: 'Notificar resultados (21h)', desc: 'Resultados dos sorteios às 21h de Brasília' },
             { key: 'bets' as const, label: 'Notificar conferência de apostas', desc: 'Resultado da conferência automática' },
-            { key: 'dailyNumbers' as const, label: 'Enviar números do dia', desc: 'Números sugeridos nos horários configurados' },
+            { key: 'dailyNumbers' as const, label: 'Enviar números do dia', desc: `Números enviados às ${auto.numberDeliveryTime}h` },
           ].map((n) => (
             <div key={n.key} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
               <div>
                 <span className="text-sm">{n.label}</span>
                 <p className="text-xs text-muted-foreground">{n.desc}</p>
               </div>
-              <button
-                onClick={() => setNotifications(prev => ({ ...prev, [n.key]: !prev[n.key] }))}
-                className={`w-11 h-6 rounded-full transition-all ${notifications[n.key] ? 'bg-primary' : 'bg-muted'}`}
-              >
+              <button onClick={() => setNotifications(prev => ({ ...prev, [n.key]: !prev[n.key] }))} className={`w-11 h-6 rounded-full transition-all ${notifications[n.key] ? 'bg-primary' : 'bg-muted'}`}>
                 <div className={`w-[18px] h-[18px] rounded-full bg-foreground transition-transform ${notifications[n.key] ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
               </button>
             </div>
@@ -227,18 +198,10 @@ const SettingsPage = () => {
           <Monitor className="w-5 h-5 text-success" />
           <h2 className="font-display font-semibold">Sincronização Desktop/Mobile</h2>
         </div>
-        <p className="text-sm text-muted-foreground">
-          Todos os dados são sincronizados automaticamente entre dispositivos via Lovable Cloud.
-        </p>
+        <p className="text-sm text-muted-foreground">Todos os dados são sincronizados automaticamente entre dispositivos via Lovable Cloud.</p>
         <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-xs text-success">
-            <Monitor className="w-4 h-4" />
-            <span>Desktop sincronizado</span>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-success">
-            <Smartphone className="w-4 h-4" />
-            <span>Mobile sincronizado</span>
-          </div>
+          <div className="flex items-center gap-2 text-xs text-success"><Monitor className="w-4 h-4" /><span>Desktop sincronizado</span></div>
+          <div className="flex items-center gap-2 text-xs text-success"><Smartphone className="w-4 h-4" /><span>Mobile sincronizado</span></div>
         </div>
       </div>
     </div>
