@@ -31,6 +31,7 @@ export async function persistGateAndBet(input: PersistGateInput): Promise<Persis
     .eq('user_id', input.userId)
     .eq('lottery', input.lottery)
     .eq('concurso', input.concurso)
+    .limit(1)
     .maybeSingle();
 
   if (gateLookupError && !isNoRowsError(gateLookupError.code)) {
