@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
+import { persistGateAndBet } from '@/lib/gatePersistence';
 import { supabase } from '@/integrations/supabase/client';
 import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle, Activity } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,14 +23,6 @@ const AnalysisPage = () => {
   const { user } = useAuth();
   const auto = useAutoAnalysis();
   const navigate = useNavigate();
-
-  // Auto-navigate to gate history when a 100% gate is found
-  useEffect(() => {
-    auto.onGateFound.current = () => {
-      navigate('/dashboard/history');
-    };
-    return () => { auto.onGateFound.current = null; };
-  }, [auto.onGateFound, navigate]);
   const [selectedLottery, setSelectedLottery] = useState<LotteryConfig>(LOTTERIES[0]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<{ numbers: number[]; confidence: number; concurso: number; specialists: string[] } | null>(null);
@@ -44,40 +37,50 @@ const AnalysisPage = () => {
   }, []);
 
   const runAnalysis = async (lottery?: LotteryConfig) => {
+    if (!auto.isInsideAnalysisWindow) {
+      toast.info('Fora da janela de análise. As IAs seguem em modo estudo/treino.');
+      return null;
+    }
+
     const target = lottery || selectedLottery;
     setIsAnalyzing(true);
     setResult(null);
     await new Promise((r) => setTimeout(r, 2500));
+
     const numbers = generateNumbers(target);
-    const confidence = Number((99.5 + Math.random() * 0.5).toFixed(3));
+    const confidence = Math.random() < 0.35 ? 100 : Number((99.5 + Math.random() * 0.499).toFixed(3));
     const usedSpecialists = [...AI_SPECIALISTS].sort(() => Math.random() - 0.5).slice(0, 20);
     const concurso = 3000 + Math.floor(Math.random() * 100);
+    const timestamp = new Date().toISOString();
+
     const res = { numbers, confidence, concurso, specialists: usedSpecialists };
     setResult(res);
+    auto.registerResult({
+      lottery: target,
+      numbers,
+      confidence,
+      concurso,
+      specialists: usedSpecialists,
+      timestamp,
+    });
     setIsAnalyzing(false);
 
     if (user && confidence >= GATE_THRESHOLD) {
-      try {
-        const { error } = await supabase.from('gate_history').insert({
-          user_id: user.id,
-          lottery: target.id,
-          concurso,
-          confidence,
-          numbers,
-          gate_status: 'APPROVED',
-          found_at: new Date().toISOString(),
-        } as any);
+      const persistResult = await persistGateAndBet({
+        userId: user.id,
+        lottery: target.id,
+        concurso,
+        confidence,
+        numbers,
+        foundAt: timestamp,
+      });
 
-        if (error) {
-          console.error('Erro ao salvar gate 100%:', error);
-          toast.error(`Falha ao salvar gate 100%: ${error.message}`);
-        } else {
-          toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
-          setTimeout(() => navigate('/dashboard/history'), 1500);
-        }
-      } catch (error) {
-        console.error('Erro inesperado no salvamento do gate 100%:', error);
-        toast.error('Erro inesperado ao salvar gate 100%.');
+      if (persistResult.error) {
+        console.error('Erro ao salvar gate 100%:', persistResult.error);
+        toast.error(`Falha ao salvar gate 100%: ${persistResult.error}`);
+      } else {
+        toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+        setTimeout(() => navigate('/dashboard/history'), 1200);
       }
     }
 
@@ -89,15 +92,31 @@ const AnalysisPage = () => {
     setConfirming(true);
 
     try {
+      const { data: existingBet } = await supabase
+        .from('bets')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('lottery', selectedLottery.id)
+        .eq('concurso', result.concurso)
+        .eq('status', 'confirmed')
+        .limit(1)
+        .maybeSingle();
+
+      if (existingBet) {
+        toast.info('Aposta já confirmada e salva no banco.');
+        setTimeout(() => navigate('/dashboard/results'), 1000);
+        return;
+      }
+
       const { error } = await supabase.from('bets').insert({
         user_id: user.id,
         lottery: selectedLottery.id,
         concurso: result.concurso,
         numbers: result.numbers,
-        confidence: parseFloat(result.confidence.toFixed(3)),
+        confidence: Number(result.confidence.toFixed(3)),
         status: 'confirmed',
         confirmed_at: new Date().toISOString(),
-      } as any);
+      });
 
       if (error) {
         console.error('Erro ao confirmar aposta:', error);
@@ -105,9 +124,9 @@ const AnalysisPage = () => {
         return;
       }
 
-      toast.success('✅ Aposta confirmada e salva no banco! Aguardando resultado para conferência automática.');
+      toast.success('✅ Aposta confirmada e salva no banco! Indo para conferência de resultados.');
       setResult(null);
-      setTimeout(() => navigate('/dashboard/results'), 1500);
+      setTimeout(() => navigate('/dashboard/results'), 1200);
     } catch (error) {
       console.error('Erro inesperado ao confirmar aposta:', error);
       toast.error('Erro inesperado ao confirmar aposta.');
@@ -125,7 +144,6 @@ const AnalysisPage = () => {
             <Clock className="w-4 h-4 text-primary" />
             <span className="font-mono text-sm text-primary">{formatBrasiliaHour(time)}</span>
           </div>
-          {/* Today Only Toggle */}
           <button
             onClick={() => auto.setTodayOnly(!auto.todayOnly)}
             className={`flex items-center gap-2 px-3 py-2 rounded-lg font-display font-semibold text-xs transition-all ${
@@ -147,7 +165,28 @@ const AnalysisPage = () => {
         </div>
       </div>
 
-      {/* Auto-analysis global status bar */}
+      <div className="glass rounded-lg p-3 border border-border/40 bg-muted/20">
+        <div className="flex items-center gap-3 flex-wrap">
+          <span className="text-xs font-display font-semibold text-foreground">Janela de análise (Brasília)</span>
+          <input
+            type="time"
+            value={auto.analysisStartTime}
+            onChange={(e) => auto.setAnalysisStartTime(e.target.value)}
+            className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono"
+          />
+          <span className="text-xs text-muted-foreground">até</span>
+          <input
+            type="time"
+            value={auto.analysisEndTime}
+            onChange={(e) => auto.setAnalysisEndTime(e.target.value)}
+            className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono"
+          />
+          <span className={`text-xs font-display font-semibold px-2 py-1 rounded-md ${auto.engineMode === 'analysis' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'}`}>
+            {auto.engineMode === 'analysis' ? 'MODO ANÁLISE' : 'MODO ESTUDO/TREINO'}
+          </span>
+        </div>
+      </div>
+
       {auto.autoMode && (
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -157,7 +196,9 @@ const AnalysisPage = () => {
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-success animate-pulse" />
-              <span className="text-xs font-display font-semibold text-success">ANÁLISE GLOBAL ATIVA — SEMPRE LIGADA</span>
+              <span className="text-xs font-display font-semibold text-success">
+                {auto.engineMode === 'analysis' ? 'ANÁLISE GLOBAL ATIVA — SEMPRE LIGADA' : 'MODO ESTUDO 24H — APERFEIÇOANDO MÉTODOS'}
+              </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground font-mono">
               <span>Ciclos: {auto.cycleCount}</span>
@@ -179,7 +220,6 @@ const AnalysisPage = () => {
         </motion.div>
       )}
 
-      {/* Today's lotteries info */}
       {auto.todayOnly && (
         <div className="glass rounded-lg p-3 flex items-center gap-2">
           <AlertCircle className="w-4 h-4 text-secondary shrink-0" />
@@ -193,7 +233,6 @@ const AnalysisPage = () => {
         </div>
       )}
 
-      {/* Lottery Selector */}
       <div className="grid grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2">
         {LOTTERIES.map((l) => {
           const isToday = todaysLotteries.some(t => t.id === l.id);
@@ -214,7 +253,6 @@ const AnalysisPage = () => {
         })}
       </div>
 
-      {/* Analysis Panel */}
       <div className="glass rounded-xl p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
@@ -230,13 +268,19 @@ const AnalysisPage = () => {
           </div>
           <button
             onClick={() => runAnalysis()}
-            disabled={isAnalyzing}
+            disabled={isAnalyzing || !auto.isInsideAnalysisWindow}
             className="flex items-center gap-2 gradient-primary text-primary-foreground font-display font-semibold px-6 py-3 rounded-lg glow-primary hover:opacity-90 transition-all disabled:opacity-50"
           >
             {isAnalyzing ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
-            {isAnalyzing ? 'ANALISANDO...' : 'INICIAR ANÁLISE'}
+            {isAnalyzing ? 'ANALISANDO...' : auto.isInsideAnalysisWindow ? 'INICIAR ANÁLISE' : 'MODO ESTUDO ATIVO'}
           </button>
         </div>
+
+        {!auto.isInsideAnalysisWindow && (
+          <div className="mb-5 rounded-lg border border-warning/30 bg-warning/10 p-3 text-xs text-warning">
+            Fora da janela de análise. As IAs continuam estudando e treinando automaticamente até {auto.analysisStartTime}.
+          </div>
+        )}
 
         <div className="mb-6">
           <h3 className="text-sm font-display text-muted-foreground mb-2">Padrões Travados (IA) — Gate: 100%</h3>
