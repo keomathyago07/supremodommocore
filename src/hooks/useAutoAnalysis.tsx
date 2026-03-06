@@ -2,7 +2,7 @@ import { createContext, useContext, useState, useEffect, useRef, useCallback, ty
 import { LOTTERIES, AI_SPECIALISTS, getTodaysLotteries, getBrasiliaTime, type LotteryConfig } from '@/lib/lotteryConstants';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { persistGateAndBet } from '@/lib/gatePersistence';
+import { persistGateOnly } from '@/lib/gatePersistence';
 
 const GATE_THRESHOLD = 100;
 const DEFAULT_ANALYSIS_START = '08:00';
@@ -33,12 +33,8 @@ function isInsideWindow(now: Date, start: string, end: string): boolean {
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
   const startMinutes = parseTimeToMinutes(start);
   const endMinutes = parseTimeToMinutes(end);
-
   if (startMinutes === endMinutes) return true;
-  if (startMinutes < endMinutes) {
-    return currentMinutes >= startMinutes && currentMinutes < endMinutes;
-  }
-
+  if (startMinutes < endMinutes) return currentMinutes >= startMinutes && currentMinutes < endMinutes;
   return currentMinutes >= startMinutes || currentMinutes < endMinutes;
 }
 
@@ -97,25 +93,13 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed) ? parsed : [];
-    } catch {
-      return [];
-    }
+    } catch { return []; }
   });
   const [cycleCount, setCycleCount] = useState(() => {
-    try {
-      const raw = localStorage.getItem('auto_analysis_cycle_count');
-      return raw ? Number(raw) || 0 : 0;
-    } catch {
-      return 0;
-    }
+    try { return Number(localStorage.getItem('auto_analysis_cycle_count')) || 0; } catch { return 0; }
   });
   const [gatesFound, setGatesFound] = useState(() => {
-    try {
-      const raw = localStorage.getItem('auto_analysis_gates_found');
-      return raw ? Number(raw) || 0 : 0;
-    } catch {
-      return 0;
-    }
+    try { return Number(localStorage.getItem('auto_analysis_gates_found')) || 0; } catch { return 0; }
   });
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
@@ -125,33 +109,13 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
     setLastResults(prev => [result, ...prev].slice(0, 80));
   }, []);
 
-  useEffect(() => {
-    localStorage.setItem('auto_analysis_on', String(autoMode));
-  }, [autoMode]);
-
-  useEffect(() => {
-    localStorage.setItem('auto_analysis_today', String(todayOnly));
-  }, [todayOnly]);
-
-  useEffect(() => {
-    localStorage.setItem('auto_analysis_start_time', analysisStartTime);
-  }, [analysisStartTime]);
-
-  useEffect(() => {
-    localStorage.setItem('auto_analysis_end_time', analysisEndTime);
-  }, [analysisEndTime]);
-
-  useEffect(() => {
-    localStorage.setItem('auto_analysis_last_results', JSON.stringify(lastResults));
-  }, [lastResults]);
-
-  useEffect(() => {
-    localStorage.setItem('auto_analysis_cycle_count', String(cycleCount));
-  }, [cycleCount]);
-
-  useEffect(() => {
-    localStorage.setItem('auto_analysis_gates_found', String(gatesFound));
-  }, [gatesFound]);
+  useEffect(() => { localStorage.setItem('auto_analysis_on', String(autoMode)); }, [autoMode]);
+  useEffect(() => { localStorage.setItem('auto_analysis_today', String(todayOnly)); }, [todayOnly]);
+  useEffect(() => { localStorage.setItem('auto_analysis_start_time', analysisStartTime); }, [analysisStartTime]);
+  useEffect(() => { localStorage.setItem('auto_analysis_end_time', analysisEndTime); }, [analysisEndTime]);
+  useEffect(() => { localStorage.setItem('auto_analysis_last_results', JSON.stringify(lastResults)); }, [lastResults]);
+  useEffect(() => { localStorage.setItem('auto_analysis_cycle_count', String(cycleCount)); }, [cycleCount]);
+  useEffect(() => { localStorage.setItem('auto_analysis_gates_found', String(gatesFound)); }, [gatesFound]);
 
   const runCycle = useCallback(async () => {
     if (runningRef.current) return;
@@ -181,10 +145,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       const concurso = 3000 + Math.floor(Math.random() * 100);
 
       const result: AnalysisResult = {
-        lottery,
-        numbers,
-        confidence,
-        concurso,
+        lottery, numbers, confidence, concurso,
         specialists: usedSpecialists,
         timestamp: new Date().toISOString(),
       };
@@ -196,29 +157,20 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
         if (!insideWindow) {
           toast.info(`Modo estudo ativo: padrão 100% detectado em ${lottery.name}, aguardando horário de análise.`);
         } else {
-          const persistResult = await persistGateAndBet({
+          // Only save to gate_history with PENDING status — NO auto-confirm
+          const persistResult = await persistGateOnly({
             userId: user.id,
             lottery: lottery.id,
-            concurso,
-            confidence,
-            numbers,
+            concurso, confidence, numbers,
             foundAt: new Date().toISOString(),
           });
 
           if (persistResult.error) {
-            console.error('Erro ao salvar gate/aposta automática:', persistResult.error);
-            toast.error(`Falha ao salvar gate 100%: ${persistResult.error}`);
-          } else {
-            if (persistResult.gateInserted) {
-              setGatesFound(g => g + 1);
-            }
-
-            if (persistResult.betInserted) {
-              toast.success(`🎯 AUTO GATE 100% — ${lottery.name} salvo e aposta confirmada!`, { duration: 8000 });
-            } else if (persistResult.alreadyConfirmed) {
-              toast.info(`Gate ${lottery.name} já estava confirmado no banco.`);
-            }
-
+            console.error('Erro ao salvar gate:', persistResult.error);
+            toast.error(`Falha ao salvar gate: ${persistResult.error}`);
+          } else if (persistResult.gateInserted) {
+            setGatesFound(g => g + 1);
+            toast.success(`🔔 GATE 100% — ${lottery.name} — Aguardando confirmação do admin!`, { duration: 8000 });
             onGateFound.current?.();
           }
         }
@@ -233,7 +185,6 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (autoRef.current) clearInterval(autoRef.current);
-
     if (autoMode) {
       runCycle();
       const lotteries = todayOnly ? getTodaysLotteries() : LOTTERIES;
@@ -244,31 +195,15 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       setCurrentLottery(null);
       setIsAnalyzing(false);
     }
-
-    return () => {
-      if (autoRef.current) clearInterval(autoRef.current);
-    };
+    return () => { if (autoRef.current) clearInterval(autoRef.current); };
   }, [autoMode, todayOnly, analysisStartTime, analysisEndTime, runCycle]);
 
   return (
     <AutoAnalysisContext.Provider value={{
-      autoMode,
-      setAutoMode,
-      todayOnly,
-      setTodayOnly,
-      analysisStartTime,
-      setAnalysisStartTime,
-      analysisEndTime,
-      setAnalysisEndTime,
-      engineMode,
-      isInsideAnalysisWindow,
-      currentLottery,
-      isAnalyzing,
-      lastResults,
-      registerResult,
-      cycleCount,
-      gatesFound,
-      onGateFound,
+      autoMode, setAutoMode, todayOnly, setTodayOnly,
+      analysisStartTime, setAnalysisStartTime, analysisEndTime, setAnalysisEndTime,
+      engineMode, isInsideAnalysisWindow, currentLottery, isAnalyzing,
+      lastResults, registerResult, cycleCount, gatesFound, onGateFound,
     }}>
       {children}
     </AutoAnalysisContext.Provider>

@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { LOTTERIES, formatBrasiliaTime, formatBrasiliaHour } from '@/lib/lotteryConstants';
-import { History, Zap, Shield, CheckCircle, Loader2 } from 'lucide-react';
+import { LOTTERY_PRIZES } from '@/lib/lotteryPrizes';
+import { confirmGateAndCreateBet } from '@/lib/gatePersistence';
+import { History, Zap, Shield, CheckCircle, Loader2, Clock, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -23,84 +25,61 @@ const GateHistoryPage = () => {
   const [entries, setEntries] = useState<GateEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirming, setConfirming] = useState<string | null>(null);
-  const [confirmed, setConfirmed] = useState<Set<string>>(new Set());
+
+  const loadEntries = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('gate_history')
+      .select('*')
+      .eq('user_id', user.id)
+      .order('found_at', { ascending: false }) as any;
+    setEntries(data || []);
+    setLoading(false);
+  };
 
   useEffect(() => {
-    if (!user) return;
-    const load = async () => {
-      const { data } = await supabase
-        .from('gate_history')
-        .select('*')
-        .order('found_at', { ascending: false }) as any;
-
-      const gates: GateEntry[] = data || [];
-      setEntries(gates);
-
-      // Check which gates already have confirmed bets
-      if (gates.length > 0) {
-        const { data: bets } = await supabase
-          .from('bets')
-          .select('concurso, lottery')
-          .eq('status', 'confirmed') as any;
-        
-        const confirmedSet = new Set<string>();
-        (bets || []).forEach((b: any) => {
-          confirmedSet.add(`${b.lottery}-${b.concurso}`);
-        });
-        setConfirmed(confirmedSet);
-      }
-      setLoading(false);
-    };
-    load();
+    loadEntries();
+    // Realtime refresh
+    const channel = supabase
+      .channel('gate_history_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'gate_history' }, () => {
+        loadEntries();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
 
   const confirmBet = async (entry: GateEntry) => {
     if (!user) return;
     setConfirming(entry.id);
-    
-    // Check if already exists to avoid duplicates
-    const { data: existing } = await supabase
-      .from('bets')
-      .select('id')
-      .eq('lottery', entry.lottery)
-      .eq('concurso', entry.concurso)
-      .eq('user_id', user.id)
-      .eq('status', 'confirmed') as any;
 
-    if (existing && existing.length > 0) {
-      toast.info('Aposta já confirmada anteriormente!');
-      setConfirmed(prev => new Set(prev).add(`${entry.lottery}-${entry.concurso}`));
-      setConfirming(null);
-      setTimeout(() => navigate('/dashboard/results'), 1000);
-      return;
-    }
-
-    const { error } = await supabase.from('bets').insert({
-      user_id: user.id,
+    const result = await confirmGateAndCreateBet({
+      userId: user.id,
       lottery: entry.lottery,
       concurso: entry.concurso,
-      numbers: entry.numbers,
       confidence: entry.confidence,
-      status: 'confirmed',
-      confirmed_at: new Date().toISOString(),
-    } as any);
+      numbers: entry.numbers,
+      foundAt: entry.found_at,
+    });
 
-    if (error) {
-      toast.error('Erro ao confirmar aposta: ' + error.message);
+    if (result.error) {
+      toast.error('Erro ao confirmar: ' + result.error);
+    } else if (result.alreadyConfirmed) {
+      toast.info('Aposta já confirmada anteriormente!');
+      await loadEntries();
+      setTimeout(() => navigate('/dashboard/results'), 1000);
     } else {
-      toast.success(`✅ Aposta confirmada e salva no banco! Indo para conferência de resultados...`);
-      setConfirmed(prev => new Set(prev).add(`${entry.lottery}-${entry.concurso}`));
+      toast.success('✅ Aposta confirmada, salva no banco e sincronizada! Indo para resultados...', { duration: 5000 });
+      await loadEntries();
       setTimeout(() => navigate('/dashboard/results'), 1500);
     }
     setConfirming(null);
   };
 
-  const isConfirmed = (entry: GateEntry) => confirmed.has(`${entry.lottery}-${entry.concurso}`);
-
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-display font-bold">Histórico de Gates</h1>
-      <p className="text-muted-foreground text-sm">Gates encontrados automaticamente pelas IAs — Confirme para conferência automática de resultados</p>
+      <p className="text-muted-foreground text-sm">Gates encontrados automaticamente pelas IAs — Confirme para salvar a aposta e ir para conferência de resultados</p>
 
       {loading ? (
         <div className="flex items-center justify-center py-20">
@@ -116,14 +95,16 @@ const GateHistoryPage = () => {
         <div className="space-y-3">
           {entries.map((entry, i) => {
             const lottery = LOTTERIES.find((l) => l.id === entry.lottery);
-            const alreadyConfirmed = isConfirmed(entry);
+            const prize = LOTTERY_PRIZES[entry.lottery];
+            const isApproved = entry.gate_status === 'APPROVED';
+            const isPending = entry.gate_status === 'PENDING';
             return (
               <motion.div
                 key={entry.id}
                 initial={{ opacity: 0, x: -20 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="glass rounded-xl p-5"
+                className={`glass rounded-xl p-5 ${isPending ? 'border border-warning/30' : ''}`}
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
@@ -132,11 +113,19 @@ const GateHistoryPage = () => {
                       {lottery?.name}
                     </span>
                     <span className="text-xs font-mono text-muted-foreground">#{entry.concurso}</span>
+                    {prize && (
+                      <span className="flex items-center gap-1 text-xs text-secondary font-display">
+                        <DollarSign className="w-3 h-3" />
+                        {prize.estimatedPrize}
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Zap className="w-4 h-4 text-secondary" />
                     <span className="font-display font-bold text-secondary">{Number(entry.confidence).toFixed(3)}%</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-success/10 text-success font-mono">
+                    <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${
+                      isApproved ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning animate-pulse'
+                    }`}>
                       {entry.gate_status}
                     </span>
                   </div>
@@ -153,10 +142,11 @@ const GateHistoryPage = () => {
                   ))}
                 </div>
                 <div className="flex items-center justify-between mt-3">
-                  <p className="text-xs text-muted-foreground">
-                    Encontrado: {formatBrasiliaTime(new Date(entry.found_at))} — {formatBrasiliaHour(new Date(entry.found_at))}
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {formatBrasiliaTime(new Date(entry.found_at))} — {formatBrasiliaHour(new Date(entry.found_at))}
                   </p>
-                  {alreadyConfirmed ? (
+                  {isApproved ? (
                     <span className="flex items-center gap-1.5 text-xs font-display font-semibold text-success bg-success/10 px-3 py-1.5 rounded-lg">
                       <CheckCircle className="w-4 h-4" /> APOSTA CONFIRMADA
                     </span>
@@ -171,7 +161,7 @@ const GateHistoryPage = () => {
                       ) : (
                         <Zap className="w-4 h-4" />
                       )}
-                      {confirming === entry.id ? 'SALVANDO...' : 'CONFIRMAR APOSTA'}
+                      {confirming === entry.id ? 'CONFIRMANDO...' : 'CONFIRMAR APOSTA'}
                     </button>
                   )}
                 </div>

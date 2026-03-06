@@ -17,11 +17,7 @@ export interface PersistGateResult {
   error: string | null;
 }
 
-function isNoRowsError(code?: string) {
-  return code === 'PGRST116';
-}
-
-export async function persistGateAndBet(input: PersistGateInput): Promise<PersistGateResult> {
+export async function persistGateOnly(input: PersistGateInput): Promise<PersistGateResult> {
   const foundAt = input.foundAt ?? new Date().toISOString();
   const normalizedConfidence = Number(input.confidence.toFixed(3));
 
@@ -34,40 +30,50 @@ export async function persistGateAndBet(input: PersistGateInput): Promise<Persis
     .limit(1)
     .maybeSingle();
 
-  if (gateLookupError && !isNoRowsError(gateLookupError.code)) {
-    return {
-      gateInserted: false,
-      betInserted: false,
-      alreadyConfirmed: false,
-      error: gateLookupError.message,
-    };
+  if (gateLookupError) {
+    return { gateInserted: false, betInserted: false, alreadyConfirmed: false, error: gateLookupError.message };
   }
 
-  let gateInserted = false;
-  if (!existingGate) {
-    const gatePayload: TablesInsert<'gate_history'> = {
-      user_id: input.userId,
-      lottery: input.lottery,
-      concurso: input.concurso,
-      confidence: normalizedConfidence,
-      numbers: input.numbers,
-      gate_status: 'APPROVED',
-      found_at: foundAt,
-    };
-
-    const { error: gateInsertError } = await supabase.from('gate_history').insert(gatePayload);
-    if (gateInsertError) {
-      return {
-        gateInserted: false,
-        betInserted: false,
-        alreadyConfirmed: false,
-        error: gateInsertError.message,
-      };
-    }
-    gateInserted = true;
+  if (existingGate) {
+    return { gateInserted: false, betInserted: false, alreadyConfirmed: false, error: null };
   }
 
-  const { data: existingBet, error: betLookupError } = await supabase
+  const gatePayload: TablesInsert<'gate_history'> = {
+    user_id: input.userId,
+    lottery: input.lottery,
+    concurso: input.concurso,
+    confidence: normalizedConfidence,
+    numbers: input.numbers,
+    gate_status: 'PENDING',
+    found_at: foundAt,
+  };
+
+  const { error: gateInsertError } = await supabase.from('gate_history').insert(gatePayload);
+  if (gateInsertError) {
+    return { gateInserted: false, betInserted: false, alreadyConfirmed: false, error: gateInsertError.message };
+  }
+
+  return { gateInserted: true, betInserted: false, alreadyConfirmed: false, error: null };
+}
+
+export async function confirmGateAndCreateBet(input: PersistGateInput): Promise<PersistGateResult> {
+  const normalizedConfidence = Number(input.confidence.toFixed(3));
+  const foundAt = input.foundAt ?? new Date().toISOString();
+
+  // Update gate status to APPROVED
+  const { error: updateError } = await supabase
+    .from('gate_history')
+    .update({ gate_status: 'APPROVED' })
+    .eq('user_id', input.userId)
+    .eq('lottery', input.lottery)
+    .eq('concurso', input.concurso);
+
+  if (updateError) {
+    return { gateInserted: false, betInserted: false, alreadyConfirmed: false, error: updateError.message };
+  }
+
+  // Check existing bet
+  const { data: existingBet } = await supabase
     .from('bets')
     .select('id')
     .eq('user_id', input.userId)
@@ -77,43 +83,27 @@ export async function persistGateAndBet(input: PersistGateInput): Promise<Persis
     .limit(1)
     .maybeSingle();
 
-  if (betLookupError && !isNoRowsError(betLookupError.code)) {
-    return {
-      gateInserted,
-      betInserted: false,
-      alreadyConfirmed: false,
-      error: betLookupError.message,
-    };
+  if (existingBet) {
+    return { gateInserted: false, betInserted: false, alreadyConfirmed: true, error: null };
   }
 
-  let betInserted = false;
-  if (!existingBet) {
-    const betPayload: TablesInsert<'bets'> = {
-      user_id: input.userId,
-      lottery: input.lottery,
-      concurso: input.concurso,
-      numbers: input.numbers,
-      confidence: normalizedConfidence,
-      status: 'confirmed',
-      confirmed_at: foundAt,
-    };
-
-    const { error: betInsertError } = await supabase.from('bets').insert(betPayload);
-    if (betInsertError) {
-      return {
-        gateInserted,
-        betInserted: false,
-        alreadyConfirmed: false,
-        error: betInsertError.message,
-      };
-    }
-    betInserted = true;
-  }
-
-  return {
-    gateInserted,
-    betInserted,
-    alreadyConfirmed: Boolean(existingBet),
-    error: null,
+  const betPayload: TablesInsert<'bets'> = {
+    user_id: input.userId,
+    lottery: input.lottery,
+    concurso: input.concurso,
+    numbers: input.numbers,
+    confidence: normalizedConfidence,
+    status: 'confirmed',
+    confirmed_at: new Date().toISOString(),
   };
+
+  const { error: betInsertError } = await supabase.from('bets').insert(betPayload);
+  if (betInsertError) {
+    return { gateInserted: false, betInserted: false, alreadyConfirmed: false, error: betInsertError.message };
+  }
+
+  return { gateInserted: true, betInserted: true, alreadyConfirmed: false, error: null };
 }
+
+// Keep backward compat
+export const persistGateAndBet = persistGateOnly;
