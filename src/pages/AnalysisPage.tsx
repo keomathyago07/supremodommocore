@@ -6,7 +6,7 @@ import { LOTTERY_PRIZES, getTotalPrizesToday, formatPrize } from '@/lib/lotteryP
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { persistGateOnly } from '@/lib/gatePersistence';
-import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle, Activity, DollarSign, TrendingUp, Trophy } from 'lucide-react';
+import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle, Activity, DollarSign, TrendingUp, Trophy, Gauge, Send } from 'lucide-react';
 import { toast } from 'sonner';
 
 function generateNumbers(config: LotteryConfig): number[] {
@@ -61,7 +61,6 @@ const AnalysisPage = () => {
     });
     setIsAnalyzing(false);
 
-    // Only save to gate_history with PENDING — NO auto-confirm
     if (user && confidence >= GATE_THRESHOLD) {
       const persistResult = await persistGateOnly({
         userId: user.id,
@@ -83,6 +82,10 @@ const AnalysisPage = () => {
 
     return res;
   };
+
+  // Analysis details from context
+  const details = auto.analysisDetails;
+  const todayDetails = todaysLotteries.map(l => details[l.id]).filter(Boolean);
 
   return (
     <div className="p-6 space-y-6">
@@ -122,7 +125,7 @@ const AnalysisPage = () => {
           </div>
           <div>
             <h2 className="font-display font-bold text-foreground text-lg">Premiações do Dia — Alvo das IAs</h2>
-            <p className="text-xs text-muted-foreground">As IAs estão dedicadas a alcançar cada premiação abaixo</p>
+            <p className="text-xs text-muted-foreground">1000% focado em ganhar a premiação máxima</p>
           </div>
           <div className="ml-auto text-right">
             <p className="text-xs text-muted-foreground">Total em jogo hoje</p>
@@ -132,6 +135,7 @@ const AnalysisPage = () => {
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {todaysLotteries.map(l => {
             const prize = LOTTERY_PRIZES[l.id];
+            const detail = details[l.id];
             return (
               <div key={l.id} className="rounded-lg p-3 border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all">
                 <div className="flex items-center gap-2 mb-1">
@@ -141,7 +145,9 @@ const AnalysisPage = () => {
                 <p className="font-display font-bold text-sm text-foreground">{prize?.estimatedPrize || '---'}</p>
                 <div className="flex items-center gap-1 mt-1">
                   <TrendingUp className="w-3 h-3 text-success" />
-                  <span className="text-[10px] text-success font-mono">IAs focadas</span>
+                  <span className="text-[10px] text-success font-mono">
+                    {detail ? `${detail.gatesReached} gates · ${detail.cyclesCompleted} ciclos` : 'IAs focadas'}
+                  </span>
                 </div>
               </div>
             );
@@ -152,12 +158,19 @@ const AnalysisPage = () => {
         </div>
       </motion.div>
 
+      {/* Analysis Window + Delivery Time */}
       <div className="glass rounded-lg p-3 border border-border/40 bg-muted/20">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="text-xs font-display font-semibold text-foreground">Janela de análise (Brasília)</span>
+          <span className="text-xs font-display font-semibold text-foreground">Janela de análise</span>
           <input type="time" value={auto.analysisStartTime} onChange={(e) => auto.setAnalysisStartTime(e.target.value)} className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono" />
           <span className="text-xs text-muted-foreground">até</span>
           <input type="time" value={auto.analysisEndTime} onChange={(e) => auto.setAnalysisEndTime(e.target.value)} className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono" />
+          <span className="text-xs text-muted-foreground">|</span>
+          <div className="flex items-center gap-2">
+            <Send className="w-3 h-3 text-secondary" />
+            <span className="text-xs font-display font-semibold text-secondary">Enviar números às:</span>
+            <input type="time" value={auto.numberDeliveryTime} onChange={(e) => auto.setNumberDeliveryTime(e.target.value)} className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono" />
+          </div>
           <span className={`text-xs font-display font-semibold px-2 py-1 rounded-md ${auto.engineMode === 'analysis' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'}`}>
             {auto.engineMode === 'analysis' ? 'MODO ANÁLISE' : 'MODO ESTUDO/TREINO'}
           </span>
@@ -170,7 +183,7 @@ const AnalysisPage = () => {
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-success animate-pulse" />
               <span className="text-xs font-display font-semibold text-success">
-                {auto.engineMode === 'analysis' ? 'ANÁLISE GLOBAL ATIVA — SEMPRE LIGADA' : 'MODO ESTUDO 24H — APERFEIÇOANDO MÉTODOS'}
+                {auto.engineMode === 'analysis' ? 'ANÁLISE GLOBAL ATIVA — SILENCIOSA 24/7' : 'MODO ESTUDO — AUTO-ADAPTAÇÃO CONTÍNUA'}
               </span>
             </div>
             <div className="flex items-center gap-4 text-xs text-muted-foreground font-mono">
@@ -191,6 +204,41 @@ const AnalysisPage = () => {
             </div>
           )}
         </motion.div>
+      )}
+
+      {/* Detailed Analysis Status per Lottery */}
+      {auto.autoMode && todayDetails.length > 0 && (
+        <div className="glass rounded-xl p-4 border border-primary/20">
+          <div className="flex items-center gap-2 mb-3">
+            <Gauge className="w-4 h-4 text-primary" />
+            <h3 className="text-sm font-display font-bold text-foreground">Detalhamento da Análise Global Silenciosa</h3>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            {todayDetails.map((d) => (
+              <div key={d.lotteryId} className={`rounded-lg p-3 border text-xs ${
+                d.status === 'gate_found' ? 'border-success/30 bg-success/5' :
+                d.status === 'ready' ? 'border-secondary/30 bg-secondary/5' :
+                'border-border bg-muted/10'
+              }`}>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="font-display font-bold">{d.lotteryName}</span>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono ${
+                    d.status === 'gate_found' ? 'bg-success/10 text-success' :
+                    d.status === 'ready' ? 'bg-secondary/10 text-secondary' :
+                    'bg-warning/10 text-warning'
+                  }`}>
+                    {d.status === 'gate_found' ? `✅ ${d.gatesReached} GATES` : d.status === 'ready' ? '🟢 PRONTO' : '⏳ ESTUDANDO'}
+                  </span>
+                </div>
+                <div className="space-y-0.5 text-muted-foreground">
+                  <p>Ciclos: <span className="text-foreground font-mono">{d.cyclesCompleted}</span></p>
+                  <p>Dom: <span className="text-foreground font-mono">{d.domination.toFixed(1)}%</span> | Prec: <span className="text-foreground font-mono">{d.precision.toFixed(1)}%</span></p>
+                  <p>Prêmio: <span className="text-secondary font-bold">{d.prizeTarget}</span></p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {auto.todayOnly && (
