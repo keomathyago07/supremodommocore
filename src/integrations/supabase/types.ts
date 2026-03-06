@@ -197,6 +197,60 @@ export type Database = {
         }
         Relationships: []
       }
+      result_checks: {
+        Row: {
+          bet_numbers: number[]
+          checked_at: string
+          concurso: number
+          created_at: string
+          data_concurso: string | null
+          draw_numbers: number[]
+          hits: number
+          id: string
+          lottery: string
+          matched_numbers: number[]
+          premiacao: Json | null
+          prize_tier: string | null
+          prize_value: number | null
+          total_winners: number | null
+          user_id: string
+        }
+        Insert: {
+          bet_numbers?: number[]
+          checked_at?: string
+          concurso: number
+          created_at?: string
+          data_concurso?: string | null
+          draw_numbers?: number[]
+          hits?: number
+          id?: string
+          lottery: string
+          matched_numbers?: number[]
+          premiacao?: Json | null
+          prize_tier?: string | null
+          prize_value?: number | null
+          total_winners?: number | null
+          user_id: string
+        }
+        Update: {
+          bet_numbers?: number[]
+          checked_at?: string
+          concurso?: number
+          created_at?: string
+          data_concurso?: string | null
+          draw_numbers?: number[]
+          hits?: number
+          id?: string
+          lottery?: string
+          matched_numbers?: number[]
+          premiacao?: Json | null
+          prize_tier?: string | null
+          prize_value?: number | null
+          total_winners?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
