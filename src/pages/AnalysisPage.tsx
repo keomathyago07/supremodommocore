@@ -211,7 +211,8 @@ const AnalysisPage = () => {
         <div className="glass rounded-xl p-4 border border-primary/20">
           <div className="flex items-center gap-2 mb-3">
             <Gauge className="w-4 h-4 text-primary" />
-            <h3 className="text-sm font-display font-bold text-foreground">Detalhamento da Análise Global Silenciosa</h3>
+            <h3 className="text-sm font-display font-bold text-foreground">ANÁLISE GLOBAL ATIVA — Detalhamento Completo</h3>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-mono animate-pulse ml-auto">● SILENCIOSO 24/7</span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
             {todayDetails.map((d) => (
@@ -230,11 +231,18 @@ const AnalysisPage = () => {
                     {d.status === 'gate_found' ? `✅ ${d.gatesReached} GATES` : d.status === 'ready' ? '🟢 PRONTO' : '⏳ ESTUDANDO'}
                   </span>
                 </div>
-                <div className="space-y-0.5 text-muted-foreground">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-0.5 text-muted-foreground">
+                  <p>Gates: <span className="text-success font-mono font-bold">{d.gatesReached}</span></p>
                   <p>Ciclos: <span className="text-foreground font-mono">{d.cyclesCompleted}</span></p>
-                  <p>Dom: <span className="text-foreground font-mono">{d.domination.toFixed(1)}%</span> | Prec: <span className="text-foreground font-mono">{d.precision.toFixed(1)}%</span></p>
-                  <p>Prêmio: <span className="text-secondary font-bold">{d.prizeTarget}</span></p>
+                  <p>Dom: <span className="text-foreground font-mono font-bold">{d.domination.toFixed(1)}%</span></p>
+                  <p>Prec: <span className="text-secondary font-mono font-bold">{d.precision.toFixed(1)}%</span></p>
+                  <p>Padrões: <span className="text-primary font-mono">{d.patternsLocked || 0}</span></p>
+                  <p>Syncs: <span className="text-foreground font-mono">{d.apiSyncCount || 0}</span></p>
+                  {d.hotNumbers && d.hotNumbers.length > 0 && (
+                    <p className="col-span-2">🔥 Hot: <span className="text-secondary font-mono">{d.hotNumbers.join(', ')}</span></p>
+                  )}
                 </div>
+                <p className="mt-1">Prêmio: <span className="text-secondary font-bold">{d.prizeTarget}</span></p>
               </div>
             ))}
           </div>

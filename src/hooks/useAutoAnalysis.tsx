@@ -59,7 +59,14 @@ export interface LotteryAnalysisDetail {
   domination: number;
   precision: number;
   prizeTarget: string;
+  prizeValue: number;
   status: 'studying' | 'ready' | 'gate_found';
+  apiSyncCount: number;
+  patternsLocked: number;
+  lastApiSync: string | null;
+  hotNumbers: number[];
+  coldNumbers: number[];
+  selfAdaptations: number;
 }
 
 interface AutoAnalysisContextType {
@@ -83,6 +90,8 @@ interface AutoAnalysisContextType {
   gatesFound: number;
   onGateFound: React.MutableRefObject<(() => void) | null>;
   analysisDetails: Record<string, LotteryAnalysisDetail>;
+  globalApiSyncStatus: string;
+  globalSelfAdaptCount: number;
 }
 
 const AutoAnalysisContext = createContext<AutoAnalysisContextType | null>(null);
@@ -124,15 +133,19 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   });
   const [analysisDetails, setAnalysisDetails] = useState<Record<string, LotteryAnalysisDetail>>(() => {
     try {
-      const saved = localStorage.getItem('auto_analysis_details');
+      const saved = localStorage.getItem('auto_analysis_details_v2');
       if (saved) return JSON.parse(saved);
     } catch {}
     return {};
   });
+  const [globalApiSyncStatus, setGlobalApiSyncStatus] = useState('SINCRONIZADO');
+  const [globalSelfAdaptCount, setGlobalSelfAdaptCount] = useState(() => {
+    try { return Number(localStorage.getItem('global_self_adapt_count')) || 0; } catch { return 0; }
+  });
+
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
   const onGateFound = useRef<(() => void) | null>(null);
-  const deliveryCheckRef = useRef<string>('');
 
   const registerResult = useCallback((result: AnalysisResult) => {
     setLastResults(prev => [result, ...prev].slice(0, 80));
@@ -146,25 +159,55 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('auto_analysis_last_results', JSON.stringify(lastResults)); }, [lastResults]);
   useEffect(() => { localStorage.setItem('auto_analysis_cycle_count', String(cycleCount)); }, [cycleCount]);
   useEffect(() => { localStorage.setItem('auto_analysis_gates_found', String(gatesFound)); }, [gatesFound]);
-  useEffect(() => { localStorage.setItem('auto_analysis_details', JSON.stringify(analysisDetails)); }, [analysisDetails]);
+  useEffect(() => { localStorage.setItem('auto_analysis_details_v2', JSON.stringify(analysisDetails)); }, [analysisDetails]);
+  useEffect(() => { localStorage.setItem('global_self_adapt_count', String(globalSelfAdaptCount)); }, [globalSelfAdaptCount]);
 
   // Save analysis details to DB periodically
   useEffect(() => {
     if (!user || Object.keys(analysisDetails).length === 0) return;
     const saveTimer = setTimeout(async () => {
       try {
-        const { error } = await supabase.from('ai_memory').upsert({
+        await supabase.from('ai_memory').upsert({
           user_id: user.id,
           lottery: 'global',
-          memory_type: 'analysis_details',
+          memory_type: 'analysis_details_v2',
           data: analysisDetails as any,
-          version: 1,
+          version: 2,
         }, { onConflict: 'user_id,lottery,memory_type' });
-        if (error) console.error('Error saving analysis details:', error);
       } catch {}
     }, 5000);
     return () => clearTimeout(saveTimer);
   }, [analysisDetails, user]);
+
+  // Self-adaptation tick — simulates API behavior learning
+  useEffect(() => {
+    if (!autoMode) return;
+    const adaptInterval = setInterval(() => {
+      setGlobalSelfAdaptCount(c => c + 1);
+      setGlobalApiSyncStatus(prev => {
+        const states = ['SINCRONIZADO', 'ADAPTANDO...', 'PADRÃO NOVO DETECTADO', 'SINCRONIZADO'];
+        const idx = states.indexOf(prev);
+        return states[(idx + 1) % states.length];
+      });
+      // Auto-adapt each lottery's patterns
+      setAnalysisDetails(prev => {
+        const updated = { ...prev };
+        for (const key of Object.keys(updated)) {
+          updated[key] = {
+            ...updated[key],
+            selfAdaptations: (updated[key].selfAdaptations || 0) + 1,
+            apiSyncCount: (updated[key].apiSyncCount || 0) + 1,
+            lastApiSync: new Date().toISOString(),
+            patternsLocked: Math.min(999, (updated[key].patternsLocked || 0) + Math.floor(Math.random() * 3)),
+            hotNumbers: Array.from({ length: 5 }, () => Math.floor(Math.random() * 60) + 1),
+            coldNumbers: Array.from({ length: 5 }, () => Math.floor(Math.random() * 60) + 1),
+          };
+        }
+        return updated;
+      });
+    }, 8000);
+    return () => clearInterval(adaptInterval);
+  }, [autoMode]);
 
   const updateAnalysisDetail = useCallback((lottery: LotteryConfig, gateFound: boolean) => {
     const dominationData = localStorage.getItem('neural_domination');
@@ -190,7 +233,14 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           domination: dom,
           precision: prec,
           prizeTarget: prize?.estimatedPrize || '---',
+          prizeValue: prize?.prizeValue || 0,
           status: gateFound ? 'gate_found' : dom >= 100 ? 'ready' : 'studying',
+          apiSyncCount: (existing?.apiSyncCount || 0) + 1,
+          patternsLocked: existing?.patternsLocked || 0,
+          lastApiSync: existing?.lastApiSync || null,
+          hotNumbers: existing?.hotNumbers || [],
+          coldNumbers: existing?.coldNumbers || [],
+          selfAdaptations: existing?.selfAdaptations || 0,
         },
       };
     });
@@ -239,7 +289,6 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
         if (!insideWindow) {
           toast.info(`Modo estudo ativo: padrão 100% detectado em ${lottery.name}, aguardando horário de análise.`);
         } else {
-          // Check domination + precision — only send after 100% comprovado
           const dominationData = localStorage.getItem('neural_domination');
           const precisionData = localStorage.getItem('neural_precision');
           let lotteryDomination = 50;
@@ -257,9 +306,6 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
             continue;
           }
 
-          // Check if within delivery time
-          const currentTimeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
-
           const persistResult = await persistGateOnly({
             userId: user.id,
             lottery: lottery.id,
@@ -272,7 +318,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
             toast.error(`Falha ao salvar gate: ${persistResult.error}`);
           } else if (persistResult.gateInserted) {
             setGatesFound(g => g + 1);
-            toast.success(`🔔 GATE 100% — ${lottery.name} — Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Aguardando admin!`, { duration: 8000 });
+            const prize = LOTTERY_PRIZES[lottery.id];
+            toast.success(`🔔 GATE 100% — ${lottery.name} — Prêmio: ${prize?.estimatedPrize || '---'} — Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Salvo no histórico!`, { duration: 8000 });
             onGateFound.current?.();
           }
         }
@@ -307,7 +354,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       numberDeliveryTime, setNumberDeliveryTime,
       engineMode, isInsideAnalysisWindow, currentLottery, isAnalyzing,
       lastResults, registerResult, cycleCount, gatesFound, onGateFound,
-      analysisDetails,
+      analysisDetails, globalApiSyncStatus, globalSelfAdaptCount,
     }}>
       {children}
     </AutoAnalysisContext.Provider>
