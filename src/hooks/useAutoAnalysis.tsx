@@ -443,27 +443,14 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
             try { lotteryPrecision = JSON.parse(precisionData)[lottery.id] || 85; } catch {}
           }
 
-          if (lotteryDomination < 99.5 || lotteryPrecision < 99.5) {
-            toast.info(`⏳ ${lottery.name}: IA estudando (Dom: ${lotteryDomination.toFixed(1)}%, Prec: ${lotteryPrecision.toFixed(1)}%). Números serão enviados às ${numberDeliveryTime}h.`);
-            await new Promise(r => setTimeout(r, 1000));
-            continue;
-          }
-
-          const persistResult = await persistGateOnly({
-            userId: user.id,
-            lottery: lottery.id,
-            concurso, confidence, numbers,
-            foundAt: new Date().toISOString(),
-          });
-
-          if (persistResult.error) {
-            console.error('Erro ao salvar gate:', persistResult.error);
-            toast.error(`Falha ao salvar gate: ${persistResult.error}`);
-          } else if (persistResult.gateInserted) {
+          // NUNCA salvar/notificar fora do horário programado
+          // Apenas registra internamente e aguarda o horário de entrega
+          const prize = LOTTERY_PRIZES[lottery.id];
+          if (lotteryDomination >= 99.5 && lotteryPrecision >= 99.5) {
             setGatesFound(g => g + 1);
-            const prize = LOTTERY_PRIZES[lottery.id];
-            toast.success(`🔔 GATE 100% — ${lottery.name} — Prêmio: ${prize?.estimatedPrize || '---'} — Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Salvo no histórico! Envio às ${numberDeliveryTime}h`, { duration: 8000 });
-            onGateFound.current?.();
+            toast.info(`✅ ${lottery.name}: Padrão 100% PRONTO! Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Aguardando envio programado às ${numberDeliveryTime}h`, { duration: 6000 });
+          } else {
+            toast.info(`⏳ ${lottery.name}: IA estudando (Dom: ${lotteryDomination.toFixed(1)}%, Prec: ${lotteryPrecision.toFixed(1)}%). Envio às ${numberDeliveryTime}h.`);
           }
         }
       }
