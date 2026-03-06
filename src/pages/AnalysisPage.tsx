@@ -99,6 +99,7 @@ const AnalysisPage = () => {
         .eq('lottery', selectedLottery.id)
         .eq('concurso', result.concurso)
         .eq('status', 'confirmed')
+        .limit(1)
         .maybeSingle();
 
       if (existingBet) {
