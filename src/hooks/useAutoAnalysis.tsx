@@ -155,8 +155,24 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
 
       if (user && confidence >= GATE_THRESHOLD) {
         if (!insideWindow) {
+          // In study mode: still save the gate but note it was found during study
           toast.info(`Modo estudo ativo: padrão 100% detectado em ${lottery.name}, aguardando horário de análise.`);
         } else {
+          // Check domination level — only send numbers after study is 100% comprovado
+          const dominationData = localStorage.getItem('neural_domination');
+          let lotteryDomination = 50;
+          if (dominationData) {
+            try {
+              const parsed = JSON.parse(dominationData);
+              lotteryDomination = parsed[lottery.id] || 50;
+            } catch {}
+          }
+
+          if (lotteryDomination < 99.5) {
+            toast.info(`⏳ ${lottery.name}: IA ainda estudando (${lotteryDomination.toFixed(1)}%). Números só após estudo 100% comprovado.`);
+            await new Promise(r => setTimeout(r, 1000));
+            continue;
+          }
           // Only save to gate_history with PENDING status — NO auto-confirm
           const persistResult = await persistGateOnly({
             userId: user.id,
