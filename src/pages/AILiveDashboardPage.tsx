@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AI_SPECIALISTS, LOTTERIES, getBrasiliaTime, formatBrasiliaHour, getTodaysLotteries } from '@/lib/lotteryConstants';
-import { LOTTERY_PRIZES } from '@/lib/lotteryPrizes';
+import { LOTTERY_PRIZES, formatPrize } from '@/lib/lotteryPrizes';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import {
-  Brain, Activity, Cpu, Zap, Target, TrendingUp, Eye, Sparkles, Clock,
-  BarChart3, Shield, Flame, Layers, GitBranch, Rocket, Trophy, Crown, Gauge, ArrowUpCircle
+  Brain, Activity, Cpu, Zap, Target, TrendingUp, Eye, Clock,
+  BarChart3, Shield, Flame, Layers, GitBranch, Rocket, Trophy, Crown, Gauge,
+  RefreshCw, Wifi, Database, ArrowUpCircle, Sparkles
 } from 'lucide-react';
 
 interface AIWorker {
@@ -51,7 +52,6 @@ const STATUS_LABELS: Record<string, string> = {
 function generateWorkers(): AIWorker[] {
   const todayLotteries = getTodaysLotteries();
   const lotteries = todayLotteries.length > 0 ? todayLotteries : LOTTERIES;
-
   return AI_SPECIALISTS.map((name, i) => {
     const catIdx = CATEGORIES.findIndex(c => i >= c.range[0] && i < c.range[1]);
     const lottery = lotteries[Math.floor(Math.random() * lotteries.length)];
@@ -71,13 +71,14 @@ function generateWorkers(): AIWorker[] {
   });
 }
 
-const StatCard = ({ label, value, icon: Icon, color }: { label: string; value: string; icon: typeof Brain; color: string }) => (
+const StatCard = ({ label, value, icon: Icon, color, sub }: { label: string; value: string; icon: typeof Brain; color: string; sub?: string }) => (
   <div className="glass rounded-xl p-4">
     <div className="flex items-center gap-2 mb-1">
       <Icon className={`w-4 h-4 ${color}`} />
       <span className="text-[11px] text-muted-foreground">{label}</span>
     </div>
     <p className={`text-2xl lg:text-3xl font-mono font-bold ${color}`}>{value}</p>
+    {sub && <p className="text-[9px] text-muted-foreground mt-0.5">{sub}</p>}
   </div>
 );
 
@@ -145,7 +146,6 @@ const AILiveDashboardPage = () => {
     return () => clearInterval(i);
   }, []);
 
-  // Continuous evolution with precision boost
   useEffect(() => {
     const interval = setInterval(() => {
       setWorkers(prev => prev.map(w => ({
@@ -170,7 +170,6 @@ const AILiveDashboardPage = () => {
   const avgAccuracy = workers.reduce((s, w) => s + w.accuracy, 0) / workers.length;
   const todayLotteries = getTodaysLotteries();
 
-  // Read neural domination/precision from localStorage
   let neuralDom: Record<string, number> = {};
   let neuralPrec: Record<string, number> = {};
   try { neuralDom = JSON.parse(localStorage.getItem('neural_domination') || '{}'); } catch {}
@@ -187,7 +186,7 @@ const AILiveDashboardPage = () => {
           <div>
             <h1 className="text-xl lg:text-2xl font-display font-bold">Painel Neural Live — TURBO 100x</h1>
             <p className="text-xs text-muted-foreground">
-              {AI_SPECIALISTS.length} IAs trabalhando 24/7 — Precisão infinita ∞ — Gate: 100%
+              {AI_SPECIALISTS.length} IAs · Auto-Adaptação + Sincronização API · Gate: 100%
             </p>
           </div>
         </div>
@@ -203,6 +202,48 @@ const AILiveDashboardPage = () => {
         </div>
       </div>
 
+      {/* API Sync + Self-Adapt Dashboard */}
+      <div className="glass rounded-xl p-4 border border-secondary/30 bg-secondary/5">
+        <div className="flex items-center gap-3 mb-3">
+          <RefreshCw className={`w-5 h-5 text-secondary ${auto.globalApiSyncStatus !== 'SINCRONIZADO' ? 'animate-spin' : ''}`} />
+          <h3 className="font-display font-bold text-sm">Dashboard IA — Auto-Adaptação + Sincronização API</h3>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-mono animate-pulse ml-auto">● LIVE</span>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+          <div className="rounded-lg p-3 bg-muted/10 border border-border">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Wifi className="w-3.5 h-3.5 text-success" />
+              <span className="text-[10px] text-muted-foreground">Status API</span>
+            </div>
+            <p className="text-xs font-mono font-bold text-success">{auto.globalApiSyncStatus}</p>
+          </div>
+          <div className="rounded-lg p-3 bg-muted/10 border border-border">
+            <div className="flex items-center gap-1.5 mb-1">
+              <ArrowUpCircle className="w-3.5 h-3.5 text-secondary" />
+              <span className="text-[10px] text-muted-foreground">Auto-Adaptações</span>
+            </div>
+            <p className="text-xs font-mono font-bold text-secondary">{auto.globalSelfAdaptCount.toLocaleString('pt-BR')}</p>
+          </div>
+          <div className="rounded-lg p-3 bg-muted/10 border border-border">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Database className="w-3.5 h-3.5 text-primary" />
+              <span className="text-[10px] text-muted-foreground">Gates Salvos DB</span>
+            </div>
+            <p className="text-xs font-mono font-bold text-primary">{auto.gatesFound}</p>
+          </div>
+          <div className="rounded-lg p-3 bg-muted/10 border border-border">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Sparkles className="w-3.5 h-3.5 text-warning" />
+              <span className="text-[10px] text-muted-foreground">Ciclos Globais</span>
+            </div>
+            <p className="text-xs font-mono font-bold text-warning">{auto.cycleCount.toLocaleString('pt-BR')}</p>
+          </div>
+        </div>
+        <p className="text-[10px] text-muted-foreground">
+          O sistema monitora todos os comportamentos da API, detecta mudanças de padrão e se auto-adapta automaticamente sem intervenção humana.
+        </p>
+      </div>
+
       {/* Today's lotteries */}
       {todayLotteries.length > 0 && (
         <div className="glass rounded-lg p-3 flex items-center gap-2 flex-wrap">
@@ -216,23 +257,23 @@ const AILiveDashboardPage = () => {
         </div>
       )}
 
-      {/* Enhanced Stats with Dom + Prec */}
+      {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3">
         <StatCard label="IAs Ativas" value={`${activeCount}/${AI_SPECIALISTS.length}`} icon={Brain} color="text-primary" />
         <StatCard label="Ciclos Totais" value={totalCycles.toLocaleString('pt-BR')} icon={Zap} color="text-secondary" />
         <StatCard label="Padrões" value={totalPatterns.toLocaleString('pt-BR')} icon={Target} color="text-success" />
         <StatCard label="Precisão IAs" value={`${avgAccuracy.toFixed(2)}%`} icon={TrendingUp} color="text-warning" />
-        <StatCard label="Domínio Global" value={`${avgDom.toFixed(1)}%`} icon={Crown} color="text-success" />
-        <StatCard label="Precisão Neural" value={`${avgPrec.toFixed(1)}%`} icon={Gauge} color="text-secondary" />
+        <StatCard label="Domínio Global" value={`${avgDom.toFixed(1)}%`} icon={Crown} color="text-success" sub="Meta: 1000%" />
+        <StatCard label="Precisão Neural" value={`${avgPrec.toFixed(1)}%`} icon={Gauge} color="text-secondary" sub="Meta: 1000%" />
         <StatCard label="Loterias Hoje" value={todayLotteries.length.toString()} icon={Flame} color="text-primary" />
       </div>
 
-      {/* Global Analysis Detail per Lottery — dashboard style */}
+      {/* Detailed per-lottery analysis — ANÁLISE GLOBAL ATIVA */}
       <div className="glass rounded-xl p-5 border border-primary/30">
         <div className="flex items-center gap-3 mb-4">
           <Activity className="w-5 h-5 text-primary animate-pulse" />
-          <h3 className="font-display font-bold text-sm">Dashboard IA — Auto-Adaptação + Sincronização API</h3>
-          <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-mono animate-pulse ml-auto">● LIVE</span>
+          <h3 className="font-display font-bold text-sm">ANÁLISE GLOBAL ATIVA — Detalhamento por Loteria</h3>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-success/10 text-success font-mono animate-pulse ml-auto">● SILENCIOSO 24/7</span>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
           {LOTTERIES.map(lottery => {
@@ -244,6 +285,9 @@ const AILiveDashboardPage = () => {
             const cyc = detail?.cyclesCompleted || 0;
             const isToday = todayLotteries.some(t => t.id === lottery.id);
             const isReady = dom >= 100 && prec >= 100;
+            const patterns = detail?.patternsLocked || 0;
+            const syncs = detail?.apiSyncCount || 0;
+            const adapts = detail?.selfAdaptations || 0;
 
             return (
               <div key={lottery.id} className={`rounded-lg p-3 border transition-all ${
@@ -251,24 +295,30 @@ const AILiveDashboardPage = () => {
                 isToday ? 'border-secondary/30 bg-secondary/5' :
                 'border-border bg-muted/10'
               }`}>
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <div className="w-2.5 h-2.5 rounded-full" style={{ background: lottery.color }} />
                     <span className="font-display font-bold text-xs" style={{ color: lottery.color }}>{lottery.name}</span>
                   </div>
                   <span className={`text-[8px] px-1.5 py-0.5 rounded-full font-mono ${
-                    isReady ? 'bg-success/10 text-success' : 'bg-warning/10 text-warning'
+                    isReady ? 'bg-success/10 text-success' : gates > 0 ? 'bg-secondary/10 text-secondary' : 'bg-warning/10 text-warning'
                   }`}>
-                    {isReady ? '✅ DOMÍNIO' : '⏳'}
+                    {isReady ? '✅ DOMÍNIO TOTAL' : gates > 0 ? `🔥 ${gates} GATES` : '⏳ ESTUDANDO'}
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-x-2 text-[10px] text-muted-foreground">
+                <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-[10px] text-muted-foreground">
                   <p>Gates: <span className="text-success font-mono font-bold">{gates}</span></p>
                   <p>Ciclos: <span className="text-foreground font-mono">{cyc}</span></p>
                   <p>Dom: <span className="font-mono font-bold" style={{ color: lottery.color }}>{dom.toFixed(1)}%</span></p>
                   <p>Prec: <span className="text-secondary font-mono font-bold">{prec.toFixed(1)}%</span></p>
+                  <p>Padrões: <span className="text-primary font-mono">{patterns}</span></p>
+                  <p>Syncs: <span className="text-foreground font-mono">{syncs}</span></p>
+                  <p>Adaptações: <span className="text-warning font-mono">{adapts}</span></p>
+                  {detail?.hotNumbers && detail.hotNumbers.length > 0 && (
+                    <p className="col-span-2">🔥 Hot: <span className="text-secondary font-mono">{detail.hotNumbers.join(', ')}</span></p>
+                  )}
                 </div>
-                <div className="flex items-center gap-1 mt-1">
+                <div className="flex items-center gap-1 mt-1.5">
                   <Trophy className="w-3 h-3 text-secondary" />
                   <span className="text-[9px] text-secondary font-bold">{prize?.estimatedPrize || '---'}</span>
                 </div>
@@ -295,14 +345,14 @@ const AILiveDashboardPage = () => {
         ))}
       </div>
 
-      {/* Live Workers Grid by Category */}
+      {/* Live Workers Grid */}
       <div className="space-y-4">
         {CATEGORIES.filter(cat => !filterCategory || filterCategory === cat.name).map(cat => (
           <CategorySection key={cat.name} cat={cat} workers={workers} />
         ))}
       </div>
 
-      {/* Global Performance Bar */}
+      {/* Neural Domination per Lottery */}
       <div className="glass rounded-xl p-5">
         <div className="flex items-center gap-3 mb-3">
           <Shield className="w-5 h-5 text-success" />
