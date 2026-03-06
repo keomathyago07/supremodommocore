@@ -18,7 +18,6 @@ const InstallPage = () => {
     window.addEventListener('online', onOnline);
     window.addEventListener('offline', onOffline);
 
-    // Detect platform
     const ua = navigator.userAgent.toLowerCase();
     if (/iphone|ipad|ipod/.test(ua)) setPlatform('ios');
     else if (/android/.test(ua)) setPlatform('android');
@@ -116,7 +115,6 @@ const InstallPage = () => {
     },
   ];
 
-  // Sort: detected platform first
   const sortedInstructions = [...platformInstructions].sort((a, b) => {
     if (a.id === platform) return -1;
     if (b.id === platform) return 1;
@@ -147,6 +145,7 @@ const InstallPage = () => {
         </div>
       </div>
 
+      {/* Always show install button */}
       {isInstalled ? (
         <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="glass rounded-xl p-8 text-center">
           <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
@@ -154,18 +153,32 @@ const InstallPage = () => {
           <p className="text-muted-foreground text-sm">O DommoSupremo está rodando neste dispositivo.</p>
         </motion.div>
       ) : (
-        <>
-          {deferredPrompt && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 text-center border border-primary/30">
-              <Download className="w-12 h-12 text-primary mx-auto mb-4" />
-              <h2 className="text-lg font-display font-bold mb-3">Instalação Rápida Disponível!</h2>
-              <p className="text-sm text-muted-foreground mb-4">Seu navegador suporta instalação direta. Clique para instalar agora.</p>
-              <button onClick={handleInstall} className="gradient-primary text-primary-foreground font-display font-bold px-8 py-3 rounded-lg glow-primary hover:opacity-90 transition-all text-lg">
-                <Download className="w-5 h-5 inline mr-2" /> INSTALAR AGORA
-              </button>
-            </motion.div>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 text-center border border-primary/30">
+          <Download className="w-12 h-12 text-primary mx-auto mb-4" />
+          <h2 className="text-lg font-display font-bold mb-3">
+            {deferredPrompt ? 'Instalação Rápida Disponível!' : 'Instalar DommoSupremo'}
+          </h2>
+          <p className="text-sm text-muted-foreground mb-4">
+            {deferredPrompt 
+              ? 'Seu navegador suporta instalação direta. Clique para instalar agora.'
+              : 'Siga as instruções abaixo para seu dispositivo para instalar o app.'}
+          </p>
+          {deferredPrompt ? (
+            <button onClick={handleInstall} className="gradient-primary text-primary-foreground font-display font-bold px-8 py-3 rounded-lg glow-primary hover:opacity-90 transition-all text-lg">
+              <Download className="w-5 h-5 inline mr-2" /> INSTALAR AGORA
+            </button>
+          ) : (
+            <div className="flex flex-wrap items-center justify-center gap-3">
+              {platform === 'ios' ? (
+                <p className="text-xs text-warning">No iOS, use o Safari e toque em Compartilhar → "Adicionar à Tela de Início"</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Procure o ícone ⊕ na barra de endereços ou acesse Menu → "Instalar app"
+                </p>
+              )}
+            </div>
           )}
-        </>
+        </motion.div>
       )}
 
       {/* Platform-specific instructions */}

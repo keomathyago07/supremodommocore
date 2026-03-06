@@ -1,17 +1,18 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key } from 'lucide-react';
+import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key, Send, Zap } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 
 const SettingsPage = () => {
   const { user } = useAuth();
+  const auto = useAutoAnalysis();
   const [currentPin, setCurrentPin] = useState('');
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [changingPin, setChangingPin] = useState(false);
 
-  // Notification schedule
   const [notifTimes, setNotifTimes] = useState(['18:00', '20:00', '20:30']);
   const [newTime, setNewTime] = useState('');
   const [notifications, setNotifications] = useState({
@@ -73,6 +74,34 @@ const SettingsPage = () => {
         <div className="bg-muted/30 rounded-lg p-4">
           <p className="text-sm text-muted-foreground">Email</p>
           <p className="font-mono text-sm">{user?.email}</p>
+        </div>
+      </div>
+
+      {/* Number Delivery Time */}
+      <div className="glass rounded-xl p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <Send className="w-5 h-5 text-secondary" />
+          <h2 className="font-display font-semibold">Horário de Envio dos Números</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Defina o horário para o programa enviar os números das loterias quando estiver 100% de certeza.
+        </p>
+        <div className="flex items-center gap-3">
+          <input
+            type="time"
+            value={auto.numberDeliveryTime}
+            onChange={e => auto.setNumberDeliveryTime(e.target.value)}
+            className="bg-muted/50 border border-border rounded-lg px-4 py-2.5 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-primary/50"
+          />
+          <span className="text-sm text-muted-foreground">Horário de Brasília</span>
+          <span className="text-xs px-2 py-1 rounded-full bg-success/10 text-success font-mono">
+            ✅ Ativo
+          </span>
+        </div>
+        <div className="bg-muted/20 rounded-lg p-3 text-xs text-muted-foreground">
+          <Zap className="w-3 h-3 inline mr-1 text-secondary" />
+          O programa enviará os números automaticamente às <span className="text-secondary font-bold">{auto.numberDeliveryTime}h</span> somente 
+          se todos os critérios estiverem 100%: domínio ≥99.5%, precisão ≥99.5%, gate 100%, e padrões travados atendidos.
         </div>
       </div>
 
@@ -185,7 +214,7 @@ const SettingsPage = () => {
                 onClick={() => setNotifications(prev => ({ ...prev, [n.key]: !prev[n.key] }))}
                 className={`w-11 h-6 rounded-full transition-all ${notifications[n.key] ? 'bg-primary' : 'bg-muted'}`}
               >
-                <div className={`w-4.5 h-4.5 w-[18px] h-[18px] rounded-full bg-foreground transition-transform ${notifications[n.key] ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
+                <div className={`w-[18px] h-[18px] rounded-full bg-foreground transition-transform ${notifications[n.key] ? 'translate-x-[22px]' : 'translate-x-[3px]'}`} />
               </button>
             </div>
           ))}
