@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
+import { LOTTERY_PRIZES, getTotalPrizesToday, formatPrize } from '@/lib/lotteryPrizes';
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
-import { persistGateAndBet } from '@/lib/gatePersistence';
-import { supabase } from '@/integrations/supabase/client';
-import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle, Activity } from 'lucide-react';
+import { persistGateOnly } from '@/lib/gatePersistence';
+import { Brain, Play, CheckCircle, Loader2, Zap, Clock, Repeat, CalendarDays, AlertCircle, Activity, DollarSign, TrendingUp, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 
 function generateNumbers(config: LotteryConfig): number[] {
@@ -27,9 +27,9 @@ const AnalysisPage = () => {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [result, setResult] = useState<{ numbers: number[]; confidence: number; concurso: number; specialists: string[] } | null>(null);
   const [time, setTime] = useState(getBrasiliaTime());
-  const [confirming, setConfirming] = useState(false);
 
   const todaysLotteries = getTodaysLotteries();
+  const totalPrizeToday = getTotalPrizesToday(todaysLotteries.map(l => l.id));
 
   useEffect(() => {
     const interval = setInterval(() => setTime(getBrasiliaTime()), 1000);
@@ -56,83 +56,32 @@ const AnalysisPage = () => {
     const res = { numbers, confidence, concurso, specialists: usedSpecialists };
     setResult(res);
     auto.registerResult({
-      lottery: target,
-      numbers,
-      confidence,
-      concurso,
-      specialists: usedSpecialists,
-      timestamp,
+      lottery: target, numbers, confidence, concurso,
+      specialists: usedSpecialists, timestamp,
     });
     setIsAnalyzing(false);
 
+    // Only save to gate_history with PENDING — NO auto-confirm
     if (user && confidence >= GATE_THRESHOLD) {
-      const persistResult = await persistGateAndBet({
+      const persistResult = await persistGateOnly({
         userId: user.id,
         lottery: target.id,
-        concurso,
-        confidence,
-        numbers,
+        concurso, confidence, numbers,
         foundAt: timestamp,
       });
 
       if (persistResult.error) {
         console.error('Erro ao salvar gate 100%:', persistResult.error);
-        toast.error(`Falha ao salvar gate 100%: ${persistResult.error}`);
-      } else {
-        toast.success(`🎯 GATE 100% APPROVED — ${target.name} — ${confidence.toFixed(3)}%`, { duration: 8000 });
+        toast.error(`Falha ao salvar gate: ${persistResult.error}`);
+      } else if (persistResult.gateInserted) {
+        toast.success(`🔔 GATE 100% — ${target.name} salvo! Aguardando confirmação do admin.`, { duration: 8000 });
         setTimeout(() => navigate('/dashboard/history'), 1200);
+      } else {
+        toast.info(`Gate 100% já registrado para ${target.name}.`);
       }
     }
 
     return res;
-  };
-
-  const confirmBet = async () => {
-    if (!result || !user) return;
-    setConfirming(true);
-
-    try {
-      const { data: existingBet } = await supabase
-        .from('bets')
-        .select('id')
-        .eq('user_id', user.id)
-        .eq('lottery', selectedLottery.id)
-        .eq('concurso', result.concurso)
-        .eq('status', 'confirmed')
-        .limit(1)
-        .maybeSingle();
-
-      if (existingBet) {
-        toast.info('Aposta já confirmada e salva no banco.');
-        setTimeout(() => navigate('/dashboard/results'), 1000);
-        return;
-      }
-
-      const { error } = await supabase.from('bets').insert({
-        user_id: user.id,
-        lottery: selectedLottery.id,
-        concurso: result.concurso,
-        numbers: result.numbers,
-        confidence: Number(result.confidence.toFixed(3)),
-        status: 'confirmed',
-        confirmed_at: new Date().toISOString(),
-      });
-
-      if (error) {
-        console.error('Erro ao confirmar aposta:', error);
-        toast.error('Erro ao confirmar aposta: ' + error.message);
-        return;
-      }
-
-      toast.success('✅ Aposta confirmada e salva no banco! Indo para conferência de resultados.');
-      setResult(null);
-      setTimeout(() => navigate('/dashboard/results'), 1200);
-    } catch (error) {
-      console.error('Erro inesperado ao confirmar aposta:', error);
-      toast.error('Erro inesperado ao confirmar aposta.');
-    } finally {
-      setConfirming(false);
-    }
   };
 
   return (
@@ -165,22 +114,50 @@ const AnalysisPage = () => {
         </div>
       </div>
 
+      {/* Prize Dashboard */}
+      <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-5 border border-secondary/20">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-lg bg-secondary/20 flex items-center justify-center">
+            <DollarSign className="w-6 h-6 text-secondary" />
+          </div>
+          <div>
+            <h2 className="font-display font-bold text-foreground text-lg">Premiações do Dia — Alvo das IAs</h2>
+            <p className="text-xs text-muted-foreground">As IAs estão dedicadas a alcançar cada premiação abaixo</p>
+          </div>
+          <div className="ml-auto text-right">
+            <p className="text-xs text-muted-foreground">Total em jogo hoje</p>
+            <p className="font-display font-bold text-secondary text-xl">{formatPrize(totalPrizeToday)}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
+          {todaysLotteries.map(l => {
+            const prize = LOTTERY_PRIZES[l.id];
+            return (
+              <div key={l.id} className="rounded-lg p-3 border border-border/40 bg-muted/10 hover:bg-muted/20 transition-all">
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="w-2.5 h-2.5 rounded-full" style={{ background: l.color }} />
+                  <span className="font-display font-semibold text-xs" style={{ color: l.color }}>{l.name}</span>
+                </div>
+                <p className="font-display font-bold text-sm text-foreground">{prize?.estimatedPrize || '---'}</p>
+                <div className="flex items-center gap-1 mt-1">
+                  <TrendingUp className="w-3 h-3 text-success" />
+                  <span className="text-[10px] text-success font-mono">IAs focadas</span>
+                </div>
+              </div>
+            );
+          })}
+          {todaysLotteries.length === 0 && (
+            <p className="col-span-full text-sm text-muted-foreground text-center py-4">Nenhuma loteria sorteada hoje</p>
+          )}
+        </div>
+      </motion.div>
+
       <div className="glass rounded-lg p-3 border border-border/40 bg-muted/20">
         <div className="flex items-center gap-3 flex-wrap">
           <span className="text-xs font-display font-semibold text-foreground">Janela de análise (Brasília)</span>
-          <input
-            type="time"
-            value={auto.analysisStartTime}
-            onChange={(e) => auto.setAnalysisStartTime(e.target.value)}
-            className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono"
-          />
+          <input type="time" value={auto.analysisStartTime} onChange={(e) => auto.setAnalysisStartTime(e.target.value)} className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono" />
           <span className="text-xs text-muted-foreground">até</span>
-          <input
-            type="time"
-            value={auto.analysisEndTime}
-            onChange={(e) => auto.setAnalysisEndTime(e.target.value)}
-            className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono"
-          />
+          <input type="time" value={auto.analysisEndTime} onChange={(e) => auto.setAnalysisEndTime(e.target.value)} className="bg-muted/60 border border-border rounded-md px-2 py-1 text-xs font-mono" />
           <span className={`text-xs font-display font-semibold px-2 py-1 rounded-md ${auto.engineMode === 'analysis' ? 'bg-success/15 text-success' : 'bg-warning/15 text-warning'}`}>
             {auto.engineMode === 'analysis' ? 'MODO ANÁLISE' : 'MODO ESTUDO/TREINO'}
           </span>
@@ -188,11 +165,7 @@ const AnalysisPage = () => {
       </div>
 
       {auto.autoMode && (
-        <motion.div
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass rounded-lg p-3 border border-success/20 bg-success/5"
-        >
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-lg p-3 border border-success/20 bg-success/5">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-success animate-pulse" />
@@ -225,10 +198,7 @@ const AnalysisPage = () => {
           <AlertCircle className="w-4 h-4 text-secondary shrink-0" />
           <p className="text-xs text-muted-foreground">
             <span className="text-secondary font-semibold">Loterias de hoje: </span>
-            {todaysLotteries.length > 0
-              ? todaysLotteries.map(l => l.name).join(', ')
-              : 'Nenhuma loteria sorteada hoje'
-            }
+            {todaysLotteries.length > 0 ? todaysLotteries.map(l => l.name).join(', ') : 'Nenhuma loteria sorteada hoje'}
           </p>
         </div>
       )}
@@ -256,15 +226,15 @@ const AnalysisPage = () => {
       <div className="glass rounded-xl p-6">
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-display font-bold" style={{ color: selectedLottery.color }}>
-              {selectedLottery.name}
-            </h2>
-            <p className="text-sm text-muted-foreground">
-              {selectedLottery.numbersCount} números · Máx {selectedLottery.maxNumber} · Sorteio {selectedLottery.drawTime}h
-            </p>
-            <p className="text-xs text-muted-foreground mt-1">
-              📅 Dias: {getDrawDayNames(selectedLottery)}
-            </p>
+            <h2 className="text-xl font-display font-bold" style={{ color: selectedLottery.color }}>{selectedLottery.name}</h2>
+            <p className="text-sm text-muted-foreground">{selectedLottery.numbersCount} números · Máx {selectedLottery.maxNumber} · Sorteio {selectedLottery.drawTime}h</p>
+            <p className="text-xs text-muted-foreground mt-1">📅 Dias: {getDrawDayNames(selectedLottery)}</p>
+            {LOTTERY_PRIZES[selectedLottery.id] && (
+              <p className="text-sm font-display font-bold text-secondary mt-1">
+                <Trophy className="w-4 h-4 inline mr-1" />
+                Prêmio estimado: {LOTTERY_PRIZES[selectedLottery.id].estimatedPrize}
+              </p>
+            )}
           </div>
           <button
             onClick={() => runAnalysis()}
@@ -286,9 +256,7 @@ const AnalysisPage = () => {
           <h3 className="text-sm font-display text-muted-foreground mb-2">Padrões Travados (IA) — Gate: 100%</h3>
           <div className="flex flex-wrap gap-2">
             {selectedLottery.lockedPatterns.map((p) => (
-              <span key={p} className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary font-mono border border-primary/20">
-                🔒 {p}
-              </span>
+              <span key={p} className="text-xs px-3 py-1.5 rounded-full bg-primary/10 text-primary font-mono border border-primary/20">🔒 {p}</span>
             ))}
           </div>
         </div>
@@ -315,6 +283,11 @@ const AnalysisPage = () => {
             <div className="flex items-center gap-2">
               <CheckCircle className="w-5 h-5 text-success" />
               <span className="font-display font-bold text-success">GATE APPROVED — {selectedLottery.name}</span>
+              {result.confidence >= GATE_THRESHOLD && (
+                <span className="text-xs px-2 py-0.5 rounded-full bg-warning/20 text-warning font-display font-bold animate-pulse">
+                  AGUARDANDO ADMIN
+                </span>
+              )}
             </div>
             <div className="glass rounded-lg p-5">
               <div className="flex items-center justify-between mb-3">
@@ -344,14 +317,11 @@ const AnalysisPage = () => {
                 ))}
               </div>
             </div>
-            <button
-              onClick={confirmBet}
-              disabled={confirming}
-              className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-secondary to-warning text-background font-display font-bold py-3 rounded-lg hover:opacity-90 transition-all disabled:opacity-50 text-lg tracking-wider"
-            >
-              {confirming ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5" />}
-              {confirming ? 'SALVANDO...' : 'CONFIRMAR APOSTA'}
-            </button>
+            {result.confidence >= GATE_THRESHOLD && (
+              <div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-sm text-warning font-display">
+                ⏳ Gate 100% salvo no histórico. Vá ao <button onClick={() => navigate('/dashboard/history')} className="underline font-bold">Histórico de Gates</button> para confirmar a aposta.
+              </div>
+            )}
           </motion.div>
         )}
       </div>
