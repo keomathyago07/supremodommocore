@@ -6,7 +6,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { LOTTERIES, formatBrasiliaTime, formatBrasiliaHour } from '@/lib/lotteryConstants';
 import { LOTTERY_PRIZES } from '@/lib/lotteryPrizes';
 import { confirmGateAndCreateBet } from '@/lib/gatePersistence';
-import { History, Zap, Shield, CheckCircle, Loader2, Clock, DollarSign, Send, BarChart3, Target, Brain } from 'lucide-react';
+import { History, Zap, Shield, CheckCircle, Loader2, Clock, DollarSign, Send, BarChart3, Target, Brain, Bell } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
