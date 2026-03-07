@@ -95,6 +95,15 @@ export interface DeliveredNumber {
   savedToGate: boolean;
 }
 
+export interface AppNotification {
+  id: string;
+  message: string;
+  type: 'gate' | 'delivery' | 'result' | 'info';
+  timestamp: string;
+  read: boolean;
+  lotteryId?: string;
+}
+
 interface AutoAnalysisContextType {
   autoMode: boolean;
   setAutoMode: (v: boolean) => void;
@@ -120,6 +129,12 @@ interface AutoAnalysisContextType {
   globalSelfAdaptCount: number;
   deliveredNumbers: DeliveredNumber[];
   deliveryTriggered: boolean;
+  autoResultCheck: boolean;
+  setAutoResultCheck: (v: boolean) => void;
+  notifications: AppNotification[];
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  addNotification: (msg: string, type: AppNotification['type'], lotteryId?: string) => void;
 }
 
 const AutoAnalysisContext = createContext<AutoAnalysisContextType | null>(null);
