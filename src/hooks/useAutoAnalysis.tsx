@@ -10,6 +10,7 @@ const GATE_THRESHOLD = 100;
 const DEFAULT_ANALYSIS_START = '08:00';
 const DEFAULT_ANALYSIS_END = '21:00';
 const DEFAULT_DELIVERY_TIME = '19:25';
+const MASTERY_THRESHOLD = 1000; // Ultra Domínio e Precisão Máxima 1000%
 
 type EngineMode = 'analysis' | 'study';
 
