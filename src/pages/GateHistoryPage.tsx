@@ -94,22 +94,29 @@ const GateHistoryPage = () => {
               <Bell className="w-4 h-4 text-primary" />
               <span className="font-display font-semibold text-sm">Notificações ({unread.length} não lidas)</span>
             </div>
-            {unread.length > 0 && (
-              <button onClick={() => auto.markAllNotificationsRead()} className="text-xs text-primary hover:underline">
-                Marcar todas como lidas
-              </button>
-            )}
+            <div className="flex items-center gap-3">
+              {unread.length > 0 && (
+                <button onClick={() => auto.markAllNotificationsRead()} className="text-xs text-primary hover:underline font-semibold">
+                  ✓ Marcar todas como lidas
+                </button>
+              )}
+              {notifs.length > 0 && (
+                <button onClick={() => auto.clearNotifications()} className="text-xs text-destructive hover:underline">
+                  🗑 Limpar
+                </button>
+              )}
+            </div>
           </div>
-          <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
-            {notifs.slice(0, 20).map(n => (
+          <div className="space-y-1.5 max-h-[300px] overflow-y-auto">
+            {notifs.slice(0, 50).map(n => (
               <div key={n.id} className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs transition-all ${
-                n.read ? 'bg-muted/10 text-muted-foreground' : 'bg-primary/5 border border-primary/20 text-foreground'
+                n.read ? 'bg-muted/10 text-muted-foreground opacity-60' : 'bg-primary/5 border border-primary/20 text-foreground'
               }`}>
-                <span className="flex-1">{n.message}</span>
+                <span className="flex-1">{n.read ? '✓ ' : '🔔 '}{n.message}</span>
                 <div className="flex items-center gap-2 shrink-0 ml-2">
                   <span className="text-[10px] text-muted-foreground font-mono">{new Date(n.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
                   {!n.read && (
-                    <button onClick={() => auto.markNotificationRead(n.id)} className="text-[10px] px-2 py-0.5 rounded bg-primary/20 text-primary hover:bg-primary/30">
+                    <button onClick={() => auto.markNotificationRead(n.id)} className="text-[10px] px-2 py-0.5 rounded bg-primary/20 text-primary hover:bg-primary/30 font-bold">
                       ✓ Lida
                     </button>
                   )}

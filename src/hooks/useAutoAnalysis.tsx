@@ -134,6 +134,7 @@ interface AutoAnalysisContextType {
   notifications: AppNotification[];
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  clearNotifications: () => void;
   addNotification: (msg: string, type: AppNotification['type'], lotteryId?: string) => void;
 }
 
@@ -214,15 +215,32 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       read: false,
       lotteryId,
     };
-    setNotifications(prev => [notif, ...prev].slice(0, 100));
+    setNotifications(prev => {
+      const updated = [notif, ...prev].slice(0, 100);
+      try { localStorage.setItem('app_notifications', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    setNotifications(prev => {
+      const updated = prev.map(n => n.id === id ? { ...n, read: true } : n);
+      try { localStorage.setItem('app_notifications', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
   }, []);
 
   const markAllNotificationsRead = useCallback(() => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    setNotifications(prev => {
+      const updated = prev.map(n => ({ ...n, read: true }));
+      try { localStorage.setItem('app_notifications', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
+  }, []);
+
+  const clearNotifications = useCallback(() => {
+    setNotifications([]);
+    try { localStorage.removeItem('app_notifications'); } catch {}
   }, []);
 
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -557,7 +575,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       analysisDetails, globalApiSyncStatus, globalSelfAdaptCount,
       deliveredNumbers, deliveryTriggered,
       autoResultCheck, setAutoResultCheck,
-      notifications, markNotificationRead, markAllNotificationsRead, addNotification,
+      notifications, markNotificationRead, markAllNotificationsRead, clearNotifications, addNotification,
     }}>
       {children}
     </AutoAnalysisContext.Provider>
