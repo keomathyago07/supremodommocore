@@ -19,6 +19,7 @@ import GateConfigPage from "./pages/GateConfigPage";
 import ApiConfigPage from "./pages/ApiConfigPage";
 import SettingsPage from "./pages/SettingsPage";
 import AIChatPage from "./pages/AIChatPage";
+import FinancialPage from "./pages/FinancialPage";
 import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
 
