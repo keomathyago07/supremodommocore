@@ -134,6 +134,7 @@ interface AutoAnalysisContextType {
   notifications: AppNotification[];
   markNotificationRead: (id: string) => void;
   markAllNotificationsRead: () => void;
+  clearNotifications: () => void;
   addNotification: (msg: string, type: AppNotification['type'], lotteryId?: string) => void;
 }
 
