@@ -78,10 +78,47 @@ const GateHistoryPage = () => {
   const details = auto.analysisDetails;
   const detailsList = Object.values(details).sort((a, b) => b.gatesReached - a.gatesReached);
 
+  const notifs = auto.notifications || [];
+  const unread = notifs.filter(n => !n.read);
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-display font-bold">Histórico de Gates</h1>
       <p className="text-muted-foreground text-sm">Gates encontrados pelas IAs — Confirme para salvar a aposta</p>
+
+      {/* Notifications Panel */}
+      {notifs.length > 0 && (
+        <div className="glass rounded-xl p-4 border border-primary/20">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Bell className="w-4 h-4 text-primary" />
+              <span className="font-display font-semibold text-sm">Notificações ({unread.length} não lidas)</span>
+            </div>
+            {unread.length > 0 && (
+              <button onClick={() => auto.markAllNotificationsRead()} className="text-xs text-primary hover:underline">
+                Marcar todas como lidas
+              </button>
+            )}
+          </div>
+          <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
+            {notifs.slice(0, 20).map(n => (
+              <div key={n.id} className={`flex items-center justify-between rounded-lg px-3 py-2 text-xs transition-all ${
+                n.read ? 'bg-muted/10 text-muted-foreground' : 'bg-primary/5 border border-primary/20 text-foreground'
+              }`}>
+                <span className="flex-1">{n.message}</span>
+                <div className="flex items-center gap-2 shrink-0 ml-2">
+                  <span className="text-[10px] text-muted-foreground font-mono">{new Date(n.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                  {!n.read && (
+                    <button onClick={() => auto.markNotificationRead(n.id)} className="text-[10px] px-2 py-0.5 rounded bg-primary/20 text-primary hover:bg-primary/30">
+                      ✓ Lida
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Delivery Schedule Info */}
       <div className="glass rounded-xl p-4 border border-secondary/20">
