@@ -34,7 +34,9 @@ const ResultsPage = () => {
   const [selectedLottery, setSelectedLottery] = useState<LotteryConfig>(LOTTERIES[0]);
   const [result, setResult] = useState<ResultData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [autoCheck, setAutoCheck] = useState(false);
+  const auto = useAutoAnalysis();
+  const autoCheck = auto.autoResultCheck;
+  const setAutoCheck = auto.setAutoResultCheck;
   const [allMatchResults, setAllMatchResults] = useState<Array<{
     betId: string;
     hits: number;
