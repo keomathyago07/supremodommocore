@@ -244,6 +244,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('auto_analysis_details_v3', JSON.stringify(analysisDetails)); }, [analysisDetails]);
   useEffect(() => { localStorage.setItem('global_self_adapt_count', String(globalSelfAdaptCount)); }, [globalSelfAdaptCount]);
   useEffect(() => { localStorage.setItem('delivered_numbers_today', JSON.stringify(deliveredNumbers)); }, [deliveredNumbers]);
+  useEffect(() => { localStorage.setItem('auto_result_check', String(autoResultCheck)); }, [autoResultCheck]);
+  useEffect(() => { localStorage.setItem('app_notifications', JSON.stringify(notifications)); }, [notifications]);
 
   // Save analysis details to DB periodically
   useEffect(() => {
