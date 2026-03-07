@@ -194,6 +194,36 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   });
   const [deliveryTriggered, setDeliveryTriggered] = useState(false);
   const deliveryDoneRef = useRef<string | null>(null);
+  const [autoResultCheck, setAutoResultCheck] = useState(() => {
+    try { return localStorage.getItem('auto_result_check') !== 'false'; } catch { return true; }
+  });
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    try {
+      const saved = localStorage.getItem('app_notifications');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  const addNotification = useCallback((message: string, type: AppNotification['type'], lotteryId?: string) => {
+    const notif: AppNotification = {
+      id: crypto.randomUUID(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      read: false,
+      lotteryId,
+    };
+    setNotifications(prev => [notif, ...prev].slice(0, 100));
+  }, []);
+
+  const markNotificationRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const markAllNotificationsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }, []);
 
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
