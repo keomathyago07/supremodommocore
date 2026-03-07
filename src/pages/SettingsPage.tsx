@@ -112,8 +112,8 @@ const SettingsPage = () => {
           </p>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span className="px-2 py-1 rounded bg-muted/30">✅ Gate 100%</span>
-            <span className="px-2 py-1 rounded bg-muted/30">✅ Domínio ≥99.5%</span>
-            <span className="px-2 py-1 rounded bg-muted/30">✅ Precisão ≥99.5%</span>
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Domínio → 1000%</span>
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Precisão → 1000%</span>
             <span className="px-2 py-1 rounded bg-muted/30">✅ Padrões travados</span>
             <span className="px-2 py-1 rounded bg-muted/30">✅ Prêmio máximo</span>
           </div>
