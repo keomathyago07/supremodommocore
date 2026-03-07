@@ -19,6 +19,7 @@ import GateConfigPage from "./pages/GateConfigPage";
 import ApiConfigPage from "./pages/ApiConfigPage";
 import SettingsPage from "./pages/SettingsPage";
 import AIChatPage from "./pages/AIChatPage";
+import FinancialPage from "./pages/FinancialPage";
 import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
 
@@ -59,6 +60,7 @@ const App = () => (
               <Route path="bets" element={<BetsPage />} />
               <Route path="history" element={<GateHistoryPage />} />
               <Route path="results" element={<ResultsPage />} />
+              <Route path="financial" element={<FinancialPage />} />
               <Route path="ai" element={<AISpecialistsPage />} />
               <Route path="aiconfig" element={<AIAdvancedConfigPage />} />
               <Route path="chat" element={<AIChatPage />} />

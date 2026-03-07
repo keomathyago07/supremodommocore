@@ -10,6 +10,7 @@ const GATE_THRESHOLD = 100;
 const DEFAULT_ANALYSIS_START = '08:00';
 const DEFAULT_ANALYSIS_END = '21:00';
 const DEFAULT_DELIVERY_TIME = '19:25';
+const MASTERY_THRESHOLD = 1000; // Ultra Domínio e Precisão Máxima 1000%
 
 type EngineMode = 'analysis' | 'study';
 
@@ -94,6 +95,15 @@ export interface DeliveredNumber {
   savedToGate: boolean;
 }
 
+export interface AppNotification {
+  id: string;
+  message: string;
+  type: 'gate' | 'delivery' | 'result' | 'info';
+  timestamp: string;
+  read: boolean;
+  lotteryId?: string;
+}
+
 interface AutoAnalysisContextType {
   autoMode: boolean;
   setAutoMode: (v: boolean) => void;
@@ -119,6 +129,12 @@ interface AutoAnalysisContextType {
   globalSelfAdaptCount: number;
   deliveredNumbers: DeliveredNumber[];
   deliveryTriggered: boolean;
+  autoResultCheck: boolean;
+  setAutoResultCheck: (v: boolean) => void;
+  notifications: AppNotification[];
+  markNotificationRead: (id: string) => void;
+  markAllNotificationsRead: () => void;
+  addNotification: (msg: string, type: AppNotification['type'], lotteryId?: string) => void;
 }
 
 const AutoAnalysisContext = createContext<AutoAnalysisContextType | null>(null);
@@ -178,6 +194,36 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   });
   const [deliveryTriggered, setDeliveryTriggered] = useState(false);
   const deliveryDoneRef = useRef<string | null>(null);
+  const [autoResultCheck, setAutoResultCheck] = useState(() => {
+    try { return localStorage.getItem('auto_result_check') !== 'false'; } catch { return true; }
+  });
+  const [notifications, setNotifications] = useState<AppNotification[]>(() => {
+    try {
+      const saved = localStorage.getItem('app_notifications');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [];
+  });
+
+  const addNotification = useCallback((message: string, type: AppNotification['type'], lotteryId?: string) => {
+    const notif: AppNotification = {
+      id: crypto.randomUUID(),
+      message,
+      type,
+      timestamp: new Date().toISOString(),
+      read: false,
+      lotteryId,
+    };
+    setNotifications(prev => [notif, ...prev].slice(0, 100));
+  }, []);
+
+  const markNotificationRead = useCallback((id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+  }, []);
+
+  const markAllNotificationsRead = useCallback(() => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  }, []);
 
   const autoRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
@@ -198,6 +244,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   useEffect(() => { localStorage.setItem('auto_analysis_details_v3', JSON.stringify(analysisDetails)); }, [analysisDetails]);
   useEffect(() => { localStorage.setItem('global_self_adapt_count', String(globalSelfAdaptCount)); }, [globalSelfAdaptCount]);
   useEffect(() => { localStorage.setItem('delivered_numbers_today', JSON.stringify(deliveredNumbers)); }, [deliveredNumbers]);
+  useEffect(() => { localStorage.setItem('auto_result_check', String(autoResultCheck)); }, [autoResultCheck]);
+  useEffect(() => { localStorage.setItem('app_notifications', JSON.stringify(notifications)); }, [notifications]);
 
   // Save analysis details to DB periodically
   useEffect(() => {
@@ -448,7 +496,29 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           const prize = LOTTERY_PRIZES[lottery.id];
           if (lotteryDomination >= 99.5 && lotteryPrecision >= 99.5) {
             setGatesFound(g => g + 1);
-            toast.info(`✅ ${lottery.name}: Padrão 100% PRONTO! Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Aguardando envio programado às ${numberDeliveryTime}h`, { duration: 6000 });
+            addNotification(`✅ ${lottery.name}: Padrão 100% PRONTO! Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Aguardando envio às ${numberDeliveryTime}h`, 'gate', lottery.id);
+            toast.info(`✅ ${lottery.name}: Padrão 100% PRONTO! Aguardando envio programado às ${numberDeliveryTime}h`, { duration: 6000 });
+
+            // Save gate-reaching lottery to DB for future study
+            try {
+              await supabase.from('ai_memory').upsert({
+                user_id: user.id,
+                lottery: lottery.id,
+                memory_type: 'gate_study_data',
+                data: {
+                  confidence,
+                  numbers,
+                  concurso,
+                  domination: lotteryDomination,
+                  precision: lotteryPrecision,
+                  patternsLocked: analysisDetails[lottery.id]?.patternsLocked || 0,
+                  hotNumbers: analysisDetails[lottery.id]?.hotNumbers || [],
+                  coldNumbers: analysisDetails[lottery.id]?.coldNumbers || [],
+                  timestamp: new Date().toISOString(),
+                } as any,
+                version: 1,
+              }, { onConflict: 'user_id,lottery,memory_type' });
+            } catch {}
           } else {
             toast.info(`⏳ ${lottery.name}: IA estudando (Dom: ${lotteryDomination.toFixed(1)}%, Prec: ${lotteryPrecision.toFixed(1)}%). Envio às ${numberDeliveryTime}h.`);
           }
@@ -486,6 +556,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       lastResults, registerResult, cycleCount, gatesFound, onGateFound,
       analysisDetails, globalApiSyncStatus, globalSelfAdaptCount,
       deliveredNumbers, deliveryTriggered,
+      autoResultCheck, setAutoResultCheck,
+      notifications, markNotificationRead, markAllNotificationsRead, addNotification,
     }}>
       {children}
     </AutoAnalysisContext.Provider>

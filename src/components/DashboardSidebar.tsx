@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
-  Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye
+  Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -16,6 +16,7 @@ const menuItems = [
   { id: 'bets', label: 'Minhas Apostas', icon: Ticket, path: '/dashboard/bets' },
   { id: 'history', label: 'Histórico de Gates', icon: History, path: '/dashboard/history' },
   { id: 'results', label: 'Resultados', icon: Trophy, path: '/dashboard/results' },
+  { id: 'financial', label: 'Financeiro', icon: DollarSign, path: '/dashboard/financial' },
   { id: 'ai', label: 'IAs Especialistas', icon: Bot, path: '/dashboard/ai' },
   { id: 'aiconfig', label: 'Config. Avançada IA', icon: Cpu, path: '/dashboard/aiconfig' },
   { id: 'chat', label: 'Chat Assistente', icon: MessageSquare, path: '/dashboard/chat' },
