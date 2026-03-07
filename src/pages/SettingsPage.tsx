@@ -84,8 +84,8 @@ const SettingsPage = () => {
           <h2 className="font-display font-semibold">📩 Horário de Envio dos Números</h2>
         </div>
         <p className="text-xs text-muted-foreground">
-          Defina o horário exato para o programa enviar os números das loterias do dia. 
-          Os números só serão enviados se TODOS os critérios forem atendidos (gate 100%, domínio ≥99.5%, precisão ≥99.5%).
+          Defina o horário exato para o programa enviar os números das loterias do dia.
+          Os números só serão enviados se TODOS os critérios forem atendidos (gate 100%, domínio e precisão máxima → 1000%).
         </p>
         <div className="flex items-center gap-3">
           <label className="text-sm font-display font-semibold text-secondary">Enviar números às:</label>

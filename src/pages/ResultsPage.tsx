@@ -3,6 +3,7 @@ import { LOTTERIES, type LotteryConfig, getBrasiliaTime, formatBrasiliaHour, for
 import { LOTTERY_PRIZES, formatPrize, getTotalPrizesToday } from '@/lib/lotteryPrizes';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { Trophy, RefreshCw, Loader2, Bell, BellOff, CheckCircle, Clock, AlertCircle, DollarSign, TrendingUp, BarChart3, Save, Database } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';

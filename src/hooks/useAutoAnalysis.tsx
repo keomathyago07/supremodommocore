@@ -556,6 +556,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       lastResults, registerResult, cycleCount, gatesFound, onGateFound,
       analysisDetails, globalApiSyncStatus, globalSelfAdaptCount,
       deliveredNumbers, deliveryTriggered,
+      autoResultCheck, setAutoResultCheck,
+      notifications, markNotificationRead, markAllNotificationsRead, addNotification,
     }}>
       {children}
     </AutoAnalysisContext.Provider>
