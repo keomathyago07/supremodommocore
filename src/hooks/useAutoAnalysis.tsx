@@ -215,7 +215,11 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       read: false,
       lotteryId,
     };
-    setNotifications(prev => [notif, ...prev].slice(0, 100));
+    setNotifications(prev => {
+      const updated = [notif, ...prev].slice(0, 100);
+      try { localStorage.setItem('app_notifications', JSON.stringify(updated)); } catch {}
+      return updated;
+    });
   }, []);
 
   const markNotificationRead = useCallback((id: string) => {
