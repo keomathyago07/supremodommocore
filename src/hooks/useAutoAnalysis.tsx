@@ -496,7 +496,29 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           const prize = LOTTERY_PRIZES[lottery.id];
           if (lotteryDomination >= 99.5 && lotteryPrecision >= 99.5) {
             setGatesFound(g => g + 1);
-            toast.info(`✅ ${lottery.name}: Padrão 100% PRONTO! Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Aguardando envio programado às ${numberDeliveryTime}h`, { duration: 6000 });
+            addNotification(`✅ ${lottery.name}: Padrão 100% PRONTO! Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Aguardando envio às ${numberDeliveryTime}h`, 'gate', lottery.id);
+            toast.info(`✅ ${lottery.name}: Padrão 100% PRONTO! Aguardando envio programado às ${numberDeliveryTime}h`, { duration: 6000 });
+
+            // Save gate-reaching lottery to DB for future study
+            try {
+              await supabase.from('ai_memory').upsert({
+                user_id: user.id,
+                lottery: lottery.id,
+                memory_type: 'gate_study_data',
+                data: {
+                  confidence,
+                  numbers,
+                  concurso,
+                  domination: lotteryDomination,
+                  precision: lotteryPrecision,
+                  patternsLocked: analysisDetails[lottery.id]?.patternsLocked || 0,
+                  hotNumbers: analysisDetails[lottery.id]?.hotNumbers || [],
+                  coldNumbers: analysisDetails[lottery.id]?.coldNumbers || [],
+                  timestamp: new Date().toISOString(),
+                } as any,
+                version: 1,
+              }, { onConflict: 'user_id,lottery,memory_type' });
+            } catch {}
           } else {
             toast.info(`⏳ ${lottery.name}: IA estudando (Dom: ${lotteryDomination.toFixed(1)}%, Prec: ${lotteryPrecision.toFixed(1)}%). Envio às ${numberDeliveryTime}h.`);
           }
