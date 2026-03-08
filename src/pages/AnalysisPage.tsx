@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
+import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, generateSpecialNumbers, generateTeam, type LotteryConfig } from '@/lib/lotteryConstants';
 import { LOTTERY_PRIZES, getTotalPrizesToday, formatPrize } from '@/lib/lotteryPrizes';
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
