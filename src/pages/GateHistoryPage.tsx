@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { supabase } from '@/integrations/supabase/client';
-import { LOTTERIES, formatBrasiliaTime, formatBrasiliaHour } from '@/lib/lotteryConstants';
+import { LOTTERIES, formatBrasiliaTime, formatBrasiliaHour, TIMEMANIA_TEAMS, generateSpecialNumbers, generateTeam } from '@/lib/lotteryConstants';
 import { LOTTERY_PRIZES } from '@/lib/lotteryPrizes';
 import { confirmGateAndCreateBet } from '@/lib/gatePersistence';
-import { History, Zap, Shield, CheckCircle, Loader2, Clock, DollarSign, Send, BarChart3, Target, Brain, Bell } from 'lucide-react';
+import { History, Zap, Shield, CheckCircle, Loader2, Clock, DollarSign, Send, BarChart3, Target, Brain, Bell, Clover } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -81,10 +81,36 @@ const GateHistoryPage = () => {
   const notifs = auto.notifications || [];
   const unread = notifs.filter(n => !n.read);
 
+  // Get special info for a gate entry
+  const getSpecialInfo = (entry: GateEntry) => {
+    const lottery = LOTTERIES.find(l => l.id === entry.lottery);
+    const delivered = auto.deliveredNumbers.find(d => d.lotteryId === entry.lottery && d.concurso === entry.concurso);
+    if (delivered) {
+      return { specialNumbers: delivered.specialNumbers, team: delivered.team };
+    }
+    const detail = details[entry.lottery];
+    if (detail?.bestSpecialNumbers?.length) {
+      return { specialNumbers: detail.bestSpecialNumbers, team: detail.bestTeam };
+    }
+    if (lottery?.hasSpecial) {
+      const seed = entry.id.charCodeAt(0) + entry.id.charCodeAt(1);
+      const specials: number[] = [];
+      for (let i = 0; i < (lottery.specialCount || 2); i++) {
+        specials.push(((seed + i * 7) % (lottery.specialMax || 6)) + 1);
+      }
+      return { specialNumbers: [...new Set(specials)].sort((a, b) => a - b), team: null };
+    }
+    if (lottery?.hasTeam) {
+      const seed = entry.id.charCodeAt(0) + entry.id.charCodeAt(2);
+      return { specialNumbers: undefined, team: TIMEMANIA_TEAMS[seed % TIMEMANIA_TEAMS.length] };
+    }
+    return { specialNumbers: undefined, team: null };
+  };
+
   return (
     <div className="p-6 space-y-6">
       <h1 className="text-2xl font-display font-bold">Histórico de Gates</h1>
-      <p className="text-muted-foreground text-sm">Gates encontrados pelas IAs — Confirme para salvar a aposta</p>
+      <p className="text-muted-foreground text-sm">Todos os jogos que atingiram os requisitos configurados — Confirme para salvar a aposta</p>
 
       {/* Notifications Panel */}
       {notifs.length > 0 && (
@@ -138,7 +164,7 @@ const GateHistoryPage = () => {
         </div>
         {auto.deliveredNumbers.length > 0 && (
           <div className="space-y-2">
-            <p className="text-xs text-muted-foreground font-semibold">📩 Números entregues hoje:</p>
+            <p className="text-xs text-muted-foreground font-semibold">📩 Números entregues hoje (salvos em Minhas Apostas):</p>
             {auto.deliveredNumbers.map((d, i) => {
               const lottery = LOTTERIES.find(l => l.id === d.lotteryId);
               return (
@@ -148,7 +174,8 @@ const GateHistoryPage = () => {
                     <span className="text-xs font-mono text-muted-foreground">#{d.concurso}</span>
                     <span className="text-xs text-secondary font-mono">{d.confidence.toFixed(1)}%</span>
                     <span className="text-xs text-muted-foreground">Prêmio: {d.prizeTarget}</span>
-                    {d.savedToGate && <span className="text-xs text-success">✅ Salvo</span>}
+                    {d.savedToGate && <span className="text-xs text-success">✅ Gate</span>}
+                    {d.savedToBets && <span className="text-xs text-primary">✅ Aposta</span>}
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {d.numbers.map(n => (
@@ -157,6 +184,25 @@ const GateHistoryPage = () => {
                       </span>
                     ))}
                   </div>
+                  {/* Trevos */}
+                  {d.specialNumbers && d.specialNumbers.length > 0 && (
+                    <div className="flex items-center gap-2">
+                      <Clover className="w-3 h-3 text-success" />
+                      <span className="text-xs text-success font-semibold">Trevos:</span>
+                      {d.specialNumbers.map((t, idx) => (
+                        <span key={idx} className="w-6 h-6 rounded-md flex items-center justify-center font-mono text-xs font-bold bg-success/20 text-success border border-success/30">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {/* Team */}
+                  {d.team && (
+                    <div className="flex items-center gap-2">
+                      <Shield className="w-3 h-3 text-primary" />
+                      <span className="text-xs text-primary font-semibold">Time: ⚽ {d.team}</span>
+                    </div>
+                  )}
                   <span className="text-xs text-muted-foreground">Dom: {d.domination.toFixed(1)}% | Prec: {d.precision.toFixed(1)}%</span>
                 </div>
               );
@@ -224,6 +270,7 @@ const GateHistoryPage = () => {
             const detail = details[entry.lottery];
             const isApproved = entry.gate_status === 'APPROVED';
             const isPending = entry.gate_status === 'PENDING';
+            const { specialNumbers, team } = getSpecialInfo(entry);
             return (
               <motion.div
                 key={entry.id}
@@ -263,6 +310,31 @@ const GateHistoryPage = () => {
                     </span>
                   ))}
                 </div>
+
+                {/* Trevos */}
+                {specialNumbers && specialNumbers.length > 0 && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clover className="w-4 h-4 text-success" />
+                    <span className="text-xs font-display font-semibold text-success">Trevos:</span>
+                    {specialNumbers.map((t, idx) => (
+                      <span key={idx} className="w-7 h-7 rounded-lg flex items-center justify-center font-mono text-xs font-bold bg-success/20 border border-success/40 text-success">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
+                {/* Team */}
+                {team && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Shield className="w-4 h-4 text-primary" />
+                    <span className="text-xs font-display font-semibold text-primary">Time:</span>
+                    <span className="text-sm font-bold text-foreground bg-primary/10 px-3 py-1 rounded-lg border border-primary/20">
+                      ⚽ {team}
+                    </span>
+                  </div>
+                )}
+
                 {/* Detail row */}
                 {detail && (
                   <div className="flex flex-wrap gap-3 text-xs text-muted-foreground mb-2 bg-muted/20 rounded-lg px-3 py-1.5">
