@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from 'react';
-import { LOTTERIES, AI_SPECIALISTS, getTodaysLotteries, getBrasiliaTime, type LotteryConfig } from '@/lib/lotteryConstants';
+import { LOTTERIES, AI_SPECIALISTS, getTodaysLotteries, getBrasiliaTime, generateSpecialNumbers, generateTeam, type LotteryConfig } from '@/lib/lotteryConstants';
 import { LOTTERY_PRIZES } from '@/lib/lotteryPrizes';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -56,6 +56,8 @@ export interface AnalysisResult {
   concurso: number;
   specialists: string[];
   timestamp: string;
+  specialNumbers?: number[];
+  team?: string | null;
 }
 
 export interface LotteryAnalysisDetail {
@@ -80,6 +82,8 @@ export interface LotteryAnalysisDetail {
   bestConfidence: number;
   bestConcurso: number;
   deliveredAt: string | null;
+  bestSpecialNumbers?: number[];
+  bestTeam?: string | null;
 }
 
 export interface DeliveredNumber {
@@ -93,6 +97,9 @@ export interface DeliveredNumber {
   domination: number;
   precision: number;
   savedToGate: boolean;
+  specialNumbers?: number[];
+  team?: string | null;
+  savedToBets?: boolean;
 }
 
 export interface AppNotification {
@@ -283,18 +290,15 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
   }, [analysisDetails, user]);
 
   // ========== SCHEDULED DELIVERY ENGINE ==========
-  // Check every 30s if it's time to deliver numbers
   useEffect(() => {
     if (!autoMode || !user) return;
     const deliveryCheck = setInterval(async () => {
       const now = getBrasiliaTime();
       const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
       
-      // Prevent double-delivery for same day+time
       if (deliveryDoneRef.current === todayKey) return;
       if (!isDeliveryTime(now, numberDeliveryTime)) return;
 
-      // Collect all lotteries from today that have gates
       const todaysLotteries = getTodaysLotteries();
       const readyLotteries: DeliveredNumber[] = [];
 
@@ -302,13 +306,14 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
         const detail = analysisDetails[lottery.id];
         if (!detail) continue;
         if (detail.gatesReached < 1) continue;
-        // Only deliver if domination and precision are high
         if (detail.domination < 95 || detail.precision < 95) continue;
 
         const numbers = detail.bestNumbers?.length > 0 ? detail.bestNumbers : generateNumbers(lottery);
         const confidence = detail.bestConfidence || 100;
         const concurso = detail.bestConcurso || 3000 + Math.floor(Math.random() * 100);
         const prize = LOTTERY_PRIZES[lottery.id];
+        const specialNumbers = detail.bestSpecialNumbers?.length ? detail.bestSpecialNumbers : generateSpecialNumbers(lottery);
+        const team = detail.bestTeam || generateTeam(lottery);
 
         // Save to gate_history
         const persistResult = await persistGateOnly({
@@ -319,6 +324,34 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           numbers,
           foundAt: new Date().toISOString(),
         });
+
+        // Auto-save to bets (max 1 per lottery per day)
+        let savedToBets = false;
+        try {
+          const { data: existingBet } = await supabase
+            .from('bets')
+            .select('id')
+            .eq('user_id', user.id)
+            .eq('lottery', lottery.id)
+            .eq('concurso', concurso)
+            .limit(1)
+            .maybeSingle();
+
+          if (!existingBet) {
+            const { error: betErr } = await supabase.from('bets').insert({
+              user_id: user.id,
+              lottery: lottery.id,
+              concurso,
+              numbers,
+              confidence,
+              status: 'confirmed',
+              confirmed_at: new Date().toISOString(),
+            } as any);
+            if (!betErr) savedToBets = true;
+          } else {
+            savedToBets = true;
+          }
+        } catch {}
 
         readyLotteries.push({
           lotteryId: lottery.id,
@@ -331,9 +364,11 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           domination: detail.domination,
           precision: detail.precision,
           savedToGate: persistResult.gateInserted,
+          specialNumbers,
+          team,
+          savedToBets,
         });
 
-        // Update detail status to delivered
         setAnalysisDetails(prev => ({
           ...prev,
           [lottery.id]: {
@@ -349,24 +384,31 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
         setDeliveredNumbers(readyLotteries);
         setDeliveryTriggered(true);
 
-        // Big notification
         const lotteryNames = readyLotteries.map(l => l.lotteryName).join(', ');
         toast.success(
-          `🔔📩 NÚMEROS ENVIADOS ÀS ${numberDeliveryTime}h!\n${readyLotteries.length} loteria(s): ${lotteryNames}\nTodos salvos no Histórico de Gates!`,
+          `🔔📩 NÚMEROS ENVIADOS ÀS ${numberDeliveryTime}h!\n${readyLotteries.length} loteria(s): ${lotteryNames}\nSalvos no Histórico + Minhas Apostas!`,
           { duration: 15000 }
         );
 
-        // Additional per-lottery notifications
+        addNotification(
+          `📩 ${readyLotteries.length} jogo(s) enviado(s) às ${numberDeliveryTime}h: ${lotteryNames} — Salvos em Minhas Apostas`,
+          'delivery'
+        );
+
         for (const delivered of readyLotteries) {
+          const specialInfo = delivered.specialNumbers?.length 
+            ? ` | Trevos: [${delivered.specialNumbers.join(', ')}]` 
+            : delivered.team 
+            ? ` | Time: ${delivered.team}` 
+            : '';
           setTimeout(() => {
             toast.success(
-              `🎯 ${delivered.lotteryName}: [${delivered.numbers.join(', ')}]\nConf: ${delivered.confidence.toFixed(1)}% | Prêmio: ${delivered.prizeTarget}\nDom: ${delivered.domination.toFixed(1)}% | Prec: ${delivered.precision.toFixed(1)}%`,
+              `🎯 ${delivered.lotteryName}: [${delivered.numbers.join(', ')}]${specialInfo}\nConf: ${delivered.confidence.toFixed(1)}% | Prêmio: ${delivered.prizeTarget}`,
               { duration: 12000 }
             );
           }, 1500);
         }
 
-        // Save delivered numbers to DB
         try {
           await supabase.from('ai_memory').upsert({
             user_id: user.id,
@@ -413,7 +455,7 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
     return () => clearInterval(adaptInterval);
   }, [autoMode]);
 
-  const updateAnalysisDetail = useCallback((lottery: LotteryConfig, gateFound: boolean, numbers: number[], confidence: number, concurso: number) => {
+  const updateAnalysisDetail = useCallback((lottery: LotteryConfig, gateFound: boolean, numbers: number[], confidence: number, concurso: number, specialNumbers?: number[], team?: string | null) => {
     const dominationData = localStorage.getItem('neural_domination');
     const precisionData = localStorage.getItem('neural_precision');
     let dom = 50, prec = 85;
@@ -450,6 +492,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
           bestConfidence: isBetter ? confidence : (existing?.bestConfidence || confidence),
           bestConcurso: isBetter ? concurso : (existing?.bestConcurso || concurso),
           deliveredAt: existing?.deliveredAt || null,
+          bestSpecialNumbers: isBetter && specialNumbers?.length ? specialNumbers : (existing?.bestSpecialNumbers || []),
+          bestTeam: isBetter && team ? team : (existing?.bestTeam || null),
         },
       };
     });
@@ -481,18 +525,22 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
       const confidence = generateConfidence();
       const usedSpecialists = [...AI_SPECIALISTS].sort(() => Math.random() - 0.5).slice(0, 20);
       const concurso = 3000 + Math.floor(Math.random() * 100);
+      const specialNumbers = generateSpecialNumbers(lottery);
+      const team = generateTeam(lottery);
 
       const result: AnalysisResult = {
         lottery, numbers, confidence, concurso,
         specialists: usedSpecialists,
         timestamp: new Date().toISOString(),
+        specialNumbers,
+        team,
       };
 
       registerResult(result);
       setIsAnalyzing(false);
 
       const gateHit = confidence >= GATE_THRESHOLD;
-      updateAnalysisDetail(lottery, gateHit, numbers, confidence, concurso);
+      updateAnalysisDetail(lottery, gateHit, numbers, confidence, concurso, specialNumbers, team);
 
       if (user && gateHit) {
         if (!insideWindow) {
@@ -509,15 +557,11 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
             try { lotteryPrecision = JSON.parse(precisionData)[lottery.id] || 85; } catch {}
           }
 
-          // NUNCA salvar/notificar fora do horário programado
-          // Apenas registra internamente e aguarda o horário de entrega
-          const prize = LOTTERY_PRIZES[lottery.id];
           if (lotteryDomination >= 99.5 && lotteryPrecision >= 99.5) {
             setGatesFound(g => g + 1);
             addNotification(`✅ ${lottery.name}: Padrão 100% PRONTO! Dom: ${lotteryDomination.toFixed(1)}% Prec: ${lotteryPrecision.toFixed(1)}% — Aguardando envio às ${numberDeliveryTime}h`, 'gate', lottery.id);
             toast.info(`✅ ${lottery.name}: Padrão 100% PRONTO! Aguardando envio programado às ${numberDeliveryTime}h`, { duration: 6000 });
 
-            // Save gate-reaching lottery to DB for future study
             try {
               await supabase.from('ai_memory').upsert({
                 user_id: user.id,
@@ -527,6 +571,8 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
                   confidence,
                   numbers,
                   concurso,
+                  specialNumbers,
+                  team,
                   domination: lotteryDomination,
                   precision: lotteryPrecision,
                   patternsLocked: analysisDetails[lottery.id]?.patternsLocked || 0,

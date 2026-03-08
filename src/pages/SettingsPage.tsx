@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key, Send, Zap } from 'lucide-react';
+import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key, Send, Zap, Palette } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
+import { THEME_PRESETS, applyTheme, loadSavedTheme, saveTheme } from '@/lib/themePresets';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -12,6 +13,7 @@ const SettingsPage = () => {
   const [newPin, setNewPin] = useState('');
   const [confirmPin, setConfirmPin] = useState('');
   const [changingPin, setChangingPin] = useState(false);
+  const [activeTheme, setActiveTheme] = useState(loadSavedTheme());
 
   const [notifTimes, setNotifTimes] = useState(['18:00', '20:00', '20:30']);
   const [newTime, setNewTime] = useState('');
@@ -61,9 +63,53 @@ const SettingsPage = () => {
     toast.success(`Horário ${t} removido`);
   };
 
+  const handleThemeChange = (themeId: string) => {
+    const theme = THEME_PRESETS.find(t => t.id === themeId);
+    if (!theme) return;
+    applyTheme(theme);
+    saveTheme(themeId);
+    setActiveTheme(themeId);
+    toast.success(`Tema "${theme.name}" aplicado!`);
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-display font-bold">Configurações</h1>
+
+      {/* Theme Customization */}
+      <div className="glass rounded-xl p-6 space-y-4 border border-primary/20">
+        <div className="flex items-center gap-3">
+          <Palette className="w-5 h-5 text-primary" />
+          <h2 className="font-display font-semibold">🎨 Temas de Customização</h2>
+        </div>
+        <p className="text-xs text-muted-foreground">Escolha um tema visual. As imagens do sistema permanecem fixas.</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {THEME_PRESETS.map(theme => (
+            <button
+              key={theme.id}
+              onClick={() => handleThemeChange(theme.id)}
+              className={`text-left rounded-xl p-4 border-2 transition-all ${
+                activeTheme === theme.id 
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
+                  : 'border-border hover:border-primary/40 bg-muted/20'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-2">
+                <span className="font-display font-bold text-sm">{theme.name}</span>
+                {activeTheme === theme.id && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono">ATIVO</span>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">{theme.description}</p>
+              <div className="flex gap-1.5 mt-2">
+                {[theme.colors.primary, theme.colors.secondary, theme.colors.success, theme.colors.accent].map((color, i) => (
+                  <div key={i} className="w-5 h-5 rounded-full border border-border/50" style={{ background: `hsl(${color})` }} />
+                ))}
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
 
       {/* Account */}
       <div className="glass rounded-xl p-6 space-y-4">
@@ -77,7 +123,7 @@ const SettingsPage = () => {
         </div>
       </div>
 
-      {/* Number Delivery Time — ENHANCED */}
+      {/* Number Delivery Time */}
       <div className="glass rounded-xl p-6 space-y-4 border border-secondary/30">
         <div className="flex items-center gap-3">
           <Send className="w-5 h-5 text-secondary" />
@@ -86,6 +132,7 @@ const SettingsPage = () => {
         <p className="text-xs text-muted-foreground">
           Defina o horário exato para o programa enviar os números das loterias do dia.
           Os números só serão enviados se TODOS os critérios forem atendidos (gate 100%, domínio e precisão máxima → 1000%).
+          Ao enviar, salva automaticamente em <strong>Minhas Apostas</strong> (máx. 1 jogo por loteria).
         </p>
         <div className="flex items-center gap-3">
           <label className="text-sm font-display font-semibold text-secondary">Enviar números às:</label>
@@ -107,8 +154,8 @@ const SettingsPage = () => {
           </div>
           <p className="text-xs text-muted-foreground">
             O programa analisará todas as loterias do dia em silêncio. Às <strong className="text-secondary">{auto.numberDeliveryTime}h</strong>, 
-            enviará os números de TODAS as loterias que atingiram gate 100% e atenderam todos os critérios. 
-            Os números serão salvos automaticamente no Histórico de Gates e você será notificado.
+            enviará os números de TODAS as loterias que atingiram gate 100%, salvando automaticamente em Minhas Apostas para conferência.
+            +Milionária inclui trevos, Timemania inclui time do coração.
           </p>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
             <span className="px-2 py-1 rounded bg-muted/30">✅ Gate 100%</span>
@@ -116,6 +163,9 @@ const SettingsPage = () => {
             <span className="px-2 py-1 rounded bg-muted/30">✅ Precisão → 1000%</span>
             <span className="px-2 py-1 rounded bg-muted/30">✅ Padrões travados</span>
             <span className="px-2 py-1 rounded bg-muted/30">✅ Prêmio máximo</span>
+            <span className="px-2 py-1 rounded bg-muted/30">✅ Auto-save Apostas</span>
+            <span className="px-2 py-1 rounded bg-muted/30">🍀 Trevos +Milionária</span>
+            <span className="px-2 py-1 rounded bg-muted/30">⚽ Time Timemania</span>
           </div>
         </div>
       </div>
