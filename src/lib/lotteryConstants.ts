@@ -12,7 +12,27 @@ export interface LotteryConfig {
   specialName?: string;
   specialCount?: number;
   specialMax?: number;
+  hasTeam?: boolean;
+  teamName?: string;
 }
+
+export const TIMEMANIA_TEAMS = [
+  'ABC/RN', 'ASA/AL', 'Atlético/AC', 'Atlético/GO', 'Atlético/MG', 'Atlético/PR',
+  'Avaí/SC', 'Bahia/BA', 'Barueri/SP', 'Botafogo/PB', 'Botafogo/RJ', 'Bragantino/SP',
+  'Brasiliense/DF', 'Ceará/CE', 'Chapecoense/SC', 'Corinthians/SP', 'Coritiba/PR',
+  'CRB/AL', 'Criciúma/SC', 'Cruzeiro/MG', 'CSA/AL', 'Cuiabá/MT', 'Figueirense/SC',
+  'Flamengo/RJ', 'Fluminense/RJ', 'Fortaleza/CE', 'Goiás/GO', 'Grêmio/RS',
+  'Guarani/SP', 'Inter de Limeira/SP', 'Internacional/RS', 'Ipatinga/MG', 'Ituano/SP',
+  'Joinville/SC', 'Juventude/RS', 'Londrina/PR', 'Marília/SP', 'Mirassol/SP',
+  'Náutico/PE', 'Operário/PR', 'Oeste/SP', 'Palmeiras/SP', 'Paraná/PR',
+  'Paysandu/PA', 'Ponte Preta/SP', 'Portuguesa/SP', 'Remo/PA', 'Sampaio Corrêa/MA',
+  'Santa Cruz/PE', 'Santo André/SP', 'Santos/SP', 'São Caetano/SP', 'São Paulo/SP',
+  'Sport/PE', 'Treze/PB', 'Tombense/MG', 'Vasco/RJ', 'Vila Nova/GO', 'Vitória/BA',
+  'XV de Piracicaba/SP', 'América/MG', 'América/RN', 'Aparecidense/GO', 'Confiança/SE',
+  'Caxias/RS', 'Ferroviário/CE', 'Jacuipense/BA', 'Luverdense/MT', 'Novorizontino/SP',
+  'Nova Iguaçu/RJ', 'Penapolense/SP', 'Rio Branco/AC', 'São Bento/SP', 'São José/RS',
+  'Sobradinho/DF', 'Tupi/MG', 'União/MT', 'Volta Redonda/RJ',
+];
 
 export const LOTTERIES: LotteryConfig[] = [
   {
@@ -20,63 +40,65 @@ export const LOTTERIES: LotteryConfig[] = [
     numbersCount: 6, maxNumber: 60, color: '#209869',
     lockedPatterns: ['6 acertos', '5 acertos', '4 acertos'],
     drawTime: '21:00',
-    drawDays: [2, 4, 6], // Terça, Quinta, Sábado
+    drawDays: [2, 4, 6],
   },
   {
     id: 'lotofacil', name: 'Lotofácil', apiName: 'lotofacil',
     numbersCount: 15, maxNumber: 25, color: '#930089',
     lockedPatterns: ['15 acertos', '14 acertos'],
     drawTime: '21:00',
-    drawDays: [1, 2, 3, 4, 5, 6], // Seg a Sáb
+    drawDays: [1, 2, 3, 4, 5, 6],
   },
   {
     id: 'quina', name: 'Quina', apiName: 'quina',
     numbersCount: 5, maxNumber: 80, color: '#260085',
     lockedPatterns: ['5 acertos', '4 acertos'],
     drawTime: '21:00',
-    drawDays: [1, 2, 3, 4, 5, 6], // Seg a Sáb
+    drawDays: [1, 2, 3, 4, 5, 6],
   },
   {
     id: 'lotomania', name: 'Lotomania', apiName: 'lotomania',
     numbersCount: 20, maxNumber: 100, color: '#F78100',
     lockedPatterns: ['20 acertos', '19 acertos', '18 acertos', '0 acertos'],
     drawTime: '21:00',
-    drawDays: [1, 3, 5], // Seg, Qua, Sex
+    drawDays: [1, 3, 5],
   },
   {
     id: 'timemania', name: 'Timemania', apiName: 'timemania',
     numbersCount: 7, maxNumber: 80, color: '#00FF48',
     lockedPatterns: ['7 acertos', '6 acertos', '5 acertos'],
     drawTime: '21:00',
-    drawDays: [2, 4, 6], // Ter, Qui, Sáb
+    drawDays: [2, 4, 6],
+    hasTeam: true,
+    teamName: 'Time do Coração',
   },
   {
     id: 'duplasena', name: 'Dupla Sena', apiName: 'dupla-sena',
     numbersCount: 6, maxNumber: 50, color: '#A61324',
     lockedPatterns: ['1º Sorteio - 6 acertos', '1º Sorteio - 5 acertos', '2º Sorteio - 6 acertos', '2º Sorteio - 5 acertos'],
     drawTime: '21:00',
-    drawDays: [1, 3, 5], // Seg, Qua, Sex
+    drawDays: [1, 3, 5],
   },
   {
     id: 'diadesorte', name: 'Dia de Sorte', apiName: 'dia-de-sorte',
     numbersCount: 7, maxNumber: 31, color: '#CB852B',
     lockedPatterns: ['7 acertos', '6 acertos'],
     drawTime: '21:00',
-    drawDays: [2, 4, 6], // Ter, Qui, Sáb
+    drawDays: [2, 4, 6],
   },
   {
     id: 'supersete', name: 'Super Sete', apiName: 'super-sete',
     numbersCount: 7, maxNumber: 9, color: '#A8CF45',
     lockedPatterns: ['7 acertos', '6 acertos', '5 acertos'],
     drawTime: '21:00',
-    drawDays: [1, 3, 5], // Seg, Qua, Sex
+    drawDays: [1, 3, 5],
   },
   {
     id: 'maismilionaria', name: '+Milionária', apiName: 'mais-milionaria',
     numbersCount: 6, maxNumber: 50, color: '#0D2C6C',
     lockedPatterns: ['6 acertos + 2 trevos', '6 acertos + 1 ou 0 trevos', '5 acertos + 2 trevos', '5 acertos + 1 ou 0 trevos', '4 acertos + 2 trevos'],
     drawTime: '21:00',
-    drawDays: [3, 6], // Qua, Sáb
+    drawDays: [3, 6],
     hasSpecial: true, specialName: 'Trevos', specialCount: 2, specialMax: 6,
   },
 ];
@@ -90,6 +112,24 @@ export function getDrawDayNames(lottery: LotteryConfig): string {
 export function getTodaysLotteries(): LotteryConfig[] {
   const today = getBrasiliaTime().getDay();
   return LOTTERIES.filter(l => l.drawDays.includes(today));
+}
+
+export function generateSpecialNumbers(config: LotteryConfig): number[] {
+  if (config.hasSpecial && config.specialCount && config.specialMax) {
+    const specials = new Set<number>();
+    while (specials.size < config.specialCount) {
+      specials.add(Math.floor(Math.random() * config.specialMax) + 1);
+    }
+    return Array.from(specials).sort((a, b) => a - b);
+  }
+  return [];
+}
+
+export function generateTeam(config: LotteryConfig): string | null {
+  if (config.hasTeam) {
+    return TIMEMANIA_TEAMS[Math.floor(Math.random() * TIMEMANIA_TEAMS.length)];
+  }
+  return null;
 }
 
 export const AI_SPECIALISTS = [
@@ -128,6 +168,16 @@ export const AI_SPECIALISTS = [
   'MountainClimber', 'RiverFormation', 'WindDrivenOpt', 'GravitySearchAI', 'BigBangCrunch',
   'BlackHoleOpt', 'SimAnnealAI', 'TabuSearchNet', 'HarmonySearch', 'ImperialistComp',
   'TeachLearnOpt', 'JayaAlgorithm', 'RainOptimizer', 'WaterCycleAI', 'TsunamiPredict',
+  // Pipeline engines
+  'DataEngine', 'NormalizationEngine', 'FeatureEngineering', 'StatAnalysisEngine',
+  'PatternDetectionEngine', 'CorrelationEngine', 'TemporalAnalysisEngine', 'SimulationEngine',
+  'MLEngine', 'OptimizationEngine', 'FilteringEngine', 'CombinationGenerator',
+  'BacktestingEngine', 'ScoringEngine', 'ReportingEngine',
+  // Monte Carlo variants
+  'MonteCarloSim100K', 'MonteCarloSim500K', 'MonteCarloSim1M', 'MonteCarloSim10M',
+  // Advanced ML
+  'XGBoostPredictor', 'RandomForestEngine', 'GradientBoostAI', 'MLPNeuralNet',
+  'LSTMDeepPredictor', 'BayesianMLEngine',
 ];
 
 export function getBrasiliaTime(): Date {

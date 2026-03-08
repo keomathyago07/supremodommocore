@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, type LotteryConfig } from '@/lib/lotteryConstants';
+import { LOTTERIES, AI_SPECIALISTS, getBrasiliaTime, formatBrasiliaHour, formatBrasiliaDate, getTodaysLotteries, getDrawDayNames, generateSpecialNumbers, generateTeam, type LotteryConfig } from '@/lib/lotteryConstants';
 import { LOTTERY_PRIZES, getTotalPrizesToday, formatPrize } from '@/lib/lotteryPrizes';
 import { useAuth } from '@/hooks/useAuth';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
@@ -360,6 +360,31 @@ const AnalysisPage = () => {
                   ))}
                 </div>
               </div>
+
+              {/* Trevos for +Milionária */}
+              {selectedLottery.hasSpecial && (
+                <div className="mb-3">
+                  <p className="text-sm text-muted-foreground mb-2 flex items-center gap-1">🍀 {selectedLottery.specialName}:</p>
+                  <div className="flex gap-2">
+                    {generateSpecialNumbers(selectedLottery).map((t, i) => (
+                      <span key={i} className="w-10 h-10 rounded-lg flex items-center justify-center font-mono font-bold text-sm bg-success/20 border-2 border-success/40 text-success">
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Team for Timemania */}
+              {selectedLottery.hasTeam && (
+                <div className="mb-3">
+                  <p className="text-sm text-muted-foreground mb-2">⚽ Time do Coração:</p>
+                  <span className="text-base font-bold text-foreground bg-primary/10 px-4 py-2 rounded-lg border border-primary/20 inline-block">
+                    ⚽ {generateTeam(selectedLottery)}
+                  </span>
+                </div>
+              )}
+
               <div className="flex items-center gap-4 text-xs text-muted-foreground">
                 <span>{formatBrasiliaDate(time)}</span>
                 <span>{formatBrasiliaHour(time)}</span>
