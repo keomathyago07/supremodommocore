@@ -20,6 +20,7 @@ import ApiConfigPage from "./pages/ApiConfigPage";
 import SettingsPage from "./pages/SettingsPage";
 import AIChatPage from "./pages/AIChatPage";
 import FinancialPage from "./pages/FinancialPage";
+import AnalyticalEnginePage from "./pages/AnalyticalEnginePage";
 import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
 
