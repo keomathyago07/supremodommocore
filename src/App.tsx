@@ -62,6 +62,7 @@ const App = () => (
               <Route path="history" element={<GateHistoryPage />} />
               <Route path="results" element={<ResultsPage />} />
               <Route path="financial" element={<FinancialPage />} />
+              <Route path="engine" element={<AnalyticalEnginePage />} />
               <Route path="ai" element={<AISpecialistsPage />} />
               <Route path="aiconfig" element={<AIAdvancedConfigPage />} />
               <Route path="chat" element={<AIChatPage />} />

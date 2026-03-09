@@ -17,6 +17,7 @@ const menuItems = [
   { id: 'history', label: 'Histórico de Gates', icon: History, path: '/dashboard/history' },
   { id: 'results', label: 'Resultados', icon: Trophy, path: '/dashboard/results' },
   { id: 'financial', label: 'Financeiro', icon: DollarSign, path: '/dashboard/financial' },
+  { id: 'engine', label: 'Motor Analítico', icon: Cog, path: '/dashboard/engine' },
   { id: 'ai', label: 'IAs Especialistas', icon: Bot, path: '/dashboard/ai' },
   { id: 'aiconfig', label: 'Config. Avançada IA', icon: Cpu, path: '/dashboard/aiconfig' },
   { id: 'chat', label: 'Chat Assistente', icon: MessageSquare, path: '/dashboard/chat' },
