@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Download, Smartphone, Monitor, CheckCircle, Layers, Wifi, WifiOff, Shield, Zap, Activity, Chrome, Apple, Globe, Laptop } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 const InstallPage = () => {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -9,9 +10,24 @@ const InstallPage = () => {
   const [platform, setPlatform] = useState<'windows' | 'mac' | 'linux' | 'android' | 'ios' | 'unknown'>('unknown');
 
   useEffect(() => {
-    const handler = (e: Event) => { e.preventDefault(); setDeferredPrompt(e); };
+    // Check if already installed
+    if (window.matchMedia('(display-mode: standalone)').matches || (window.navigator as any).standalone) {
+      setIsInstalled(true);
+    }
+
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+      toast.info('Instalação disponível! Clique no botão para instalar.', { duration: 5000 });
+    };
     window.addEventListener('beforeinstallprompt', handler);
-    if (window.matchMedia('(display-mode: standalone)').matches) setIsInstalled(true);
+
+    const installedHandler = () => {
+      setIsInstalled(true);
+      setDeferredPrompt(null);
+      toast.success('✅ DommoSupremo instalado com sucesso!');
+    };
+    window.addEventListener('appinstalled', installedHandler);
 
     const onOnline = () => setIsOnline(true);
     const onOffline = () => setIsOnline(false);
@@ -27,18 +43,30 @@ const InstallPage = () => {
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
+      window.removeEventListener('appinstalled', installedHandler);
       window.removeEventListener('online', onOnline);
       window.removeEventListener('offline', onOffline);
     };
   }, []);
 
-  const handleInstall = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === 'accepted') setIsInstalled(true);
-    setDeferredPrompt(null);
-  };
+  const handleInstall = useCallback(async () => {
+    if (!deferredPrompt) {
+      // Fallback: show manual instructions
+      toast.info('Use o menu do navegador (⋮) → "Instalar app" ou "Adicionar à tela inicial"', { duration: 8000 });
+      return;
+    }
+    try {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        setIsInstalled(true);
+        toast.success('✅ DommoSupremo instalado com sucesso!');
+      }
+      setDeferredPrompt(null);
+    } catch (e) {
+      toast.error('Erro na instalação. Tente pelo menu do navegador.');
+    }
+  }, [deferredPrompt]);
 
   const features = [
     { icon: Activity, label: 'Funciona 24/7', desc: 'As IAs continuam trabalhando mesmo em segundo plano' },
@@ -145,7 +173,7 @@ const InstallPage = () => {
         </div>
       </div>
 
-      {/* Always show install button */}
+      {/* Install Button - Always visible and functional */}
       {isInstalled ? (
         <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="glass rounded-xl p-8 text-center">
           <CheckCircle className="w-16 h-16 text-success mx-auto mb-4" />
@@ -156,27 +184,26 @@ const InstallPage = () => {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="glass rounded-xl p-6 text-center border border-primary/30">
           <Download className="w-12 h-12 text-primary mx-auto mb-4" />
           <h2 className="text-lg font-display font-bold mb-3">
-            {deferredPrompt ? 'Instalação Rápida Disponível!' : 'Instalar DommoSupremo'}
+            {deferredPrompt ? '✅ Instalação Rápida Disponível!' : 'Instalar DommoSupremo'}
           </h2>
           <p className="text-sm text-muted-foreground mb-4">
             {deferredPrompt 
               ? 'Seu navegador suporta instalação direta. Clique para instalar agora.'
-              : 'Siga as instruções abaixo para seu dispositivo para instalar o app.'}
+              : platform === 'ios'
+              ? 'No iOS, use o Safari e toque em Compartilhar → "Adicionar à Tela de Início"'
+              : 'Clique no botão abaixo ou use o ícone ⊕ na barra de endereços do navegador.'}
           </p>
-          {deferredPrompt ? (
-            <button onClick={handleInstall} className="gradient-primary text-primary-foreground font-display font-bold px-8 py-3 rounded-lg glow-primary hover:opacity-90 transition-all text-lg">
-              <Download className="w-5 h-5 inline mr-2" /> INSTALAR AGORA
-            </button>
-          ) : (
-            <div className="flex flex-wrap items-center justify-center gap-3">
-              {platform === 'ios' ? (
-                <p className="text-xs text-warning">No iOS, use o Safari e toque em Compartilhar → "Adicionar à Tela de Início"</p>
-              ) : (
-                <p className="text-xs text-muted-foreground">
-                  Procure o ícone ⊕ na barra de endereços ou acesse Menu → "Instalar app"
-                </p>
-              )}
-            </div>
+          <button 
+            onClick={handleInstall} 
+            className="gradient-primary text-primary-foreground font-display font-bold px-8 py-3 rounded-lg glow-primary hover:opacity-90 transition-all text-lg inline-flex items-center gap-2"
+          >
+            <Download className="w-5 h-5" /> 
+            {deferredPrompt ? 'INSTALAR AGORA' : 'INSTALAR'}
+          </button>
+          {!deferredPrompt && platform !== 'ios' && (
+            <p className="text-xs text-muted-foreground mt-3">
+              💡 Se o botão não abrir a instalação, procure o ícone ⊕ na barra de endereços ou acesse Menu (⋮) → "Instalar app"
+            </p>
           )}
         </motion.div>
       )}
