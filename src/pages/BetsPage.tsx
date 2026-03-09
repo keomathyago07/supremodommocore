@@ -3,8 +3,9 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { LOTTERIES, formatBrasiliaTime, TIMEMANIA_TEAMS } from '@/lib/lotteryConstants';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
-import { Ticket, CheckCircle, Clock, Trophy, XCircle, Clover, Shield } from 'lucide-react';
+import { Ticket, CheckCircle, Clock, Trophy, XCircle, Clover, Shield, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { toast } from 'sonner';
 
 interface Bet {
   id: string;
@@ -26,6 +27,7 @@ const BetsPage = () => {
   const auto = useAutoAnalysis();
   const [bets, setBets] = useState<Bet[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirming, setConfirming] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -43,6 +45,30 @@ const BetsPage = () => {
 
   const getLotteryConfig = (id: string) => LOTTERIES.find((l) => l.id === id);
 
+  const confirmBet = async (bet: Bet) => {
+    if (!user) return;
+    setConfirming(bet.id);
+    try {
+      const { error } = await supabase
+        .from('bets')
+        .update({
+          status: 'confirmed',
+          confirmed_at: new Date().toISOString(),
+        } as any)
+        .eq('id', bet.id);
+
+      if (error) {
+        toast.error('Erro ao confirmar aposta');
+      } else {
+        toast.success(`✅ Aposta ${getLotteryConfig(bet.lottery)?.name} #${bet.concurso} confirmada e salva!`);
+        await loadBets();
+      }
+    } catch {
+      toast.error('Erro ao confirmar aposta');
+    }
+    setConfirming(null);
+  };
+
   const statusIcons: Record<string, any> = {
     pending: <Clock className="w-4 h-4 text-warning" />,
     confirmed: <CheckCircle className="w-4 h-4 text-primary" />,
@@ -51,13 +77,18 @@ const BetsPage = () => {
     lost: <XCircle className="w-4 h-4 text-destructive" />,
   };
 
-  // Get special numbers and team from delivered data
-  const getDeliveredInfo = (lotteryId: string, concurso: number) => {
-    const d = auto.deliveredNumbers.find(dn => dn.lotteryId === lotteryId && dn.concurso === concurso);
-    return d;
+  const statusLabels: Record<string, string> = {
+    pending: 'Pendente',
+    confirmed: 'Confirmada',
+    checked: 'Conferida',
+    winner: 'Ganhadora!',
+    lost: 'Sem prêmio',
   };
 
-  // Generate deterministic special data for display
+  const getDeliveredInfo = (lotteryId: string, concurso: number) => {
+    return auto.deliveredNumbers.find(dn => dn.lotteryId === lotteryId && dn.concurso === concurso);
+  };
+
   const getSpecialForBet = (bet: Bet) => {
     const lottery = getLotteryConfig(bet.lottery);
     const delivered = getDeliveredInfo(bet.lottery, bet.concurso);
@@ -66,7 +97,6 @@ const BetsPage = () => {
       return { specialNumbers: delivered.specialNumbers, team: delivered.team };
     }
     
-    // Deterministic fallback based on bet ID
     if (lottery?.hasSpecial && lottery.specialCount && lottery.specialMax) {
       const seed = bet.id.charCodeAt(0) + bet.id.charCodeAt(1);
       const specials: number[] = [];
@@ -91,7 +121,6 @@ const BetsPage = () => {
         <span className="text-sm text-muted-foreground">{bets.length} apostas</span>
       </div>
 
-      {/* Delivery info */}
       {auto.deliveredNumbers.length > 0 && (
         <div className="glass rounded-xl p-4 border border-success/20">
           <div className="flex items-center gap-2 mb-2">
@@ -99,7 +128,7 @@ const BetsPage = () => {
             <span className="text-sm font-display font-bold text-success">Apostas do dia — Enviadas às {auto.numberDeliveryTime}h</span>
           </div>
           <p className="text-xs text-muted-foreground">
-            {auto.deliveredNumbers.length} jogo(s) salvos automaticamente após análise completa com Domínio e Precisão 1000%.
+            {auto.deliveredNumbers.length} jogo(s) salvos automaticamente. Confirme abaixo para validar cada aposta.
           </p>
         </div>
       )}
@@ -111,7 +140,7 @@ const BetsPage = () => {
       ) : bets.length === 0 ? (
         <div className="glass rounded-xl p-12 text-center">
           <Ticket className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">Nenhuma aposta confirmada ainda.</p>
+          <p className="text-muted-foreground">Nenhuma aposta ainda.</p>
           <p className="text-sm text-muted-foreground/60 mt-1">As IAs enviarão automaticamente no horário programado ({auto.numberDeliveryTime}h).</p>
         </div>
       ) : (
@@ -119,13 +148,14 @@ const BetsPage = () => {
           {bets.map((bet, i) => {
             const lottery = getLotteryConfig(bet.lottery);
             const { specialNumbers, team } = getSpecialForBet(bet);
+            const isPending = bet.status === 'pending';
             return (
               <motion.div
                 key={bet.id}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05 }}
-                className="glass rounded-xl p-5"
+                className={`glass rounded-xl p-5 ${isPending ? 'border border-warning/30' : ''}`}
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center gap-3">
@@ -135,7 +165,7 @@ const BetsPage = () => {
                   </div>
                   <div className="flex items-center gap-2">
                     {statusIcons[bet.status] || statusIcons.pending}
-                    <span className="text-xs text-muted-foreground capitalize">{bet.status}</span>
+                    <span className="text-xs text-muted-foreground">{statusLabels[bet.status] || bet.status}</span>
                     <span className="text-sm font-display font-bold text-secondary">{Number(bet.confidence).toFixed(3)}%</span>
                   </div>
                 </div>
@@ -144,15 +174,16 @@ const BetsPage = () => {
                   {bet.numbers.map((n) => (
                     <span
                       key={n}
-                      className="w-9 h-9 rounded-full flex items-center justify-center font-mono text-sm border"
-                      style={{ borderColor: lottery?.color, color: lottery?.color }}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center font-mono text-sm border ${
+                        bet.draw_numbers?.includes(n) ? 'bg-success/20 border-success text-success font-bold' : ''
+                      }`}
+                      style={!bet.draw_numbers?.includes(n) ? { borderColor: lottery?.color, color: lottery?.color } : {}}
                     >
                       {n.toString().padStart(2, '0')}
                     </span>
                   ))}
                 </div>
 
-                {/* Trevos for +Milionária */}
                 {specialNumbers && specialNumbers.length > 0 && (
                   <div className="flex items-center gap-2 mb-2">
                     <Clover className="w-4 h-4 text-success" />
@@ -167,7 +198,6 @@ const BetsPage = () => {
                   </div>
                 )}
 
-                {/* Team for Timemania */}
                 {team && (
                   <div className="flex items-center gap-2 mb-2">
                     <Shield className="w-4 h-4 text-primary" />
@@ -179,9 +209,9 @@ const BetsPage = () => {
                 )}
 
                 {bet.hits !== null && (
-                  <div className="flex items-center gap-4 text-sm">
+                  <div className="flex items-center gap-4 text-sm mb-2">
                     <span className="text-success font-bold">{bet.hits} acertos</span>
-                    {bet.prize_amount && (
+                    {bet.prize_amount && Number(bet.prize_amount) > 0 && (
                       <span className="text-secondary font-bold">
                         R$ {Number(bet.prize_amount).toLocaleString('pt-BR')}
                       </span>
@@ -189,9 +219,37 @@ const BetsPage = () => {
                   </div>
                 )}
 
-                <p className="text-xs text-muted-foreground mt-2">
-                  {bet.confirmed_at ? formatBrasiliaTime(new Date(bet.confirmed_at)) : formatBrasiliaTime(new Date(bet.created_at))}
-                </p>
+                <div className="flex items-center justify-between mt-3">
+                  <p className="text-xs text-muted-foreground">
+                    {bet.confirmed_at ? formatBrasiliaTime(new Date(bet.confirmed_at)) : formatBrasiliaTime(new Date(bet.created_at))}
+                  </p>
+
+                  {/* Confirm button for pending bets */}
+                  {isPending && (
+                    <button
+                      onClick={() => confirmBet(bet)}
+                      disabled={confirming === bet.id}
+                      className="flex items-center gap-2 gradient-primary text-primary-foreground font-display font-bold px-5 py-2 rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
+                    >
+                      {confirming === bet.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <CheckCircle className="w-4 h-4" />
+                      )}
+                      CONFIRMAR APOSTA
+                    </button>
+                  )}
+                  {bet.status === 'confirmed' && (
+                    <span className="flex items-center gap-1.5 text-xs font-display font-semibold text-success bg-success/10 px-3 py-1.5 rounded-lg">
+                      <CheckCircle className="w-4 h-4" /> CONFIRMADA
+                    </span>
+                  )}
+                  {(bet.status === 'checked' || bet.status === 'winner') && (
+                    <span className="flex items-center gap-1.5 text-xs font-display font-semibold text-secondary bg-secondary/10 px-3 py-1.5 rounded-lg">
+                      <Trophy className="w-4 h-4" /> CONFERIDA
+                    </span>
+                  )}
+                </div>
               </motion.div>
             );
           })}
