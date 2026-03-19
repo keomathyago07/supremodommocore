@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { LOTTERIES, formatBrasiliaTime, TIMEMANIA_TEAMS } from '@/lib/lotteryConstants';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
-import { Ticket, CheckCircle, Clock, Trophy, XCircle, Clover, Shield, Loader2 } from 'lucide-react';
+import { Ticket, CheckCircle, Clock, Trophy, XCircle, Clover, Shield, Loader2, Layers, GitBranch } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 
@@ -60,7 +60,7 @@ const BetsPage = () => {
       if (error) {
         toast.error('Erro ao confirmar aposta');
       } else {
-        toast.success(`✅ Aposta ${getLotteryConfig(bet.lottery)?.name} #${bet.concurso} confirmada e salva!`);
+        toast.success(`✅ Aposta ${getLotteryConfig(bet.lottery)?.name} #${bet.concurso} confirmada e salva no banco!`);
         await loadBets();
       }
     } catch {
@@ -114,6 +114,14 @@ const BetsPage = () => {
     return { specialNumbers: undefined, team: null };
   };
 
+  // Generate complementary numbers for Lotomania (50 not in bet)
+  const getComplementaryNumbers = (bet: Bet) => {
+    const lottery = getLotteryConfig(bet.lottery);
+    if (lottery?.id !== 'lotomania') return null;
+    const allNumbers = Array.from({ length: lottery.maxNumber }, (_, i) => i);
+    return allNumbers.filter(n => !bet.numbers.includes(n));
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
@@ -149,6 +157,8 @@ const BetsPage = () => {
             const lottery = getLotteryConfig(bet.lottery);
             const { specialNumbers, team } = getSpecialForBet(bet);
             const isPending = bet.status === 'pending';
+            const complementary = getComplementaryNumbers(bet);
+            const isDuplaSena = lottery?.hasDualDraw;
             return (
               <motion.div
                 key={bet.id}
@@ -162,6 +172,12 @@ const BetsPage = () => {
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: lottery?.color }} />
                     <span className="font-display font-semibold">{lottery?.name || bet.lottery}</span>
                     <span className="text-xs text-muted-foreground font-mono">#{bet.concurso}</span>
+                    {lottery?.hasDualGame && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warning/20 text-warning font-mono">JOGO DUPLO</span>
+                    )}
+                    {isDuplaSena && (
+                      <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive font-mono">2 SORTEIOS</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     {statusIcons[bet.status] || statusIcons.pending}
@@ -170,22 +186,72 @@ const BetsPage = () => {
                   </div>
                 </div>
 
-                <div className="flex flex-wrap gap-2 mb-2">
-                  {bet.numbers.map((n) => (
-                    <span
-                      key={n}
-                      className={`w-9 h-9 rounded-full flex items-center justify-center font-mono text-sm border ${
-                        bet.draw_numbers?.includes(n) ? 'bg-success/20 border-success text-success font-bold' : ''
-                      }`}
-                      style={!bet.draw_numbers?.includes(n) ? { borderColor: lottery?.color, color: lottery?.color } : {}}
-                    >
-                      {n.toString().padStart(2, '0')}
-                    </span>
-                  ))}
+                {/* Main numbers */}
+                <div className="mb-1">
+                  {lottery?.id === 'lotomania' && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers className="w-4 h-4 text-warning" />
+                      <span className="text-xs font-display font-bold text-warning">Jogo 1 — 50 Números Marcados</span>
+                    </div>
+                  )}
+                  {isDuplaSena && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <GitBranch className="w-4 h-4 text-destructive" />
+                      <span className="text-xs font-display font-bold text-destructive">Números (1º e 2º Sorteio)</span>
+                    </div>
+                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {bet.numbers.map((n) => (
+                      <span
+                        key={n}
+                        className={`w-8 h-8 rounded-full flex items-center justify-center font-mono text-[11px] border ${
+                          bet.draw_numbers?.includes(n) ? 'bg-success/20 border-success text-success font-bold' : ''
+                        }`}
+                        style={!bet.draw_numbers?.includes(n) ? { borderColor: lottery?.color, color: lottery?.color } : {}}
+                      >
+                        {n.toString().padStart(2, '0')}
+                      </span>
+                    ))}
+                  </div>
                 </div>
 
+                {/* Lotomania Complementary Game */}
+                {complementary && complementary.length > 0 && (
+                  <div className="mt-3 bg-warning/5 rounded-lg p-3 border border-warning/20">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers className="w-4 h-4 text-warning" />
+                      <span className="text-xs font-display font-bold text-warning">Jogo 2 — 50 Números Complementares (não marcados)</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {complementary.map((n) => (
+                        <span
+                          key={n}
+                          className="w-7 h-7 rounded-full flex items-center justify-center font-mono text-[10px] border border-warning/30 text-warning/80"
+                        >
+                          {n.toString().padStart(2, '0')}
+                        </span>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-muted-foreground mt-2">
+                      Lotomania: Prêmio para 20, 19, 18, 17, 16, 15 ou 0 acertos — Conferência dos dois jogos
+                    </p>
+                  </div>
+                )}
+
+                {/* Dupla Sena info */}
+                {isDuplaSena && (
+                  <div className="mt-2 bg-destructive/5 rounded-lg p-3 border border-destructive/20">
+                    <p className="text-[10px] text-muted-foreground">
+                      <strong className="text-destructive">Dupla Sena:</strong> Seus números concorrem nos 2 sorteios do concurso.
+                      Prêmio para 3, 4, 5 ou 6 acertos no 1º e/ou 2º sorteio.
+                      A conferência é automática para ambos os sorteios após as 21h.
+                    </p>
+                  </div>
+                )}
+
+                {/* Trevos (+Milionária) */}
                 {specialNumbers && specialNumbers.length > 0 && (
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mt-2">
                     <Clover className="w-4 h-4 text-success" />
                     <span className="text-xs font-display font-semibold text-success">Trevos:</span>
                     <div className="flex gap-1.5">
@@ -198,8 +264,9 @@ const BetsPage = () => {
                   </div>
                 )}
 
+                {/* Time (Timemania) */}
                 {team && (
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2 mt-2">
                     <Shield className="w-4 h-4 text-primary" />
                     <span className="text-xs font-display font-semibold text-primary">Time do Coração:</span>
                     <span className="text-sm font-bold text-foreground bg-primary/10 px-3 py-1 rounded-lg border border-primary/20">
@@ -208,8 +275,9 @@ const BetsPage = () => {
                   </div>
                 )}
 
+                {/* Hits & Prize */}
                 {bet.hits !== null && (
-                  <div className="flex items-center gap-4 text-sm mb-2">
+                  <div className="flex items-center gap-4 text-sm mt-2">
                     <span className="text-success font-bold">{bet.hits} acertos</span>
                     {bet.prize_amount && Number(bet.prize_amount) > 0 && (
                       <span className="text-secondary font-bold">
@@ -224,7 +292,6 @@ const BetsPage = () => {
                     {bet.confirmed_at ? formatBrasiliaTime(new Date(bet.confirmed_at)) : formatBrasiliaTime(new Date(bet.created_at))}
                   </p>
 
-                  {/* Confirm button for pending bets */}
                   {isPending && (
                     <button
                       onClick={() => confirmBet(bet)}
