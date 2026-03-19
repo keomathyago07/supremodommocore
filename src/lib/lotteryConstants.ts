@@ -14,6 +14,9 @@ export interface LotteryConfig {
   specialMax?: number;
   hasTeam?: boolean;
   teamName?: string;
+  hasDualGame?: boolean; // Lotomania: 50 marked + 50 complementary
+  dualGameName?: string;
+  hasDualDraw?: boolean; // Dupla Sena: 2 draws per concurso
 }
 
 export const TIMEMANIA_TEAMS = [
