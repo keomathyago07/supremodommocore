@@ -1,29 +1,39 @@
 import { useState, useEffect } from 'react';
 import { LOTTERIES, getBrasiliaTime, formatBrasiliaHour, getTodaysLotteries, AI_SPECIALISTS } from '@/lib/lotteryConstants';
-import { LOTTERY_PRIZES, formatPrize } from '@/lib/lotteryPrizes';
+import { LOTTERY_PRIZES } from '@/lib/lotteryPrizes';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import {
   Brain, Activity, Cpu, BarChart3, Zap, Database, Target, TrendingUp,
-  Layers, Gauge, Clock, RefreshCw, CheckCircle, AlertCircle, Sigma
+  Layers, Gauge, Clock, RefreshCw, CheckCircle, AlertCircle, Sigma,
+  GitBranch, Workflow, Bot, Sparkles
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const PIPELINE_STAGES = [
-  { id: 'data', name: 'Data Engine', icon: Database, desc: 'Ingestão de dados históricos via API' },
-  { id: 'norm', name: 'Normalization', icon: Layers, desc: 'Padronização e ordenação de dados' },
+  { id: 'atlas', name: 'Atlas Ingest', icon: Database, desc: 'Ingestão de dados via API + fallback multi-fonte' },
+  { id: 'norm', name: 'Normalization', icon: Layers, desc: 'Padronização, ordenação e classificação' },
   { id: 'feat', name: 'Feature Engineering', icon: Sigma, desc: 'Frequência, atraso, variância, entropia, kurtosis' },
-  { id: 'stat', name: 'Statistical Analysis', icon: BarChart3, desc: 'Regressão, Bayesiano, Markov, dispersão' },
+  { id: 'certus', name: 'Certus Engine v4', icon: Brain, desc: 'Score: freq + delay + trend + gap + entropia' },
   { id: 'pattern', name: 'Pattern Detection', icon: Target, desc: 'Sequências, clusters, par/ímpar, alto/baixo' },
   { id: 'corr', name: 'Correlation Engine', icon: TrendingUp, desc: 'Matriz de correlação, pares/trincas frequentes' },
   { id: 'temporal', name: 'Temporal Analysis', icon: Clock, desc: 'Tendência, sazonalidade, ciclos de retorno' },
   { id: 'sim', name: 'Simulation Engine', icon: Activity, desc: 'Monte Carlo: 100K → 10M+ sorteios simulados' },
-  { id: 'ml', name: 'Machine Learning', icon: Brain, desc: 'XGBoost, LSTM, Random Forest, GBM, MLP, Bayesian' },
+  { id: 'ml', name: 'Machine Learning', icon: Bot, desc: 'XGBoost, LSTM, RF, GBM, MLP, Bayesian' },
+  { id: 'decision', name: 'Decision Engine', icon: GitBranch, desc: 'Seleção inteligente do top pool + diversidade' },
   { id: 'opt', name: 'Optimization', icon: Gauge, desc: 'Genetic Algorithm, Simulated Annealing, PSO' },
   { id: 'filter', name: 'Filtering Engine', icon: AlertCircle, desc: 'Eliminar combinações fracas e redundantes' },
-  { id: 'combo', name: 'Combination Generator', icon: Layers, desc: 'Wheeling, fechamentos, distribuição balanceada' },
   { id: 'backtest', name: 'Backtesting Engine', icon: RefreshCw, desc: 'Simulação retrospectiva, taxa de acerto' },
-  { id: 'score', name: 'Scoring Engine', icon: Zap, desc: 'Score = frequência + atraso + tendência + IA' },
-  { id: 'report', name: 'Reporting Engine', icon: CheckCircle, desc: 'Relatório analítico completo + ranking final' },
+  { id: 'score', name: 'Global Scoring', icon: Zap, desc: 'Score final = Certus + ML + Tendência + IA' },
+  { id: 'report', name: 'Auto-Learning', icon: Sparkles, desc: 'Adaptação de pesos + relatório final' },
+];
+
+const DOMMO_MODULES = [
+  { name: 'Atlas Ingest', desc: 'Multi-fonte: APILoterias + Caixa + Fallback', status: 'ATIVO' },
+  { name: 'Certus Engine v4', desc: 'Cérebro estatístico: freq + delay + trend + gap + entropia', status: 'ATIVO' },
+  { name: 'Decision Engine', desc: 'Geração inteligente com pool dinâmico', status: 'ATIVO' },
+  { name: 'Global Scoring', desc: 'Classificação ALTA/MÉDIA/BAIXA por confiança', status: 'ATIVO' },
+  { name: 'Auto-Learning', desc: 'Ajuste automático de pesos por performance', status: 'ATIVO' },
+  { name: 'Chat Orchestrator', desc: 'Controle por linguagem natural (agressivo/conservador)', status: 'ATIVO' },
 ];
 
 const AnalyticalEnginePage = () => {
@@ -36,7 +46,6 @@ const AnalyticalEnginePage = () => {
     return () => clearInterval(t);
   }, []);
 
-  // Animate pipeline stages
   useEffect(() => {
     if (!auto.autoMode) return;
     const interval = setInterval(() => {
@@ -52,7 +61,6 @@ const AnalyticalEnginePage = () => {
   const totalGates = detailsList.reduce((s, d) => s + d.gatesReached, 0);
   const totalCycles = detailsList.reduce((s, d) => s + d.cyclesCompleted, 0);
   const avgDomination = detailsList.length > 0 ? detailsList.reduce((s, d) => s + d.domination, 0) / detailsList.length : 0;
-  const avgPrecision = detailsList.length > 0 ? detailsList.reduce((s, d) => s + d.precision, 0) / detailsList.length : 0;
 
   const activeSpecialists = auto.autoMode ? AI_SPECIALISTS.length : 0;
 
@@ -61,7 +69,10 @@ const AnalyticalEnginePage = () => {
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div className="flex items-center gap-3">
           <Cpu className="w-7 h-7 text-primary" />
-          <h1 className="text-2xl font-display font-bold">Motor Analítico</h1>
+          <div>
+            <h1 className="text-2xl font-display font-bold">Motor Analítico DOMMO CORE</h1>
+            <p className="text-xs text-muted-foreground">Atlas Ingest + Certus v4 + Decision Engine + Auto-Learning</p>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <div className="glass px-3 py-1.5 rounded-lg flex items-center gap-2">
@@ -73,6 +84,26 @@ const AnalyticalEnginePage = () => {
           }`}>
             {auto.autoMode ? '⚡ ATIVO 24/7' : '⏸ PARADO'}
           </span>
+        </div>
+      </div>
+
+      {/* DOMMO CORE Modules */}
+      <div className="glass rounded-xl p-5 border border-secondary/20">
+        <div className="flex items-center gap-3 mb-4">
+          <Workflow className="w-5 h-5 text-secondary" />
+          <h2 className="font-display font-bold">DOMMO CORE — Módulos Ativos</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+          {DOMMO_MODULES.map((mod, i) => (
+            <motion.div key={mod.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+              className="rounded-lg p-3 border border-secondary/20 bg-secondary/5">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-xs font-display font-bold text-secondary">{mod.name}</span>
+                <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-success/20 text-success font-mono">{mod.status}</span>
+              </div>
+              <p className="text-[10px] text-muted-foreground">{mod.desc}</p>
+            </motion.div>
+          ))}
         </div>
       </div>
 
@@ -99,7 +130,7 @@ const AnalyticalEnginePage = () => {
       <div className="glass rounded-xl p-5 border border-primary/20">
         <div className="flex items-center gap-3 mb-4">
           <Activity className="w-5 h-5 text-primary" />
-          <h2 className="font-display font-bold">Pipeline Analítico — 15 Etapas</h2>
+          <h2 className="font-display font-bold">Pipeline Analítico — 15 Etapas DOMMO CORE</h2>
           <span className="text-xs text-muted-foreground font-mono ml-auto">
             Etapa ativa: {PIPELINE_STAGES[activeStage]?.name}
           </span>
@@ -146,7 +177,7 @@ const AnalyticalEnginePage = () => {
           <span className="text-xs text-muted-foreground ml-auto">{detailsList.length} loterias monitoradas</span>
         </div>
         {detailsList.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-8">Ative o modo AUTO para iniciar o motor analítico.</p>
+          <p className="text-sm text-muted-foreground text-center py-8">Ative o modo AUTO para iniciar o motor analítico DOMMO CORE.</p>
         ) : (
           <div className="space-y-2">
             {detailsList.map((d, i) => {
@@ -160,6 +191,8 @@ const AnalyticalEnginePage = () => {
                       <div className="w-3 h-3 rounded-full" style={{ background: lottery?.color }} />
                       <span className="font-display font-bold text-sm" style={{ color: lottery?.color }}>{d.lotteryName}</span>
                       {isToday && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-success/20 text-success font-mono">HOJE</span>}
+                      {lottery?.hasDualGame && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-warning/20 text-warning font-mono">JOGO DUPLO</span>}
+                      {lottery?.hasDualDraw && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-destructive/20 text-destructive font-mono">2 SORTEIOS</span>}
                     </div>
                     <span className={`text-xs px-2 py-0.5 rounded-full font-mono ${
                       d.status === 'delivered' ? 'bg-success/20 text-success' :
@@ -198,7 +231,6 @@ const AnalyticalEnginePage = () => {
                       </span>
                     )}
                   </div>
-                  {/* Hot/Cold numbers */}
                   {d.hotNumbers?.length > 0 && (
                     <div className="flex items-center gap-2 mt-2">
                       <span className="text-[10px] text-destructive font-mono">🔥 Hot:</span>

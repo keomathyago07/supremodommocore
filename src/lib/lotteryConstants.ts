@@ -14,6 +14,9 @@ export interface LotteryConfig {
   specialMax?: number;
   hasTeam?: boolean;
   teamName?: string;
+  hasDualGame?: boolean; // Lotomania: 50 marked + 50 complementary
+  dualGameName?: string;
+  hasDualDraw?: boolean; // Dupla Sena: 2 draws per concurso
 }
 
 export const TIMEMANIA_TEAMS = [
@@ -58,10 +61,12 @@ export const LOTTERIES: LotteryConfig[] = [
   },
   {
     id: 'lotomania', name: 'Lotomania', apiName: 'lotomania',
-    numbersCount: 20, maxNumber: 100, color: '#F78100',
-    lockedPatterns: ['20 acertos', '19 acertos', '18 acertos', '0 acertos'],
+    numbersCount: 50, maxNumber: 100, color: '#F78100',
+    lockedPatterns: ['20 acertos', '19 acertos', '18 acertos', '17 acertos', '16 acertos', '15 acertos', '0 acertos'],
     drawTime: '21:00',
     drawDays: [1, 3, 5],
+    hasDualGame: true,
+    dualGameName: 'Jogo Complementar (50 não marcados)',
   },
   {
     id: 'timemania', name: 'Timemania', apiName: 'timemania',
@@ -75,9 +80,10 @@ export const LOTTERIES: LotteryConfig[] = [
   {
     id: 'duplasena', name: 'Dupla Sena', apiName: 'dupla-sena',
     numbersCount: 6, maxNumber: 50, color: '#A61324',
-    lockedPatterns: ['1º Sorteio - 6 acertos', '1º Sorteio - 5 acertos', '2º Sorteio - 6 acertos', '2º Sorteio - 5 acertos'],
+    lockedPatterns: ['1º Sorteio - 6 acertos', '1º Sorteio - 5 acertos', '1º Sorteio - 4 acertos', '1º Sorteio - 3 acertos', '2º Sorteio - 6 acertos', '2º Sorteio - 5 acertos', '2º Sorteio - 4 acertos', '2º Sorteio - 3 acertos'],
     drawTime: '21:00',
     drawDays: [1, 3, 5],
+    hasDualDraw: true,
   },
   {
     id: 'diadesorte', name: 'Dia de Sorte', apiName: 'dia-de-sorte',

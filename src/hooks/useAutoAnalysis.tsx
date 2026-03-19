@@ -16,8 +16,9 @@ type EngineMode = 'analysis' | 'study';
 
 function generateNumbers(config: LotteryConfig): number[] {
   const nums = new Set<number>();
+  const startAt = config.id === 'lotomania' ? 0 : (config.id === 'supersete' ? 0 : 1);
   while (nums.size < config.numbersCount) {
-    nums.add(Math.floor(Math.random() * config.maxNumber) + (config.id === 'supersete' ? 0 : 1));
+    nums.add(Math.floor(Math.random() * config.maxNumber) + startAt);
   }
   return Array.from(nums).sort((a, b) => a - b);
 }
