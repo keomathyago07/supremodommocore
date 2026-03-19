@@ -80,9 +80,10 @@ export const LOTTERIES: LotteryConfig[] = [
   {
     id: 'duplasena', name: 'Dupla Sena', apiName: 'dupla-sena',
     numbersCount: 6, maxNumber: 50, color: '#A61324',
-    lockedPatterns: ['1º Sorteio - 6 acertos', '1º Sorteio - 5 acertos', '2º Sorteio - 6 acertos', '2º Sorteio - 5 acertos'],
+    lockedPatterns: ['1º Sorteio - 6 acertos', '1º Sorteio - 5 acertos', '1º Sorteio - 4 acertos', '1º Sorteio - 3 acertos', '2º Sorteio - 6 acertos', '2º Sorteio - 5 acertos', '2º Sorteio - 4 acertos', '2º Sorteio - 3 acertos'],
     drawTime: '21:00',
     drawDays: [1, 3, 5],
+    hasDualDraw: true,
   },
   {
     id: 'diadesorte', name: 'Dia de Sorte', apiName: 'dia-de-sorte',
