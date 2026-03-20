@@ -2,6 +2,7 @@ export interface ThemePreset {
   id: string;
   name: string;
   description: string;
+  wallpaper?: string; // CSS background value or data URL
   colors: {
     background: string;
     foreground: string;

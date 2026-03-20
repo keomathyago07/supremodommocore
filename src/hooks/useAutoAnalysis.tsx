@@ -434,7 +434,121 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
     }, 30000);
 
     return () => clearInterval(deliveryCheck);
-  }, [autoMode, user, numberDeliveryTime, analysisDetails]);
+  }, [autoMode, user, numberDeliveryTime, analysisDetails, addNotification]);
+
+  // ========== GLOBAL AUTO RESULT CHECK ENGINE (after 21:00) ==========
+  useEffect(() => {
+    if (!autoResultCheck || !user) return;
+    const resultCheckRef = { lastCheckedDate: '' };
+
+    const runAutoResultCheck = async () => {
+      const now = getBrasiliaTime();
+      if (now.getHours() < 21) return;
+
+      const todayKey = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+      if (resultCheckRef.lastCheckedDate === todayKey) return;
+
+      const todaysLotteries = getTodaysLotteries();
+      if (todaysLotteries.length === 0) return;
+
+      for (const lottery of todaysLotteries) {
+        try {
+          // Fetch API token
+          const { data: tokenData } = await supabase
+            .from('api_tokens')
+            .select('token')
+            .eq('user_id', user.id)
+            .limit(1)
+            .maybeSingle();
+
+          const tokenParam = tokenData?.token ? `&token=${tokenData.token}` : '&token=demo';
+          const res = await fetch(`https://apiloterias.com.br/app/v2/resultado?loteria=${lottery.apiName}${tokenParam}`, {
+            signal: AbortSignal.timeout(15000),
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (!data?.dezenas) continue;
+
+          const drawnNumbers = data.dezenas.map((d: string) => parseInt(d));
+
+          // Get confirmed bets for this lottery
+          const { data: bets } = await supabase
+            .from('bets')
+            .select('*')
+            .eq('user_id', user.id)
+            .eq('lottery', lottery.id)
+            .eq('status', 'confirmed');
+
+          if (!bets || bets.length === 0) continue;
+
+          for (const bet of bets) {
+            const betNumbers = bet.numbers as number[];
+            const matched = betNumbers.filter((n: number) => drawnNumbers.includes(n));
+            const hits = matched.length;
+
+            // Determine prize tier
+            let tier = `${hits} acerto(s)`;
+            let value = 0;
+            const premiacao = data.premiacao || [];
+            if (hits >= lottery.numbersCount) {
+              tier = '💰 PRÊMIO PRINCIPAL!';
+              value = parseFloat(String(premiacao[0]?.valorPremio || premiacao[0]?.valor_premio || 0).replace(/[^\d,.]/g, '').replace(',', '.')) || 0;
+            } else if (hits >= lottery.numbersCount - 1) {
+              tier = '🥈 Prêmio Secundário';
+              value = parseFloat(String(premiacao[1]?.valorPremio || premiacao[1]?.valor_premio || 0).replace(/[^\d,.]/g, '').replace(',', '.')) || 0;
+            } else if (hits >= lottery.numbersCount - 2) {
+              tier = '🥉 Prêmio Terciário';
+              value = parseFloat(String(premiacao[2]?.valorPremio || premiacao[2]?.valor_premio || 0).replace(/[^\d,.]/g, '').replace(',', '.')) || 0;
+            }
+
+            // Update bet
+            await supabase.from('bets').update({
+              draw_numbers: drawnNumbers,
+              hits,
+              checked_at: new Date().toISOString(),
+              status: hits >= 3 ? 'winner' : 'checked',
+              prize_amount: value,
+            } as any).eq('id', bet.id);
+
+            // Save to result_checks
+            await supabase.from('result_checks').upsert({
+              user_id: user.id,
+              lottery: lottery.id,
+              concurso: data.numero_concurso,
+              data_concurso: data.data_concurso,
+              draw_numbers: drawnNumbers,
+              bet_numbers: betNumbers,
+              hits,
+              matched_numbers: matched,
+              prize_tier: tier,
+              prize_value: value,
+              total_winners: premiacao.reduce((s: number, p: any) => s + (p.ganhadores || p.numero_ganhadores || 0), 0),
+              premiacao: premiacao,
+              checked_at: new Date().toISOString(),
+            } as any, { onConflict: 'user_id,lottery,concurso' });
+
+            addNotification(
+              `🎯 ${lottery.name} #${data.numero_concurso}: ${hits} acerto(s)${value > 0 ? ` — R$ ${value.toLocaleString('pt-BR')}` : ''} | Conferência automática`,
+              'result',
+              lottery.id
+            );
+
+            if (hits >= 3 || value > 0) {
+              toast.success(`🎯 ${lottery.name}: ${hits} acerto(s)! ${tier}${value > 0 ? ` — R$ ${value.toLocaleString('pt-BR')}` : ''}`, { duration: 15000 });
+            }
+          }
+        } catch (e) {
+          console.error(`Auto-check error for ${lottery.id}:`, e);
+        }
+      }
+
+      resultCheckRef.lastCheckedDate = todayKey;
+      addNotification('✅ Conferência automática concluída para todas as loterias do dia', 'info');
+    };
+
+    runAutoResultCheck();
+    const interval = setInterval(runAutoResultCheck, 5 * 60 * 1000); // Every 5 min
+    return () => clearInterval(interval);
 
   // Self-adaptation tick
   useEffect(() => {
