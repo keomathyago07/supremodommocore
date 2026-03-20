@@ -15,10 +15,19 @@ const MASTERY_THRESHOLD = 1000; // Ultra Domínio e Precisão Máxima 1000%
 type EngineMode = 'analysis' | 'study';
 
 function generateNumbers(config: LotteryConfig): number[] {
+  // Super Sete: 7 columns, each 0-9 (one number per column)
+  if (config.hasColumns && config.columnsCount) {
+    const nums: number[] = [];
+    for (let col = 0; col < config.columnsCount; col++) {
+      nums.push(Math.floor(Math.random() * ((config.columnMax ?? 9) + 1)));
+    }
+    return nums; // Don't sort - column order matters
+  }
+
   const nums = new Set<number>();
-  const startAt = config.id === 'lotomania' ? 0 : (config.id === 'supersete' ? 0 : 1);
+  const startAt = config.id === 'lotomania' ? 0 : 1;
   while (nums.size < config.numbersCount) {
-    nums.add(Math.floor(Math.random() * config.maxNumber) + startAt);
+    nums.add(Math.floor(Math.random() * (config.maxNumber + (startAt === 0 ? 0 : 0))) + startAt);
   }
   return Array.from(nums).sort((a, b) => a - b);
 }
