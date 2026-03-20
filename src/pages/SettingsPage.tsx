@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key, Send, Zap, Palette } from 'lucide-react';
+import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key, Send, Zap, Palette, Image, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
-import { THEME_PRESETS, applyTheme, loadSavedTheme, saveTheme } from '@/lib/themePresets';
+import { THEME_PRESETS, applyTheme, loadSavedTheme, saveTheme, saveWallpaper, loadSavedWallpaper, removeWallpaper, applyWallpaper } from '@/lib/themePresets';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -14,6 +14,8 @@ const SettingsPage = () => {
   const [confirmPin, setConfirmPin] = useState('');
   const [changingPin, setChangingPin] = useState(false);
   const [activeTheme, setActiveTheme] = useState(loadSavedTheme());
+  const [hasWallpaper, setHasWallpaper] = useState(!!loadSavedWallpaper());
+  const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
   const [notifTimes, setNotifTimes] = useState(['18:00', '20:00', '20:30']);
   const [newTime, setNewTime] = useState('');
