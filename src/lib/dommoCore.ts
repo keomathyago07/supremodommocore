@@ -169,7 +169,7 @@ export class DecisionEngine {
 
   buildGames(scores: Record<number, number>, config: LotteryConfig): GameResult[] {
     const games: GameResult[] = [];
-    const game = this.generateGame(scores, config.numbersCount);
+    const game = this.generateGame(scores, config.numbersCount, config);
     const confidence = game.reduce((s, n) => s + (scores[n] || 0), 0) / game.length;
 
     const result: GameResult = {
