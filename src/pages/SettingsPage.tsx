@@ -139,9 +139,44 @@ const SettingsPage = () => {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Account */}
+        {/* Wallpaper Upload */}
+        <div className="mt-4 pt-4 border-t border-border/30">
+          <div className="flex items-center gap-3 mb-3">
+            <Image className="w-5 h-5 text-secondary" />
+            <h3 className="font-display font-semibold text-sm">🖼️ Papel de Parede Personalizado</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Faça upload de uma imagem para usar como fundo do programa. Máximo 5MB.</p>
+          <div className="flex items-center gap-3">
+            <input
+              ref={wallpaperInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleWallpaperUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => wallpaperInputRef.current?.click()}
+              className="flex items-center gap-2 gradient-primary text-primary-foreground font-display font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-all text-sm"
+            >
+              <Image className="w-4 h-4" />
+              Escolher Imagem
+            </button>
+            {hasWallpaper && (
+              <button
+                onClick={handleRemoveWallpaper}
+                className="flex items-center gap-2 bg-destructive/20 text-destructive font-display font-semibold px-4 py-2 rounded-lg hover:bg-destructive/30 transition-all text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remover Wallpaper
+              </button>
+            )}
+          </div>
+          {hasWallpaper && (
+            <p className="text-xs text-success mt-2">✅ Papel de parede ativo. A imagem é mantida ao trocar temas.</p>
+          )}
+        </div>
+      </div>
       <div className="glass rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-3">
           <User className="w-5 h-5 text-primary" />
