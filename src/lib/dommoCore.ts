@@ -131,11 +131,24 @@ export class CertusEngine {
 
 // ============ DECISION ENGINE ============
 export class DecisionEngine {
-  generateGame(scores: Record<number, number>, size: number): number[] {
+  generateGame(scores: Record<number, number>, size: number, config?: LotteryConfig): number[] {
+    // Super Sete: one number per column (0-9)
+    if (config?.hasColumns && config.columnsCount) {
+      const nums: number[] = [];
+      for (let col = 0; col < config.columnsCount; col++) {
+        // Weighted random from scores for each column digit
+        const colScores = Array.from({ length: (config.columnMax ?? 9) + 1 }, (_, i) => ({
+          n: i,
+          score: scores[i] || Math.random(),
+        })).sort((a, b) => b.score - a.score);
+        nums.push(colScores[Math.floor(Math.random() * Math.min(3, colScores.length))].n);
+      }
+      return nums; // Don't sort - column order matters
+    }
+
     const sorted = Object.entries(scores)
       .sort(([, a], [, b]) => b - a)
       .map(([n]) => Number(n));
-    // Top pool: take top N * 3, then randomly select
     const poolSize = Math.min(sorted.length, size * 3);
     const pool = sorted.slice(0, poolSize);
     const selected = new Set<number>();
@@ -156,7 +169,7 @@ export class DecisionEngine {
 
   buildGames(scores: Record<number, number>, config: LotteryConfig): GameResult[] {
     const games: GameResult[] = [];
-    const game = this.generateGame(scores, config.numbersCount);
+    const game = this.generateGame(scores, config.numbersCount, config);
     const confidence = game.reduce((s, n) => s + (scores[n] || 0), 0) / game.length;
 
     const result: GameResult = {

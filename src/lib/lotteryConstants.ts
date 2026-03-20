@@ -17,6 +17,10 @@ export interface LotteryConfig {
   hasDualGame?: boolean; // Lotomania: 50 marked + 50 complementary
   dualGameName?: string;
   hasDualDraw?: boolean; // Dupla Sena: 2 draws per concurso
+  hasColumns?: boolean; // Super Sete: 7 columns
+  columnsCount?: number;
+  columnMin?: number;
+  columnMax?: number;
 }
 
 export const TIMEMANIA_TEAMS = [
@@ -98,6 +102,7 @@ export const LOTTERIES: LotteryConfig[] = [
     lockedPatterns: ['7 acertos', '6 acertos', '5 acertos'],
     drawTime: '21:00',
     drawDays: [1, 3, 5],
+    hasColumns: true, columnsCount: 7, columnMin: 0, columnMax: 9,
   },
   {
     id: 'maismilionaria', name: '+Milionária', apiName: 'mais-milionaria',

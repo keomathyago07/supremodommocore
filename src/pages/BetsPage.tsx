@@ -200,16 +200,29 @@ const BetsPage = () => {
                       <span className="text-xs font-display font-bold text-destructive">Números (1º e 2º Sorteio)</span>
                     </div>
                   )}
+                  {lottery?.hasColumns && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <Layers className="w-4 h-4 text-success" />
+                      <span className="text-xs font-display font-bold text-success">Super Sete — 7 Colunas (0 a 9)</span>
+                    </div>
+                  )}
                   <div className="flex flex-wrap gap-1.5">
-                    {bet.numbers.map((n) => (
+                    {bet.numbers.map((n, idx) => (
                       <span
-                        key={n}
-                        className={`w-8 h-8 rounded-full flex items-center justify-center font-mono text-[11px] border ${
+                        key={idx}
+                        className={`${lottery?.hasColumns ? 'w-10 h-10' : 'w-8 h-8'} rounded-full flex items-center justify-center font-mono text-[11px] border ${
                           bet.draw_numbers?.includes(n) ? 'bg-success/20 border-success text-success font-bold' : ''
                         }`}
                         style={!bet.draw_numbers?.includes(n) ? { borderColor: lottery?.color, color: lottery?.color } : {}}
                       >
-                        {n.toString().padStart(2, '0')}
+                        {lottery?.hasColumns ? (
+                          <span className="flex flex-col items-center leading-none">
+                            <span className="text-[8px] text-muted-foreground">C{idx + 1}</span>
+                            <span className="text-sm font-bold">{n}</span>
+                          </span>
+                        ) : (
+                          n.toString().padStart(2, '0')
+                        )}
                       </span>
                     ))}
                   </div>

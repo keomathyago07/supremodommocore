@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key, Send, Zap, Palette } from 'lucide-react';
+import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, Key, Send, Zap, Palette, Image, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
-import { THEME_PRESETS, applyTheme, loadSavedTheme, saveTheme } from '@/lib/themePresets';
+import { THEME_PRESETS, applyTheme, loadSavedTheme, saveTheme, saveWallpaper, loadSavedWallpaper, removeWallpaper, applyWallpaper } from '@/lib/themePresets';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -14,6 +14,8 @@ const SettingsPage = () => {
   const [confirmPin, setConfirmPin] = useState('');
   const [changingPin, setChangingPin] = useState(false);
   const [activeTheme, setActiveTheme] = useState(loadSavedTheme());
+  const [hasWallpaper, setHasWallpaper] = useState(!!loadSavedWallpaper());
+  const wallpaperInputRef = useRef<HTMLInputElement>(null);
 
   const [notifTimes, setNotifTimes] = useState(['18:00', '20:00', '20:30']);
   const [newTime, setNewTime] = useState('');
@@ -72,6 +74,34 @@ const SettingsPage = () => {
     toast.success(`Tema "${theme.name}" aplicado!`);
   };
 
+  const handleWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecione uma imagem válida (JPG, PNG, WebP)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem muito grande. Máximo 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      saveWallpaper(dataUrl);
+      applyWallpaper(dataUrl);
+      setHasWallpaper(true);
+      toast.success('🖼️ Papel de parede aplicado com sucesso!');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveWallpaper = () => {
+    removeWallpaper();
+    setHasWallpaper(false);
+    toast.success('Papel de parede removido');
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-display font-bold">Configurações</h1>
@@ -109,9 +139,44 @@ const SettingsPage = () => {
             </button>
           ))}
         </div>
-      </div>
 
-      {/* Account */}
+        {/* Wallpaper Upload */}
+        <div className="mt-4 pt-4 border-t border-border/30">
+          <div className="flex items-center gap-3 mb-3">
+            <Image className="w-5 h-5 text-secondary" />
+            <h3 className="font-display font-semibold text-sm">🖼️ Papel de Parede Personalizado</h3>
+          </div>
+          <p className="text-xs text-muted-foreground mb-3">Faça upload de uma imagem para usar como fundo do programa. Máximo 5MB.</p>
+          <div className="flex items-center gap-3">
+            <input
+              ref={wallpaperInputRef}
+              type="file"
+              accept="image/*"
+              onChange={handleWallpaperUpload}
+              className="hidden"
+            />
+            <button
+              onClick={() => wallpaperInputRef.current?.click()}
+              className="flex items-center gap-2 gradient-primary text-primary-foreground font-display font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-all text-sm"
+            >
+              <Image className="w-4 h-4" />
+              Escolher Imagem
+            </button>
+            {hasWallpaper && (
+              <button
+                onClick={handleRemoveWallpaper}
+                className="flex items-center gap-2 bg-destructive/20 text-destructive font-display font-semibold px-4 py-2 rounded-lg hover:bg-destructive/30 transition-all text-sm"
+              >
+                <Trash2 className="w-4 h-4" />
+                Remover Wallpaper
+              </button>
+            )}
+          </div>
+          {hasWallpaper && (
+            <p className="text-xs text-success mt-2">✅ Papel de parede ativo. A imagem é mantida ao trocar temas.</p>
+          )}
+        </div>
+      </div>
       <div className="glass rounded-xl p-6 space-y-4">
         <div className="flex items-center gap-3">
           <User className="w-5 h-5 text-primary" />
