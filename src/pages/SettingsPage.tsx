@@ -74,6 +74,34 @@ const SettingsPage = () => {
     toast.success(`Tema "${theme.name}" aplicado!`);
   };
 
+  const handleWallpaperUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      toast.error('Selecione uma imagem válida (JPG, PNG, WebP)');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem muito grande. Máximo 5MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      saveWallpaper(dataUrl);
+      applyWallpaper(dataUrl);
+      setHasWallpaper(true);
+      toast.success('🖼️ Papel de parede aplicado com sucesso!');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveWallpaper = () => {
+    removeWallpaper();
+    setHasWallpaper(false);
+    toast.success('Papel de parede removido');
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-display font-bold">Configurações</h1>
