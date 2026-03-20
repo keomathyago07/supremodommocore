@@ -547,8 +547,9 @@ export function AutoAnalysisProvider({ children }: { children: ReactNode }) {
     };
 
     runAutoResultCheck();
-    const interval = setInterval(runAutoResultCheck, 5 * 60 * 1000); // Every 5 min
+    const interval = setInterval(runAutoResultCheck, 5 * 60 * 1000);
     return () => clearInterval(interval);
+  }, [autoResultCheck, user, addNotification]);
 
   // Self-adaptation tick
   useEffect(() => {
