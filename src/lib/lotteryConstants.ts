@@ -17,6 +17,10 @@ export interface LotteryConfig {
   hasDualGame?: boolean; // Lotomania: 50 marked + 50 complementary
   dualGameName?: string;
   hasDualDraw?: boolean; // Dupla Sena: 2 draws per concurso
+  hasColumns?: boolean; // Super Sete: 7 columns
+  columnsCount?: number;
+  columnMin?: number;
+  columnMax?: number;
 }
 
 export const TIMEMANIA_TEAMS = [
