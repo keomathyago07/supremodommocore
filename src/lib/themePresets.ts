@@ -209,6 +209,43 @@ export function applyTheme(theme: ThemePreset) {
   root.style.setProperty('--sidebar-accent-foreground', theme.colors.sidebarForeground);
   root.style.setProperty('--sidebar-border', theme.colors.sidebarBorder);
   root.style.setProperty('--sidebar-ring', theme.colors.sidebarPrimary);
+
+  // Apply wallpaper
+  const savedWallpaper = loadSavedWallpaper();
+  if (savedWallpaper) {
+    applyWallpaper(savedWallpaper);
+  } else {
+    clearWallpaper();
+  }
+}
+
+export function applyWallpaper(dataUrl: string) {
+  document.body.style.backgroundImage = `url(${dataUrl})`;
+  document.body.style.backgroundSize = 'cover';
+  document.body.style.backgroundPosition = 'center';
+  document.body.style.backgroundRepeat = 'no-repeat';
+  document.body.style.backgroundAttachment = 'fixed';
+}
+
+export function clearWallpaper() {
+  document.body.style.backgroundImage = '';
+  document.body.style.backgroundSize = '';
+  document.body.style.backgroundPosition = '';
+  document.body.style.backgroundRepeat = '';
+  document.body.style.backgroundAttachment = '';
+}
+
+export function saveWallpaper(dataUrl: string) {
+  try { localStorage.setItem('app_wallpaper', dataUrl); } catch {}
+}
+
+export function loadSavedWallpaper(): string | null {
+  try { return localStorage.getItem('app_wallpaper'); } catch { return null; }
+}
+
+export function removeWallpaper() {
+  try { localStorage.removeItem('app_wallpaper'); } catch {}
+  clearWallpaper();
 }
 
 export function loadSavedTheme(): string {
