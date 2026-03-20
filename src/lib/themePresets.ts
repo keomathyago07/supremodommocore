@@ -268,4 +268,9 @@ export function initTheme() {
   if (theme && savedId !== 'cyber-dark') {
     applyTheme(theme);
   }
+  // Apply saved wallpaper regardless of theme
+  const wallpaper = loadSavedWallpaper();
+  if (wallpaper) {
+    applyWallpaper(wallpaper);
+  }
 }
