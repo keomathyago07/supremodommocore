@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { LOTTERIES, getBrasiliaTime, formatBrasiliaHour, getTodaysLotteries, AI_SPECIALISTS } from '@/lib/lotteryConstants';
 import { LOTTERY_PRIZES } from '@/lib/lotteryPrizes';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
-import { ALL_ENGINES, DOMMO_CONFIG } from '@/lib/dommoCore';
+import { ALL_ENGINES, DOMMO_CONFIG, LOTTERY_SPECIALISTS } from '@/lib/dommoCore';
 import {
   Brain, Activity, Cpu, BarChart3, Zap, Database, Target, TrendingUp,
   Layers, Gauge, Clock, RefreshCw, CheckCircle, AlertCircle, Sigma,
