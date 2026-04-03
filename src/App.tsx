@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { ThemeProvider } from "@/components/ThemeSystem";
 import LoginPage from "./pages/LoginPage";
 import DashboardPage from "./pages/DashboardPage";
 import DashboardHome from "./pages/DashboardHome";
@@ -21,6 +22,7 @@ import SettingsPage from "./pages/SettingsPage";
 import AIChatPage from "./pages/AIChatPage";
 import FinancialPage from "./pages/FinancialPage";
 import AnalyticalEnginePage from "./pages/AnalyticalEnginePage";
+import MotorAnaliticoPage from "./pages/MotorAnaliticoPage";
 import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
 
@@ -47,34 +49,37 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<PublicRoute><LoginPage /></PublicRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}>
-              <Route index element={<DashboardHome />} />
-              <Route path="evolution" element={<NeuralEvolutionPage />} />
-              <Route path="livepanel" element={<AILiveDashboardPage />} />
-              <Route path="analysis" element={<AnalysisPage />} />
-              <Route path="bets" element={<BetsPage />} />
-              <Route path="history" element={<GateHistoryPage />} />
-              <Route path="results" element={<ResultsPage />} />
-              <Route path="financial" element={<FinancialPage />} />
-              <Route path="engine" element={<AnalyticalEnginePage />} />
-              <Route path="ai" element={<AISpecialistsPage />} />
-              <Route path="aiconfig" element={<AIAdvancedConfigPage />} />
-              <Route path="chat" element={<AIChatPage />} />
-              <Route path="gates" element={<GateConfigPage />} />
-              <Route path="api" element={<ApiConfigPage />} />
-              <Route path="install" element={<InstallPage />} />
-              <Route path="settings" element={<SettingsPage />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
+      <ThemeProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<PublicRoute><LoginPage /></PublicRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}>
+                <Route index element={<DashboardHome />} />
+                <Route path="evolution" element={<NeuralEvolutionPage />} />
+                <Route path="livepanel" element={<AILiveDashboardPage />} />
+                <Route path="analysis" element={<AnalysisPage />} />
+                <Route path="bets" element={<BetsPage />} />
+                <Route path="history" element={<GateHistoryPage />} />
+                <Route path="results" element={<ResultsPage />} />
+                <Route path="financial" element={<FinancialPage />} />
+                <Route path="engine" element={<AnalyticalEnginePage />} />
+                <Route path="motor" element={<MotorAnaliticoPage />} />
+                <Route path="ai" element={<AISpecialistsPage />} />
+                <Route path="aiconfig" element={<AIAdvancedConfigPage />} />
+                <Route path="chat" element={<AIChatPage />} />
+                <Route path="gates" element={<GateConfigPage />} />
+                <Route path="api" element={<ApiConfigPage />} />
+                <Route path="install" element={<InstallPage />} />
+                <Route path="settings" element={<SettingsPage />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </ThemeProvider>
     </AuthProvider>
   </QueryClientProvider>
 );

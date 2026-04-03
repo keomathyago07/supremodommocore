@@ -4,9 +4,10 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
-  Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign, Cog
+  Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign, Cog, BarChart3
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { InstallButton } from '@/components/InstallButton';
 
 const menuItems = [
   { id: 'dashboard', label: 'Painel Principal', icon: LayoutDashboard, path: '/dashboard' },
@@ -17,7 +18,8 @@ const menuItems = [
   { id: 'history', label: 'Histórico de Gates', icon: History, path: '/dashboard/history' },
   { id: 'results', label: 'Resultados', icon: Trophy, path: '/dashboard/results' },
   { id: 'financial', label: 'Financeiro', icon: DollarSign, path: '/dashboard/financial' },
-  { id: 'engine', label: 'Motor Analítico', icon: Cog, path: '/dashboard/engine' },
+  { id: 'engine', label: 'Motor Analítico v9', icon: Cog, path: '/dashboard/engine' },
+  { id: 'motor', label: 'Motor Analítico IA', icon: BarChart3, path: '/dashboard/motor' },
   { id: 'ai', label: 'IAs Especialistas', icon: Bot, path: '/dashboard/ai' },
   { id: 'aiconfig', label: 'Config. Avançada IA', icon: Cpu, path: '/dashboard/aiconfig' },
   { id: 'chat', label: 'Chat Assistente', icon: MessageSquare, path: '/dashboard/chat' },
@@ -75,6 +77,13 @@ const DashboardSidebar = () => {
             </button>
           );
         })}
+
+        {/* Install Button integrado na sidebar */}
+        {!collapsed && (
+          <div className="mt-2">
+            <InstallButton variant="minimal" />
+          </div>
+        )}
       </nav>
 
       <div className="p-2 border-t border-sidebar-border space-y-1">

@@ -5,6 +5,7 @@ import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, 
 import { toast } from 'sonner';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { THEME_PRESETS, applyTheme, loadSavedTheme, saveTheme, saveWallpaper, loadSavedWallpaper, removeWallpaper, applyWallpaper } from '@/lib/themePresets';
+import { ThemePanel } from '@/components/ThemeSystem';
 
 const SettingsPage = () => {
   const { user } = useAuth();
@@ -106,21 +107,62 @@ const SettingsPage = () => {
     <div className="p-6 space-y-6 max-w-3xl">
       <h1 className="text-2xl font-display font-bold">Configurações</h1>
 
-      {/* Theme Customization */}
+      {/* Theme System Ultra Avançado com IA */}
+      <div className="glass rounded-xl border border-primary/20 overflow-hidden">
+        <ThemePanel />
+      </div>
+
+      {/* Wallpaper Upload */}
       <div className="glass rounded-xl p-6 space-y-4 border border-primary/20">
         <div className="flex items-center gap-3">
-          <Palette className="w-5 h-5 text-primary" />
-          <h2 className="font-display font-semibold">🎨 Temas de Customização</h2>
+          <Image className="w-5 h-5 text-primary" />
+          <h2 className="font-display font-semibold text-sm">🖼️ Papel de Parede Personalizado</h2>
         </div>
-        <p className="text-xs text-muted-foreground">Escolha um tema visual. As imagens do sistema permanecem fixas.</p>
+        <p className="text-xs text-muted-foreground">Faça upload de uma imagem para usar como fundo do programa. Máximo 5MB. As imagens fixas do sistema permanecem.</p>
+        <div className="flex items-center gap-3">
+          <input
+            ref={wallpaperInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleWallpaperUpload}
+            className="hidden"
+          />
+          <button
+            onClick={() => wallpaperInputRef.current?.click()}
+            className="flex items-center gap-2 gradient-primary text-primary-foreground font-display font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-all text-sm"
+          >
+            <Image className="w-4 h-4" />
+            Escolher Imagem
+          </button>
+          {hasWallpaper && (
+            <button
+              onClick={handleRemoveWallpaper}
+              className="flex items-center gap-2 bg-destructive/20 text-destructive font-display font-semibold px-4 py-2 rounded-lg hover:bg-destructive/30 transition-all text-sm"
+            >
+              <Trash2 className="w-4 h-4" />
+              Remover Wallpaper
+            </button>
+          )}
+        </div>
+        {hasWallpaper && (
+          <p className="text-xs text-green-400 mt-2">✅ Papel de parede ativo. A imagem é mantida ao trocar temas.</p>
+        )}
+      </div>
+
+      {/* Old theme presets kept for backward compat */}
+      <div className="glass rounded-xl p-6 space-y-4 border border-border/20">
+        <div className="flex items-center gap-3">
+          <Palette className="w-5 h-5 text-primary" />
+          <h2 className="font-display font-semibold">Presets de Cores Clássicos</h2>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {THEME_PRESETS.map(theme => (
             <button
               key={theme.id}
               onClick={() => handleThemeChange(theme.id)}
               className={`text-left rounded-xl p-4 border-2 transition-all ${
-                activeTheme === theme.id 
-                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30' 
+                activeTheme === theme.id
+                  ? 'border-primary bg-primary/10 ring-2 ring-primary/30'
                   : 'border-border hover:border-primary/40 bg-muted/20'
               }`}
             >
@@ -138,43 +180,6 @@ const SettingsPage = () => {
               </div>
             </button>
           ))}
-        </div>
-
-        {/* Wallpaper Upload */}
-        <div className="mt-4 pt-4 border-t border-border/30">
-          <div className="flex items-center gap-3 mb-3">
-            <Image className="w-5 h-5 text-secondary" />
-            <h3 className="font-display font-semibold text-sm">🖼️ Papel de Parede Personalizado</h3>
-          </div>
-          <p className="text-xs text-muted-foreground mb-3">Faça upload de uma imagem para usar como fundo do programa. Máximo 5MB.</p>
-          <div className="flex items-center gap-3">
-            <input
-              ref={wallpaperInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleWallpaperUpload}
-              className="hidden"
-            />
-            <button
-              onClick={() => wallpaperInputRef.current?.click()}
-              className="flex items-center gap-2 gradient-primary text-primary-foreground font-display font-semibold px-4 py-2 rounded-lg hover:opacity-90 transition-all text-sm"
-            >
-              <Image className="w-4 h-4" />
-              Escolher Imagem
-            </button>
-            {hasWallpaper && (
-              <button
-                onClick={handleRemoveWallpaper}
-                className="flex items-center gap-2 bg-destructive/20 text-destructive font-display font-semibold px-4 py-2 rounded-lg hover:bg-destructive/30 transition-all text-sm"
-              >
-                <Trash2 className="w-4 h-4" />
-                Remover Wallpaper
-              </button>
-            )}
-          </div>
-          {hasWallpaper && (
-            <p className="text-xs text-success mt-2">✅ Papel de parede ativo. A imagem é mantida ao trocar temas.</p>
-          )}
         </div>
       </div>
       <div className="glass rounded-xl p-6 space-y-4">
