@@ -5,6 +5,7 @@ import { Settings, User, Bell, Monitor, Smartphone, Lock, Save, Loader2, Clock, 
 import { toast } from 'sonner';
 import { useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { THEME_PRESETS, applyTheme, loadSavedTheme, saveTheme, saveWallpaper, loadSavedWallpaper, removeWallpaper, applyWallpaper } from '@/lib/themePresets';
+import { ThemePanel } from '@/components/ThemeSystem';
 
 const SettingsPage = () => {
   const { user } = useAuth();
