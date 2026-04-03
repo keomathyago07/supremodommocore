@@ -17,32 +17,65 @@ export default defineConfig(({ mode }) => ({
     mode === "development" && componentTagger(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico", "robots.txt"],
+      devOptions: {
+        enabled: false,
+      },
+      includeAssets: ["favicon.ico", "robots.txt", "sw-advanced.js"],
       workbox: {
         navigateFallbackDenylist: [/^\/~oauth/],
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
-      },
-      manifest: {
-        name: "DommoSupremo — O Terror das Loterias",
-        short_name: "DommoSupremo",
-        description: "Sistema Avançado de Inteligência para Loterias — 155+ IAs",
-        start_url: "/",
-        display: "standalone",
-        background_color: "#0d1117",
-        theme_color: "#00bfff",
-        orientation: "any",
-        icons: [
-          { src: "/favicon.ico", sizes: "64x64", type: "image/x-icon" },
-          { src: "/pwa-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/pwa-512.png", sizes: "512x512", type: "image/png" },
-          { src: "/pwa-512.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api',
+              expiration: { maxEntries: 100, maxAgeSeconds: 30 * 60 },
+              networkTimeoutSeconds: 10,
+            },
+          },
+          {
+            urlPattern: /^https:\/\/serviceodds\.com\.br\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'resultados-api',
+              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
+              networkTimeoutSeconds: 8,
+            },
+          },
+          {
+            urlPattern: /\.(?:png|jpg|jpeg|svg|gif|webp|ico)$/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'images',
+              expiration: { maxEntries: 200, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
         ],
+        navigateFallback: 'index.html',
+        skipWaiting: true,
+        clientsClaim: true,
       },
+      manifest: false,
     }),
   ].filter(Boolean),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  build: {
+    sourcemap: mode === 'development',
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom', 'react-router-dom'],
+          charts: ['recharts'],
+          supabase: ['@supabase/supabase-js'],
+        },
+      },
+    },
+    minify: 'esbuild',
+    target: 'esnext',
   },
 }));

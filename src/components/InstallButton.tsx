@@ -56,7 +56,7 @@ export function InstallButton({ variant = 'sidebar', className = '' }: InstallBu
   }, []);
 
   const handleInstall = async () => {
-    if (platform === 'ios') {
+    if (platform === 'ios' as Platform) {
       setShowInstructions(true);
       return;
     }
