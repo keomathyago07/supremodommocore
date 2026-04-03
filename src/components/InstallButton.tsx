@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Smartphone, Monitor, CheckCircle, Info, X, Wifi, WifiOff, Battery } from 'lucide-react';
+import type { Platform } from '@/hooks/usePWAInstall';
 import { usePWAInstall } from '@/hooks/usePWAInstall';
 import {
   Dialog,
