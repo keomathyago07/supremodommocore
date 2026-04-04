@@ -175,7 +175,7 @@ export function useVerificacaoSorteios() {
     if (error || !apostas || apostas.length === 0) return;
 
     for (const aposta of apostas) {
-      await verificarAposta(aposta as ApostaConfirmada, qc);
+      await verificarAposta(aposta as unknown as ApostaConfirmada, qc);
       await new Promise((r) => setTimeout(r, 2000));
     }
   }, [eHorarioSorteio, qc]);
