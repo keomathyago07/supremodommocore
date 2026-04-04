@@ -4,22 +4,28 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
-  Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign, Cog, BarChart3
+  Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign, Cog, BarChart3,
+  Sparkles, FileCheck, Wallet, Sliders
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InstallButton } from '@/components/InstallButton';
 
 const menuItems = [
   { id: 'dashboard', label: 'Painel Principal', icon: LayoutDashboard, path: '/dashboard' },
+  { id: 'dashboard-ia', label: 'Dashboard IA', icon: Sparkles, path: '/dashboard/dashboard-ia' },
   { id: 'evolution', label: 'Neural Evolution', icon: Activity, path: '/dashboard/evolution' },
   { id: 'livepanel', label: 'Painel Neural Live', icon: Eye, path: '/dashboard/livepanel' },
   { id: 'analysis', label: 'Análise de Loterias', icon: Brain, path: '/dashboard/analysis' },
-  { id: 'bets', label: 'Minhas Apostas', icon: Ticket, path: '/dashboard/bets' },
-  { id: 'history', label: 'Histórico de Gates', icon: History, path: '/dashboard/history' },
+  { id: 'minha-aposta', label: 'Minha Aposta', icon: Ticket, path: '/dashboard/minha-aposta' },
+  { id: 'bets', label: 'Apostas (Legacy)', icon: Ticket, path: '/dashboard/bets' },
+  { id: 'historico-gates', label: 'Histórico Gates IA', icon: FileCheck, path: '/dashboard/historico-gates' },
+  { id: 'history', label: 'Histórico Gates', icon: History, path: '/dashboard/history' },
   { id: 'results', label: 'Resultados', icon: Trophy, path: '/dashboard/results' },
+  { id: 'financeiro', label: 'Financeiro IA', icon: Wallet, path: '/dashboard/financeiro' },
   { id: 'financial', label: 'Financeiro', icon: DollarSign, path: '/dashboard/financial' },
   { id: 'engine', label: 'Motor Analítico v9', icon: Cog, path: '/dashboard/engine' },
   { id: 'motor', label: 'Motor Analítico IA', icon: BarChart3, path: '/dashboard/motor' },
+  { id: 'config-ia', label: 'Config. IA Loterias', icon: Sliders, path: '/dashboard/config-ia' },
   { id: 'ai', label: 'IAs Especialistas', icon: Bot, path: '/dashboard/ai' },
   { id: 'aiconfig', label: 'Config. Avançada IA', icon: Cpu, path: '/dashboard/aiconfig' },
   { id: 'chat', label: 'Chat Assistente', icon: MessageSquare, path: '/dashboard/chat' },
@@ -78,7 +84,6 @@ const DashboardSidebar = () => {
           );
         })}
 
-        {/* Install Button integrado na sidebar */}
         {!collapsed && (
           <div className="mt-2">
             <InstallButton variant="minimal" />
