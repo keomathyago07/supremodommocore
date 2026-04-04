@@ -67,7 +67,7 @@ function useHistorico(loteria: string, status: StatusVerificacao) {
       if (status !== "todos") q = q.eq("status_verificacao", status);
       const { data, error } = await q;
       if (error) throw error;
-      return (data ?? []) as ApostaHistorico[];
+      return (data ?? []) as unknown as ApostaHistorico[];
     },
     refetchInterval: 60_000,
   });

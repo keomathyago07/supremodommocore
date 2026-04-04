@@ -48,7 +48,7 @@ function useResumoLoterias() {
     queryFn: async () => {
       const { data, error } = await supabase.from("vw_financeiro_resumo" as any).select("*");
       if (error) throw error;
-      return (data ?? []) as ResumoLoteria[];
+      return (data ?? []) as unknown as ResumoLoteria[];
     },
   });
 }

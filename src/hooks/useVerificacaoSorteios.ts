@@ -202,7 +202,7 @@ export async function verificarAgoraManual(
 
   toast.info(`Verificando ${apostas.length} aposta(s)...`);
   for (const aposta of apostas) {
-    await verificarAposta(aposta as ApostaConfirmada, qc);
+    await verificarAposta(aposta as unknown as ApostaConfirmada, qc);
     await new Promise((r) => setTimeout(r, 2000));
   }
 }
