@@ -25,6 +25,12 @@ import AnalyticalEnginePage from "./pages/AnalyticalEnginePage";
 import MotorAnaliticoPage from "./pages/MotorAnaliticoPage";
 import InstallPage from "./pages/InstallPage";
 import NotFound from "./pages/NotFound";
+// New v10 pages
+import MinhaApostaPage from "./pages/MinhaApostaPage";
+import HistoricoGatesPage from "./pages/HistoricoGatesPage";
+import FinanceiroPage from "./pages/FinanceiroPage";
+import DashboardIAPage from "./pages/DashboardIAPage";
+import ConfiguracaoIAPage from "./pages/ConfiguracaoIAPage";
 
 const queryClient = new QueryClient();
 
@@ -62,9 +68,14 @@ const App = () => (
                 <Route path="livepanel" element={<AILiveDashboardPage />} />
                 <Route path="analysis" element={<AnalysisPage />} />
                 <Route path="bets" element={<BetsPage />} />
+                <Route path="minha-aposta" element={<MinhaApostaPage />} />
                 <Route path="history" element={<GateHistoryPage />} />
+                <Route path="historico-gates" element={<HistoricoGatesPage />} />
                 <Route path="results" element={<ResultsPage />} />
                 <Route path="financial" element={<FinancialPage />} />
+                <Route path="financeiro" element={<FinanceiroPage />} />
+                <Route path="dashboard-ia" element={<DashboardIAPage />} />
+                <Route path="config-ia" element={<ConfiguracaoIAPage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
