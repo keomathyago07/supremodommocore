@@ -36,7 +36,7 @@ function usePremios() {
     queryFn: async () => {
       const { data, error } = await supabase.from("financeiro_premiacoes" as any).select("*").order("data_lancamento", { ascending: false });
       if (error) throw error;
-      return (data ?? []) as Premio[];
+      return (data ?? []) as unknown as Premio[];
     },
     refetchInterval: 60_000,
   });
