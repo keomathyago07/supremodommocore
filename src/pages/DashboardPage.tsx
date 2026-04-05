@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { AutoAnalysisProvider, useAutoAnalysis } from '@/hooks/useAutoAnalysis';
+import { useAgendadorIA } from '@/hooks/useGerarJogo';
 
 const DashboardLayout = () => {
   const auto = useAutoAnalysis();
