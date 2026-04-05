@@ -2,10 +2,12 @@ import { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { AutoAnalysisProvider, useAutoAnalysis } from '@/hooks/useAutoAnalysis';
+import { useAgendadorIA } from '@/hooks/useGerarJogo';
 
 const DashboardLayout = () => {
   const auto = useAutoAnalysis();
   const navigate = useNavigate();
+  useAgendadorIA('19:30');
 
   useEffect(() => {
     auto.onGateFound.current = () => {

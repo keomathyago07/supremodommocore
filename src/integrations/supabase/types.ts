@@ -504,7 +504,17 @@ export type Database = {
       }
     }
     Functions: {
-      [_ in never]: never
+      confirmar_aposta_ia: { Args: { p_aposta_id: string }; Returns: boolean }
+      inserir_aposta_ia: {
+        Args: {
+          p_criterios?: Json
+          p_dominancia?: number
+          p_loteria: string
+          p_numeros: number[]
+          p_precisao?: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
