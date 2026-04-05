@@ -7,6 +7,7 @@ import { useAgendadorIA } from '@/hooks/useGerarJogo';
 const DashboardLayout = () => {
   const auto = useAutoAnalysis();
   const navigate = useNavigate();
+  useAgendadorIA('19:30');
 
   useEffect(() => {
     auto.onGateFound.current = () => {
