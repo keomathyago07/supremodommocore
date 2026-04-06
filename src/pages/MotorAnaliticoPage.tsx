@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useGerarJogo } from '@/hooks/useGerarJogo';
-import { LOTERIAS_CONFIG } from '@/hooks/useIAGerador';
+import { useGerarJogo, CONFIG_LOTERIAS, type LoteriaNome } from '@/hooks/useGerarJogo';
 
-type Loteria = string;
+const LOTERIAS_CONFIG = CONFIG_LOTERIAS;
+type Loteria = LoteriaNome;
 
 interface NumeroAnalise {
   numero: number;
