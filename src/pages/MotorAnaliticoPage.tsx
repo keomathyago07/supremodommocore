@@ -154,7 +154,7 @@ const MotorAnaliticoPage = () => {
       const score = Math.max(30, Math.min(95, 50 + (qtdQuentes / numerosAnalise.length) * 30 + Math.min(padroes.length * 5, 20)));
 
       const resultado: AnaliseCompleta = {
-        loteria: loteriaSelecionada,
+        loteria: loteriaSelecionada as LoteriaNome,
         concursoReferencia: (hist?.[0] as any)?.concurso ?? Date.now(),
         numeros: numerosAnalise,
         padroesDetectados: padroes,
