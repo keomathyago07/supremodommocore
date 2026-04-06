@@ -9,10 +9,10 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
-import { useGerarJogo } from '@/hooks/useGerarJogo';
-import { LOTERIAS_CONFIG } from '@/hooks/useIAGerador';
+import { useGerarJogo, CONFIG_LOTERIAS, type LoteriaNome } from '@/hooks/useGerarJogo';
 
-type Loteria = string;
+const LOTERIAS_CONFIG = CONFIG_LOTERIAS;
+type Loteria = LoteriaNome;
 
 interface NumeroAnalise {
   numero: number;
@@ -154,7 +154,7 @@ const MotorAnaliticoPage = () => {
       const score = Math.max(30, Math.min(95, 50 + (qtdQuentes / numerosAnalise.length) * 30 + Math.min(padroes.length * 5, 20)));
 
       const resultado: AnaliseCompleta = {
-        loteria: loteriaSelecionada,
+        loteria: loteriaSelecionada as LoteriaNome,
         concursoReferencia: (hist?.[0] as any)?.concurso ?? Date.now(),
         numeros: numerosAnalise,
         padroesDetectados: padroes,
@@ -171,7 +171,7 @@ const MotorAnaliticoPage = () => {
   }, [loteriaSelecionada, cfg]);
 
   const handleGerarJogo = useCallback(async () => {
-    await gerarJogo(loteriaSelecionada);
+    await gerarJogo(loteriaSelecionada as LoteriaNome);
   }, [gerarJogo, loteriaSelecionada]);
 
   return (

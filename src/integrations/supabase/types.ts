@@ -83,6 +83,7 @@ export type Database = {
       apostas_confirmadas: {
         Row: {
           aposta_pendente_id: string | null
+          colunas_supersete: Json | null
           concurso: number | null
           concurso_verificado: number | null
           created_at: string | null
@@ -94,19 +95,26 @@ export type Database = {
           horario_confirmacao: string
           id: string
           loteria: string
+          mes_da_sorte: string | null
           numeros: number[]
+          numeros_invertido: number[] | null
           numeros_sorteados: number[] | null
           pontos_acertados: number | null
           precisao: number
           qtd_numeros_esperada: number
           range_max: number
           range_min: number
+          score_qualidade: number | null
           status_verificacao: string
+          time_timemania: string | null
+          tipo_jogo: string | null
+          trevos_maismilionaria: number[] | null
           user_id: string
           valor_premio: number | null
         }
         Insert: {
           aposta_pendente_id?: string | null
+          colunas_supersete?: Json | null
           concurso?: number | null
           concurso_verificado?: number | null
           created_at?: string | null
@@ -118,19 +126,26 @@ export type Database = {
           horario_confirmacao?: string
           id?: string
           loteria: string
+          mes_da_sorte?: string | null
           numeros: number[]
+          numeros_invertido?: number[] | null
           numeros_sorteados?: number[] | null
           pontos_acertados?: number | null
           precisao?: number
           qtd_numeros_esperada?: number
           range_max?: number
           range_min?: number
+          score_qualidade?: number | null
           status_verificacao?: string
+          time_timemania?: string | null
+          tipo_jogo?: string | null
+          trevos_maismilionaria?: number[] | null
           user_id: string
           valor_premio?: number | null
         }
         Update: {
           aposta_pendente_id?: string | null
+          colunas_supersete?: Json | null
           concurso?: number | null
           concurso_verificado?: number | null
           created_at?: string | null
@@ -142,14 +157,20 @@ export type Database = {
           horario_confirmacao?: string
           id?: string
           loteria?: string
+          mes_da_sorte?: string | null
           numeros?: number[]
+          numeros_invertido?: number[] | null
           numeros_sorteados?: number[] | null
           pontos_acertados?: number | null
           precisao?: number
           qtd_numeros_esperada?: number
           range_max?: number
           range_min?: number
+          score_qualidade?: number | null
           status_verificacao?: string
+          time_timemania?: string | null
+          tipo_jogo?: string | null
+          trevos_maismilionaria?: number[] | null
           user_id?: string
           valor_premio?: number | null
         }
@@ -165,6 +186,7 @@ export type Database = {
       }
       apostas_pendentes: {
         Row: {
+          colunas_supersete: Json | null
           concurso: number | null
           created_at: string | null
           criterios_atendidos: Json | null
@@ -172,12 +194,19 @@ export type Database = {
           horario_envio: string
           id: string
           loteria: string
+          mes_da_sorte: string | null
           numeros: number[]
+          numeros_invertido: number[] | null
           precisao: number
+          score_qualidade: number | null
           status: string
+          time_timemania: string | null
+          tipo_jogo: string | null
+          trevos_maismilionaria: number[] | null
           user_id: string
         }
         Insert: {
+          colunas_supersete?: Json | null
           concurso?: number | null
           created_at?: string | null
           criterios_atendidos?: Json | null
@@ -185,12 +214,19 @@ export type Database = {
           horario_envio?: string
           id?: string
           loteria: string
+          mes_da_sorte?: string | null
           numeros: number[]
+          numeros_invertido?: number[] | null
           precisao?: number
+          score_qualidade?: number | null
           status?: string
+          time_timemania?: string | null
+          tipo_jogo?: string | null
+          trevos_maismilionaria?: number[] | null
           user_id: string
         }
         Update: {
+          colunas_supersete?: Json | null
           concurso?: number | null
           created_at?: string | null
           criterios_atendidos?: Json | null
@@ -198,9 +234,15 @@ export type Database = {
           horario_envio?: string
           id?: string
           loteria?: string
+          mes_da_sorte?: string | null
           numeros?: number[]
+          numeros_invertido?: number[] | null
           precisao?: number
+          score_qualidade?: number | null
           status?: string
+          time_timemania?: string | null
+          tipo_jogo?: string | null
+          trevos_maismilionaria?: number[] | null
           user_id?: string
         }
         Relationships: []
@@ -474,6 +516,113 @@ export type Database = {
         }
         Relationships: []
       }
+      verificacoes_sorteio: {
+        Row: {
+          acertos_s1: number
+          acertos_s2: number | null
+          acertos_total: number
+          aposta_id: string | null
+          concurso: number
+          data_sorteio: string
+          dentro_padrao: boolean | null
+          faixa_s1: string | null
+          faixa_s2: string | null
+          hora_sorteio: string | null
+          id: string
+          lancado_financeiro: boolean | null
+          loteria: string
+          mes_acertou: boolean | null
+          mes_sorte: string | null
+          numeros_apostados: number[]
+          numeros_apostados2: number[] | null
+          numeros_sorteados: number[]
+          numeros_sorteio2: number[] | null
+          premiado: boolean | null
+          raw_api: Json | null
+          time_acertou: boolean | null
+          time_coracao: string | null
+          trevos_acertados: number | null
+          trevos_sorteados: number[] | null
+          user_id: string
+          valor_s1: number | null
+          valor_s2: number | null
+          valor_total: number | null
+          verificado_em: string | null
+        }
+        Insert: {
+          acertos_s1?: number
+          acertos_s2?: number | null
+          acertos_total?: number
+          aposta_id?: string | null
+          concurso: number
+          data_sorteio: string
+          dentro_padrao?: boolean | null
+          faixa_s1?: string | null
+          faixa_s2?: string | null
+          hora_sorteio?: string | null
+          id?: string
+          lancado_financeiro?: boolean | null
+          loteria: string
+          mes_acertou?: boolean | null
+          mes_sorte?: string | null
+          numeros_apostados?: number[]
+          numeros_apostados2?: number[] | null
+          numeros_sorteados?: number[]
+          numeros_sorteio2?: number[] | null
+          premiado?: boolean | null
+          raw_api?: Json | null
+          time_acertou?: boolean | null
+          time_coracao?: string | null
+          trevos_acertados?: number | null
+          trevos_sorteados?: number[] | null
+          user_id: string
+          valor_s1?: number | null
+          valor_s2?: number | null
+          valor_total?: number | null
+          verificado_em?: string | null
+        }
+        Update: {
+          acertos_s1?: number
+          acertos_s2?: number | null
+          acertos_total?: number
+          aposta_id?: string | null
+          concurso?: number
+          data_sorteio?: string
+          dentro_padrao?: boolean | null
+          faixa_s1?: string | null
+          faixa_s2?: string | null
+          hora_sorteio?: string | null
+          id?: string
+          lancado_financeiro?: boolean | null
+          loteria?: string
+          mes_acertou?: boolean | null
+          mes_sorte?: string | null
+          numeros_apostados?: number[]
+          numeros_apostados2?: number[] | null
+          numeros_sorteados?: number[]
+          numeros_sorteio2?: number[] | null
+          premiado?: boolean | null
+          raw_api?: Json | null
+          time_acertou?: boolean | null
+          time_coracao?: string | null
+          trevos_acertados?: number | null
+          trevos_sorteados?: number[] | null
+          user_id?: string
+          valor_s1?: number | null
+          valor_s2?: number | null
+          valor_total?: number | null
+          verificado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verificacoes_sorteio_aposta_id_fkey"
+            columns: ["aposta_id"]
+            isOneToOne: false
+            referencedRelation: "apostas_confirmadas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       vw_dashboard_loterias: {
@@ -505,16 +654,34 @@ export type Database = {
     }
     Functions: {
       confirmar_aposta_ia: { Args: { p_aposta_id: string }; Returns: boolean }
-      inserir_aposta_ia: {
-        Args: {
-          p_criterios?: Json
-          p_dominancia?: number
-          p_loteria: string
-          p_numeros: number[]
-          p_precisao?: number
-        }
-        Returns: string
-      }
+      inserir_aposta_ia:
+        | {
+            Args: {
+              p_criterios?: Json
+              p_dominancia?: number
+              p_loteria: string
+              p_numeros: number[]
+              p_precisao?: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_colunas_supersete?: Json
+              p_criterios?: Json
+              p_dominancia?: number
+              p_loteria: string
+              p_mes_da_sorte?: string
+              p_numeros: number[]
+              p_numeros_invertido?: number[]
+              p_precisao?: number
+              p_score_qualidade?: number
+              p_time_timemania?: string
+              p_tipo_jogo?: string
+              p_trevos?: number[]
+            }
+            Returns: string
+          }
     }
     Enums: {
       [_ in never]: never
