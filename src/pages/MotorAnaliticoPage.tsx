@@ -171,7 +171,7 @@ const MotorAnaliticoPage = () => {
   }, [loteriaSelecionada, cfg]);
 
   const handleGerarJogo = useCallback(async () => {
-    await gerarJogo(loteriaSelecionada);
+    await gerarJogo(loteriaSelecionada as LoteriaNome);
   }, [gerarJogo, loteriaSelecionada]);
 
   return (
