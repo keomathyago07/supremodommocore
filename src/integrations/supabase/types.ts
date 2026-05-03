@@ -47,6 +47,63 @@ export type Database = {
         }
         Relationships: []
       }
+      alertas_atraso: {
+        Row: {
+          atraso: number
+          concurso_referencia: number | null
+          criado_em: string
+          hash: string
+          id: string
+          loteria: string
+          notificado: boolean
+          numero: number
+          user_id: string
+        }
+        Insert: {
+          atraso: number
+          concurso_referencia?: number | null
+          criado_em?: string
+          hash: string
+          id?: string
+          loteria: string
+          notificado?: boolean
+          numero: number
+          user_id: string
+        }
+        Update: {
+          atraso?: number
+          concurso_referencia?: number | null
+          criado_em?: string
+          hash?: string
+          id?: string
+          loteria?: string
+          notificado?: boolean
+          numero?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
+      alertas_dedupe: {
+        Row: {
+          criado_em: string
+          hash: string
+          loteria: string
+          tipo: string
+        }
+        Insert: {
+          criado_em?: string
+          hash: string
+          loteria: string
+          tipo?: string
+        }
+        Update: {
+          criado_em?: string
+          hash?: string
+          loteria?: string
+          tipo?: string
+        }
+        Relationships: []
+      }
       api_tokens: {
         Row: {
           created_at: string
@@ -397,6 +454,39 @@ export type Database = {
         }
         Relationships: []
       }
+      engine_config_supremo: {
+        Row: {
+          loteria: string
+          peso_lstm: number
+          peso_mcmc: number
+          peso_stacking: number
+          timeout_lstm_ms: number
+          timeout_mcmc_ms: number
+          timeout_stacking_ms: number
+          updated_at: string
+        }
+        Insert: {
+          loteria: string
+          peso_lstm?: number
+          peso_mcmc?: number
+          peso_stacking?: number
+          timeout_lstm_ms?: number
+          timeout_mcmc_ms?: number
+          timeout_stacking_ms?: number
+          updated_at?: string
+        }
+        Update: {
+          loteria?: string
+          peso_lstm?: number
+          peso_mcmc?: number
+          peso_stacking?: number
+          timeout_lstm_ms?: number
+          timeout_mcmc_ms?: number
+          timeout_stacking_ms?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       financeiro_premiacoes: {
         Row: {
           acertos: number
@@ -522,6 +612,33 @@ export type Database = {
           lottery?: string
           numbers?: number[]
           user_id?: string
+        }
+        Relationships: []
+      }
+      loterias_calendario: {
+        Row: {
+          dias_semana: number[]
+          hora_sorteio: string
+          loteria: string
+          qtd_dezenas_total: number
+          threshold_atraso: number
+          updated_at: string
+        }
+        Insert: {
+          dias_semana: number[]
+          hora_sorteio?: string
+          loteria: string
+          qtd_dezenas_total?: number
+          threshold_atraso?: number
+          updated_at?: string
+        }
+        Update: {
+          dias_semana?: number[]
+          hora_sorteio?: string
+          loteria?: string
+          qtd_dezenas_total?: number
+          threshold_atraso?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -865,6 +982,8 @@ export type Database = {
             }
             Returns: string
           }
+      limpar_dedupe_expirado: { Args: never; Returns: number }
+      tem_sorteio_hoje: { Args: { p_loteria: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
