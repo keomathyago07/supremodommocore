@@ -31,6 +31,7 @@ import HistoricoGatesPage from "./pages/HistoricoGatesPage";
 import FinanceiroPage from "./pages/FinanceiroPage";
 import DashboardIAPage from "./pages/DashboardIAPage";
 import ConfiguracaoIAPage from "./pages/ConfiguracaoIAPage";
+import ScoreUltraPage from "./pages/ScoreUltraPage";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
                 <Route path="financeiro" element={<FinanceiroPage />} />
                 <Route path="dashboard-ia" element={<DashboardIAPage />} />
                 <Route path="config-ia" element={<ConfiguracaoIAPage />} />
+                <Route path="score-ultra" element={<ScoreUltraPage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
