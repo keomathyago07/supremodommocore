@@ -247,6 +247,45 @@ export type Database = {
         }
         Relationships: []
       }
+      backtesting_resultados: {
+        Row: {
+          criado_em: string | null
+          data_teste: string | null
+          detalhes: Json | null
+          id: string
+          loteria: string | null
+          media_acertos: number | null
+          modelo_versao: string | null
+          n_concursos_test: number | null
+          roi_estimado: number | null
+          taxa_premiacao: number | null
+        }
+        Insert: {
+          criado_em?: string | null
+          data_teste?: string | null
+          detalhes?: Json | null
+          id?: string
+          loteria?: string | null
+          media_acertos?: number | null
+          modelo_versao?: string | null
+          n_concursos_test?: number | null
+          roi_estimado?: number | null
+          taxa_premiacao?: number | null
+        }
+        Update: {
+          criado_em?: string | null
+          data_teste?: string | null
+          detalhes?: Json | null
+          id?: string
+          loteria?: string | null
+          media_acertos?: number | null
+          modelo_versao?: string | null
+          n_concursos_test?: number | null
+          roi_estimado?: number | null
+          taxa_premiacao?: number | null
+        }
+        Relationships: []
+      }
       bets: {
         Row: {
           checked_at: string | null
@@ -295,6 +334,66 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      ciclos_espectrais: {
+        Row: {
+          amplitude: number | null
+          atualizado: string | null
+          ciclo_medio: number | null
+          fase_atual: number | null
+          loteria: string
+          numero: number
+          prob_proximo: number | null
+        }
+        Insert: {
+          amplitude?: number | null
+          atualizado?: string | null
+          ciclo_medio?: number | null
+          fase_atual?: number | null
+          loteria: string
+          numero: number
+          prob_proximo?: number | null
+        }
+        Update: {
+          amplitude?: number | null
+          atualizado?: string | null
+          ciclo_medio?: number | null
+          fase_atual?: number | null
+          loteria?: string
+          numero?: number
+          prob_proximo?: number | null
+        }
+        Relationships: []
+      }
+      correlacoes_numeros: {
+        Row: {
+          atualizado: string | null
+          confianca: number | null
+          lift: number | null
+          loteria: string
+          num_a: number
+          num_b: number
+          suporte: number | null
+        }
+        Insert: {
+          atualizado?: string | null
+          confianca?: number | null
+          lift?: number | null
+          loteria: string
+          num_a: number
+          num_b: number
+          suporte?: number | null
+        }
+        Update: {
+          atualizado?: string | null
+          confianca?: number | null
+          lift?: number | null
+          loteria?: string
+          num_a?: number
+          num_b?: number
+          suporte?: number | null
         }
         Relationships: []
       }
@@ -426,6 +525,66 @@ export type Database = {
         }
         Relationships: []
       }
+      previsao_acumulo: {
+        Row: {
+          concurso_alvo: number
+          confianca: number | null
+          criado_em: string | null
+          estrategia: string | null
+          loteria: string
+          prob_acumulo: number | null
+          prob_ganhador: number | null
+        }
+        Insert: {
+          concurso_alvo: number
+          confianca?: number | null
+          criado_em?: string | null
+          estrategia?: string | null
+          loteria: string
+          prob_acumulo?: number | null
+          prob_ganhador?: number | null
+        }
+        Update: {
+          concurso_alvo?: number
+          confianca?: number | null
+          criado_em?: string | null
+          estrategia?: string | null
+          loteria?: string
+          prob_acumulo?: number | null
+          prob_ganhador?: number | null
+        }
+        Relationships: []
+      }
+      regimes_hmm: {
+        Row: {
+          concurso: number
+          detectado_em: string | null
+          loteria: string
+          numeros_scores: Json | null
+          probabilidade: number | null
+          regime_id: number
+          regime_nome: string | null
+        }
+        Insert: {
+          concurso: number
+          detectado_em?: string | null
+          loteria: string
+          numeros_scores?: Json | null
+          probabilidade?: number | null
+          regime_id: number
+          regime_nome?: string | null
+        }
+        Update: {
+          concurso?: number
+          detectado_em?: string | null
+          loteria?: string
+          numeros_scores?: Json | null
+          probabilidade?: number | null
+          regime_id?: number
+          regime_nome?: string | null
+        }
+        Relationships: []
+      }
       result_checks: {
         Row: {
           bet_numbers: number[]
@@ -513,6 +672,30 @@ export type Database = {
           loteria?: string
           raw_response?: Json | null
           valor_proximo?: number | null
+        }
+        Relationships: []
+      }
+      scores_ultra: {
+        Row: {
+          atualizado: string | null
+          componentes: Json | null
+          loteria: string
+          numero: number
+          score: number
+        }
+        Insert: {
+          atualizado?: string | null
+          componentes?: Json | null
+          loteria: string
+          numero: number
+          score?: number
+        }
+        Update: {
+          atualizado?: string | null
+          componentes?: Json | null
+          loteria?: string
+          numero?: number
+          score?: number
         }
         Relationships: []
       }
