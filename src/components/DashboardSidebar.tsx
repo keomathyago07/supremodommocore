@@ -5,7 +5,7 @@ import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
   Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign, Cog, BarChart3,
-  Sparkles, FileCheck, Wallet, Sliders
+  Sparkles, FileCheck, Wallet, Sliders, Atom
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InstallButton } from '@/components/InstallButton';
@@ -13,6 +13,7 @@ import { InstallButton } from '@/components/InstallButton';
 const menuItems = [
   { id: 'dashboard', label: 'Painel Principal', icon: LayoutDashboard, path: '/dashboard' },
   { id: 'dashboard-ia', label: 'Dashboard IA', icon: Sparkles, path: '/dashboard/dashboard-ia' },
+  { id: 'score-ultra', label: 'Score Ultra v17', icon: Atom, path: '/dashboard/score-ultra' },
   { id: 'evolution', label: 'Neural Evolution', icon: Activity, path: '/dashboard/evolution' },
   { id: 'livepanel', label: 'Painel Neural Live', icon: Eye, path: '/dashboard/livepanel' },
   { id: 'analysis', label: 'Análise de Loterias', icon: Brain, path: '/dashboard/analysis' },
