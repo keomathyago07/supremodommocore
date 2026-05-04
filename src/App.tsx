@@ -33,6 +33,7 @@ import DashboardIAPage from "./pages/DashboardIAPage";
 import ConfiguracaoIAPage from "./pages/ConfiguracaoIAPage";
 import ScoreUltraPage from "./pages/ScoreUltraPage";
 import AlertasAtrasoPage from "./pages/AlertasAtrasoPage";
+import ConferidorV23Page, { useAutoConferenciaV23 } from "./pages/ConferidorV23Page";
 
 const queryClient = new QueryClient();
 
