@@ -142,10 +142,12 @@ export type Database = {
           aposta_pendente_id: string | null
           colunas_supersete: Json | null
           concurso: number | null
+          concurso_invalido: boolean
           concurso_verificado: number | null
           created_at: string | null
           custo_aposta: number
           data_sorteio: string | null
+          data_sorteio_alvo: string | null
           descricao_faixa: string | null
           dominancia: number
           faixas_premio: Json | null
@@ -173,10 +175,12 @@ export type Database = {
           aposta_pendente_id?: string | null
           colunas_supersete?: Json | null
           concurso?: number | null
+          concurso_invalido?: boolean
           concurso_verificado?: number | null
           created_at?: string | null
           custo_aposta?: number
           data_sorteio?: string | null
+          data_sorteio_alvo?: string | null
           descricao_faixa?: string | null
           dominancia?: number
           faixas_premio?: Json | null
@@ -204,10 +208,12 @@ export type Database = {
           aposta_pendente_id?: string | null
           colunas_supersete?: Json | null
           concurso?: number | null
+          concurso_invalido?: boolean
           concurso_verificado?: number | null
           created_at?: string | null
           custo_aposta?: number
           data_sorteio?: string | null
+          data_sorteio_alvo?: string | null
           descricao_faixa?: string | null
           dominancia?: number
           faixas_premio?: Json | null
@@ -245,8 +251,10 @@ export type Database = {
         Row: {
           colunas_supersete: Json | null
           concurso: number | null
+          concurso_invalido: boolean
           created_at: string | null
           criterios_atendidos: Json | null
+          data_sorteio_alvo: string | null
           dominancia: number
           horario_envio: string
           id: string
@@ -265,8 +273,10 @@ export type Database = {
         Insert: {
           colunas_supersete?: Json | null
           concurso?: number | null
+          concurso_invalido?: boolean
           created_at?: string | null
           criterios_atendidos?: Json | null
+          data_sorteio_alvo?: string | null
           dominancia?: number
           horario_envio?: string
           id?: string
@@ -285,8 +295,10 @@ export type Database = {
         Update: {
           colunas_supersete?: Json | null
           concurso?: number | null
+          concurso_invalido?: boolean
           created_at?: string | null
           criterios_atendidos?: Json | null
+          data_sorteio_alvo?: string | null
           dominancia?: number
           horario_envio?: string
           id?: string
@@ -642,6 +654,48 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes: {
+        Row: {
+          corpo: string | null
+          criado_em: string
+          emoji: string | null
+          id: string
+          lido: boolean
+          loteria: string | null
+          loteria_nome: string | null
+          prioridade: string | null
+          tipo: string
+          titulo: string
+          user_id: string | null
+        }
+        Insert: {
+          corpo?: string | null
+          criado_em?: string
+          emoji?: string | null
+          id?: string
+          lido?: boolean
+          loteria?: string | null
+          loteria_nome?: string | null
+          prioridade?: string | null
+          tipo: string
+          titulo: string
+          user_id?: string | null
+        }
+        Update: {
+          corpo?: string | null
+          criado_em?: string
+          emoji?: string | null
+          id?: string
+          lido?: boolean
+          loteria?: string | null
+          loteria_nome?: string | null
+          prioridade?: string | null
+          tipo?: string
+          titulo?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       previsao_acumulo: {
         Row: {
           concurso_alvo: number
@@ -669,6 +723,27 @@ export type Database = {
           loteria?: string
           prob_acumulo?: number | null
           prob_ganhador?: number | null
+        }
+        Relationships: []
+      }
+      proximo_concurso: {
+        Row: {
+          atualizado_em: string
+          concurso_atual: number
+          data_proxima: string | null
+          loteria: string
+        }
+        Insert: {
+          atualizado_em?: string
+          concurso_atual: number
+          data_proxima?: string | null
+          loteria: string
+        }
+        Update: {
+          atualizado_em?: string
+          concurso_atual?: number
+          data_proxima?: string | null
+          loteria?: string
         }
         Relationships: []
       }
@@ -953,6 +1028,16 @@ export type Database = {
       }
     }
     Functions: {
+      conferir_pelo_dia: {
+        Args: { p_data?: string; p_loteria: string }
+        Returns: {
+          acumulado: boolean
+          concurso: number
+          data_sorteio: string
+          numeros: number[]
+          raw_response: Json
+        }[]
+      }
       confirmar_aposta_ia: { Args: { p_aposta_id: string }; Returns: boolean }
       inserir_aposta_ia:
         | {
