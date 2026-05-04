@@ -3,11 +3,15 @@ import { Outlet, useNavigate } from 'react-router-dom';
 import DashboardSidebar from '@/components/DashboardSidebar';
 import { AutoAnalysisProvider, useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { useAgendadorIA } from '@/hooks/useGerarJogo';
+import { usePollingResultados } from '@/hooks/usePollingResultados';
+import { useAutoConferenciaV23 } from '@/pages/ConferidorV23Page';
 
 const DashboardLayout = () => {
   const auto = useAutoAnalysis();
   const navigate = useNavigate();
   useAgendadorIA('19:30');
+  usePollingResultados();
+  useAutoConferenciaV23();
 
   useEffect(() => {
     auto.onGateFound.current = () => {
