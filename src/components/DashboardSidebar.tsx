@@ -15,6 +15,7 @@ const menuItems = [
   { id: 'dashboard-ia', label: 'Dashboard IA', icon: Sparkles, path: '/dashboard/dashboard-ia' },
   { id: 'score-ultra', label: 'Score Ultra v17', icon: Atom, path: '/dashboard/score-ultra' },
   { id: 'alertas', label: 'Alertas Críticos v18', icon: AlertTriangle, path: '/dashboard/alertas' },
+  { id: 'conferidor-v23', label: 'Conferidor v23 ⚡', icon: Trophy, path: '/dashboard/conferidor-v23' },
   { id: 'evolution', label: 'Neural Evolution', icon: Activity, path: '/dashboard/evolution' },
   { id: 'livepanel', label: 'Painel Neural Live', icon: Eye, path: '/dashboard/livepanel' },
   { id: 'analysis', label: 'Análise de Loterias', icon: Brain, path: '/dashboard/analysis' },
