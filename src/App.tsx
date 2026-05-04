@@ -81,6 +81,7 @@ const App = () => (
                 <Route path="config-ia" element={<ConfiguracaoIAPage />} />
                 <Route path="score-ultra" element={<ScoreUltraPage />} />
                 <Route path="alertas" element={<AlertasAtrasoPage />} />
+                <Route path="conferidor-v23" element={<ConferidorV23Page />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
