@@ -12,6 +12,7 @@ import { InstallButton } from '@/components/InstallButton';
 
 const menuItems = [
   { id: 'dashboard', label: 'Painel Principal', icon: LayoutDashboard, path: '/dashboard' },
+  { id: 'god-eye', label: '👁️ Olho de Deus IASV60+', icon: Eye, path: '/dashboard/god-eye' },
   { id: 'dashboard-ia', label: 'Dashboard IA', icon: Sparkles, path: '/dashboard/dashboard-ia' },
   { id: 'score-ultra', label: 'Score Ultra v17', icon: Atom, path: '/dashboard/score-ultra' },
   { id: 'alertas', label: 'Alertas Críticos v18', icon: AlertTriangle, path: '/dashboard/alertas' },

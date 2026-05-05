@@ -34,6 +34,7 @@ import ConfiguracaoIAPage from "./pages/ConfiguracaoIAPage";
 import ScoreUltraPage from "./pages/ScoreUltraPage";
 import AlertasAtrasoPage from "./pages/AlertasAtrasoPage";
 import ConferidorV23Page, { useAutoConferenciaV23 } from "./pages/ConferidorV23Page";
+import GodEyePage from "./pages/GodEyePage";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +83,7 @@ const App = () => (
                 <Route path="score-ultra" element={<ScoreUltraPage />} />
                 <Route path="alertas" element={<AlertasAtrasoPage />} />
                 <Route path="conferidor-v23" element={<ConferidorV23Page />} />
+                <Route path="god-eye" element={<GodEyePage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />

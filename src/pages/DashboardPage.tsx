@@ -5,6 +5,7 @@ import { AutoAnalysisProvider, useAutoAnalysis } from '@/hooks/useAutoAnalysis';
 import { useAgendadorIA } from '@/hooks/useGerarJogo';
 import { usePollingResultados } from '@/hooks/usePollingResultados';
 import { useAutoConferenciaV23 } from '@/pages/ConferidorV23Page';
+import { useGodCore } from '@/hooks/useGodCore';
 
 const DashboardLayout = () => {
   const auto = useAutoAnalysis();
@@ -12,6 +13,8 @@ const DashboardLayout = () => {
   useAgendadorIA('19:30');
   usePollingResultados();
   useAutoConferenciaV23();
+  // 👁️ IASV60+ GOD CORE — Olho de Deus ativo 24/7 (anti-trava real)
+  useGodCore(true, 5000);
 
   useEffect(() => {
     auto.onGateFound.current = () => {
