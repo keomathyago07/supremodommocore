@@ -282,41 +282,105 @@ async function conferirLoteria(
   let premiadas = 0;
   const detalhes_premiados: any[] = [];
 
+  // Para Dupla Sena, parsear segundo sorteio da resposta da API
+  const numeros_reais_2: number[] =
+    loteria === "duplasena"
+      ? (
+          res.raw_response?.dezenas_2 ??
+          res.raw_response?.dezenasSegundoSorteio ??
+          res.raw_response?.dezenas2 ??
+          []
+        ).map(Number)
+      : [];
+
   for (const aposta of lista_apostas) {
-    const acertados: number[] = aposta.numeros.filter((n: number) =>
+    // ─── Lotomania: confere PRINCIPAL + INVERTIDO (jogo duplo) ───
+    let acertados: number[] = aposta.numeros.filter((n: number) =>
       numeros_reais.includes(n),
     );
+    let acertados_invertido: number[] = [];
+    if (loteria === "lotomania" && Array.isArray(aposta.numeros_invertido)) {
+      acertados_invertido = (aposta.numeros_invertido as number[]).filter(
+        (n) => numeros_reais.includes(n),
+      );
+      // Pontuação considera o melhor dos dois jogos (principal ou invertido)
+      if (acertados_invertido.length > acertados.length) {
+        acertados = acertados_invertido;
+      }
+    }
     const n_acertos = acertados.length;
+
+    // ─── Dupla Sena: confere SORTEIO 1 e SORTEIO 2 ───
+    let acertados_s2: number[] = [];
+    let n_acertos_s2 = 0;
+    if (loteria === "duplasena" && numeros_reais_2.length) {
+      acertados_s2 = aposta.numeros.filter((n: number) =>
+        numeros_reais_2.includes(n),
+      );
+      n_acertos_s2 = acertados_s2.length;
+    }
+
     const loto_zero = loteria === "lotomania" && n_acertos === 0;
+    const melhor_acertos = Math.max(n_acertos, n_acertos_s2);
     const faixa_obj = (FAIXAS[loteria] ?? []).find(
-      (f) => f.n === n_acertos || (loto_zero && f.n === 0),
+      (f) => f.n === melhor_acertos || (loto_zero && f.n === 0),
     );
-    const premiada = n_acertos >= (LIMIARES[loteria] ?? 4) || loto_zero;
+    const premiada =
+      melhor_acertos >= (LIMIARES[loteria] ?? 4) || loto_zero;
 
     let valor_premio = 0;
+    let valor_premio_s2 = 0;
     if (faixa_obj && Array.isArray(premiacao_arr)) {
       const fapi = premiacao_arr.find((p: any) => {
         const desc = String(p.acertos ?? p.nome ?? p.descricao ?? "").toLowerCase();
         return (
-          desc.includes(`${n_acertos} acerto`) ||
+          desc.includes(`${melhor_acertos} acerto`) ||
           desc.includes(faixa_obj.nome.toLowerCase())
         );
       });
       valor_premio = Number(fapi?.valor_total ?? fapi?.valorPremio ?? 0);
+      // Dupla Sena: valor do segundo sorteio se ele for o premiado
+      if (loteria === "duplasena" && n_acertos_s2 >= (LIMIARES.duplasena ?? 3)) {
+        valor_premio_s2 = valor_premio;
+      }
     }
+    const valor_total = valor_premio + valor_premio_s2;
+    // Líquido com desconto fixo de 30% (IR/taxa)
+    const valor_liquido = Number((valor_total * 0.7).toFixed(2));
 
     if (premiada) {
       premiadas++;
       detalhes_premiados.push({
         user_id: aposta.user_id,
-        n_acertos,
+        n_acertos: melhor_acertos,
         faixa: faixa_obj?.nome,
         acertados,
-        valor_premio,
+        valor_premio: valor_total,
+        valor_liquido,
       });
+
+      // ─── LANÇAMENTO AUTOMÁTICO NO FINANCEIRO (apenas premiados) ───
+      try {
+        await supabase.from("financeiro_premiacoes").insert({
+          user_id: aposta.user_id,
+          aposta_confirmada_id: aposta.id,
+          loteria,
+          concurso: res.concurso,
+          numeros_apostados: aposta.numeros,
+          numeros_sorteados: numeros_reais,
+          acertos: melhor_acertos,
+          descricao_faixa: faixa_obj?.nome ?? null,
+          valor_bruto: valor_total,
+          valor_liquido,
+          status_pagamento: "a_receber",
+          observacoes: `Verificado automaticamente em ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" })}. Líquido = bruto - 30%.`,
+        });
+      } catch (e) {
+        console.warn(`[v23] financeiro insert falhou:`, e);
+      }
     }
 
-    // Persistir verificação detalhada
+    // Persistir verificação detalhada (com S1 e S2 da Dupla Sena / Lotomania)
     await supabase.from("verificacoes_sorteio").upsert(
       {
         aposta_id: aposta.id,
@@ -326,12 +390,17 @@ async function conferirLoteria(
         data_sorteio: res.data_sorteio,
         numeros_apostados: aposta.numeros,
         numeros_sorteados: numeros_reais,
+        numeros_apostados2: loteria === "lotomania" ? aposta.numeros_invertido ?? null : aposta.numeros,
+        numeros_sorteio2: numeros_reais_2,
         acertos_s1: n_acertos,
-        acertos_total: n_acertos,
+        acertos_s2: loteria === "duplasena" ? n_acertos_s2 : (loteria === "lotomania" ? acertados_invertido.length : 0),
+        acertos_total: melhor_acertos,
         faixa_s1: faixa_obj?.nome ?? null,
         valor_s1: valor_premio,
-        valor_total: valor_premio,
+        valor_s2: valor_premio_s2,
+        valor_total,
         premiado: premiada,
+        lancado_financeiro: premiada,
         verificado_em: new Date().toISOString(),
       },
       { onConflict: "aposta_id" } as any,
@@ -345,9 +414,9 @@ async function conferirLoteria(
         numeros_sorteados: numeros_reais,
         concurso_verificado: res.concurso,
         data_sorteio: res.data_sorteio,
-        pontos_acertados: n_acertos,
+        pontos_acertados: melhor_acertos,
         descricao_faixa: faixa_obj?.nome ?? null,
-        valor_premio,
+        valor_premio: valor_total,
       })
       .eq("id", aposta.id);
   }
