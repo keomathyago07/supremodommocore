@@ -282,16 +282,51 @@ async function conferirLoteria(
   let premiadas = 0;
   const detalhes_premiados: any[] = [];
 
+  // Para Dupla Sena, parsear segundo sorteio da resposta da API
+  const numeros_reais_2: number[] =
+    loteria === "duplasena"
+      ? (
+          res.raw_response?.dezenas_2 ??
+          res.raw_response?.dezenasSegundoSorteio ??
+          res.raw_response?.dezenas2 ??
+          []
+        ).map(Number)
+      : [];
+
   for (const aposta of lista_apostas) {
-    const acertados: number[] = aposta.numeros.filter((n: number) =>
+    // ─── Lotomania: confere PRINCIPAL + INVERTIDO (jogo duplo) ───
+    let acertados: number[] = aposta.numeros.filter((n: number) =>
       numeros_reais.includes(n),
     );
+    let acertados_invertido: number[] = [];
+    if (loteria === "lotomania" && Array.isArray(aposta.numeros_invertido)) {
+      acertados_invertido = (aposta.numeros_invertido as number[]).filter(
+        (n) => numeros_reais.includes(n),
+      );
+      // Pontuação considera o melhor dos dois jogos (principal ou invertido)
+      if (acertados_invertido.length > acertados.length) {
+        acertados = acertados_invertido;
+      }
+    }
     const n_acertos = acertados.length;
+
+    // ─── Dupla Sena: confere SORTEIO 1 e SORTEIO 2 ───
+    let acertados_s2: number[] = [];
+    let n_acertos_s2 = 0;
+    if (loteria === "duplasena" && numeros_reais_2.length) {
+      acertados_s2 = aposta.numeros.filter((n: number) =>
+        numeros_reais_2.includes(n),
+      );
+      n_acertos_s2 = acertados_s2.length;
+    }
+
     const loto_zero = loteria === "lotomania" && n_acertos === 0;
+    const melhor_acertos = Math.max(n_acertos, n_acertos_s2);
     const faixa_obj = (FAIXAS[loteria] ?? []).find(
-      (f) => f.n === n_acertos || (loto_zero && f.n === 0),
+      (f) => f.n === melhor_acertos || (loto_zero && f.n === 0),
     );
-    const premiada = n_acertos >= (LIMIARES[loteria] ?? 4) || loto_zero;
+    const premiada =
+      melhor_acertos >= (LIMIARES[loteria] ?? 4) || loto_zero;
 
     let valor_premio = 0;
     if (faixa_obj && Array.isArray(premiacao_arr)) {
