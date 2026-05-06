@@ -14,7 +14,7 @@ import { rodarMCMC } from "../engine/motorMCMC";
 import { rodarStacking, calcularEnsemble } from "../engine/motorStacking";
 
 // ── Estado global singleton ──────────────────────────────────────
-interface GodEyeState {
+export interface GodEyeState {
   pipelines: Record<LoteriaNome, LoteriaPipelineState>;
   rodando: Set<LoteriaNome>;
   autoPipelineAtivo: boolean;
