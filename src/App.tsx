@@ -35,6 +35,12 @@ import ScoreUltraPage from "./pages/ScoreUltraPage";
 import AlertasAtrasoPage from "./pages/AlertasAtrasoPage";
 import ConferidorV23Page, { useAutoConferenciaV23 } from "./pages/ConferidorV23Page";
 import GodEyePage from "./pages/GodEyePage";
+import GodEyePainel from "./components/GodEyePainel";
+import QuantCorePage from "./pages/QuantCorePage";
+import { godActivate } from "./store/godEyeStore";
+
+// 👁️ Auto-boot do God Eye v6.0 (re-execução a cada 10 min)
+godActivate(10);
 
 const queryClient = new QueryClient();
 
@@ -84,6 +90,8 @@ const App = () => (
                 <Route path="alertas" element={<AlertasAtrasoPage />} />
                 <Route path="conferidor-v23" element={<ConferidorV23Page />} />
                 <Route path="god-eye" element={<GodEyePage />} />
+                <Route path="god-eye-v6" element={<GodEyePainel />} />
+                <Route path="quant-core" element={<QuantCorePage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
