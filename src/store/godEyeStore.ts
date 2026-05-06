@@ -8,10 +8,10 @@
 import {
   LoteriaNome, TODAS_LOTERIAS, LOTERIAS_CONFIG, MESES_ANO,
   fetchAPIMultiFonte, DadosAPI, LoteriaPipelineState, ModeloResultado,
-} from "./godCore";
-import { rodarBiLSTM } from "./motorBiLSTM";
-import { rodarMCMC } from "./motorMCMC";
-import { rodarStacking, calcularEnsemble } from "./motorStacking";
+} from "../engine/godCore";
+import { rodarBiLSTM } from "../engine/motorBiLSTM";
+import { rodarMCMC } from "../engine/motorMCMC";
+import { rodarStacking, calcularEnsemble } from "../engine/motorStacking";
 
 // ── Estado global singleton ──────────────────────────────────────
 interface GodEyeState {
