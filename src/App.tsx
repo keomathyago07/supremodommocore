@@ -37,6 +37,9 @@ import ConferidorV23Page, { useAutoConferenciaV23 } from "./pages/ConferidorV23P
 import GodEyePage from "./pages/GodEyePage";
 import GodEyePainel from "./components/GodEyePainel";
 import QuantCorePage from "./pages/QuantCorePage";
+import MinhasApostasPage from "./pages/MinhasApostasPage";
+import IASControlPage from "./pages/IASControlPage";
+import NotificacoesPage from "./pages/NotificacoesPage";
 import { godActivate } from "./store/godEyeStore";
 
 // 👁️ Auto-boot do God Eye v6.0 (re-execução a cada 10 min)
@@ -92,6 +95,9 @@ const App = () => (
                 <Route path="god-eye" element={<GodEyePage />} />
                 <Route path="god-eye-v6" element={<GodEyePainel />} />
                 <Route path="quant-core" element={<QuantCorePage />} />
+                <Route path="minhas-apostas" element={<MinhasApostasPage />} />
+                <Route path="ias-control" element={<IASControlPage />} />
+                <Route path="notificacoes" element={<NotificacoesPage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
