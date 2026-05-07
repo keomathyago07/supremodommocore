@@ -5,7 +5,7 @@ import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
   Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign, Cog, BarChart3,
-  Sparkles, FileCheck, Wallet, Sliders, Atom, AlertTriangle, Bell, Brain
+  Sparkles, FileCheck, Wallet, Sliders, Atom, AlertTriangle, Bell
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InstallButton } from '@/components/InstallButton';
