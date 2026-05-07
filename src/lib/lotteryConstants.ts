@@ -66,7 +66,7 @@ export const LOTTERIES: LotteryConfig[] = [
   {
     id: 'lotomania', name: 'Lotomania', apiName: 'lotomania',
     numbersCount: 50, maxNumber: 100, color: '#F78100',
-    lockedPatterns: ['20 acertos', '19 acertos', '18 acertos', '17 acertos', '16 acertos', '15 acertos', '0 acertos'],
+    lockedPatterns: ['20 acertos', '19 acertos', '18 acertos', '0 acertos'],
     drawTime: '21:00',
     drawDays: [1, 3, 5],
     hasDualGame: true,
