@@ -45,40 +45,42 @@ const ApiConfigPage = () => {
     }
   };
 
-  const testConnection = async () => {
+  const testConnection = async (silent = false): Promise<boolean> => {
     if (!token.trim()) {
-      toast.error('Insira um token válido');
-      return;
+      if (!silent) toast.error('Insira um token válido');
+      return false;
     }
     setIsTesting(true);
     setConnectionStatus('idle');
     try {
-      // Test the API connection
       const response = await fetch(`https://apiloterias.com.br/app/v2/resultado?loteria=megasena&token=${token}`);
       if (response.ok) {
         const data = await response.json();
-        if (data && data.numero_concurso) {
+        if (data && (data.numero_concurso || data.concurso)) {
           setConnectionStatus('success');
-          toast.success(`Conexão válida! Último concurso: #${data.numero_concurso}`);
-        } else {
-          setConnectionStatus('error');
-          toast.error('Token inválido ou resposta inesperada');
+          if (!silent) toast.success(`✅ Conexão OK! Concurso #${data.numero_concurso || data.concurso}`);
+          setIsTesting(false);
+          return true;
         }
-      } else {
-        setConnectionStatus('error');
-        toast.error('Falha na conexão — verifique o token');
       }
+      setConnectionStatus('error');
+      if (!silent) toast.error('Token inválido ou API indisponível');
     } catch {
       setConnectionStatus('error');
-      toast.error('Erro de rede — verifique sua conexão');
+      if (!silent) toast.error('Erro de rede — verifique sua conexão');
     }
     setIsTesting(false);
+    return false;
   };
 
   const saveToken = async () => {
     if (!user || !token.trim()) return;
     setIsSaving(true);
-    const isValid = connectionStatus === 'success';
+
+    // Força teste antes de salvar para garantir validação
+    const ok = connectionStatus === 'success' ? true : await testConnection(true);
+    const isValid = ok;
+
     const payload = {
       user_id: user.id,
       provider,
@@ -94,11 +96,12 @@ const ApiConfigPage = () => {
       if (data) setSavedTokenId(data.id);
     }
     setLastSync(isValid ? new Date().toISOString() : null);
-    toast.success('Token salvo com sucesso!');
-    
-    // Auto-sync after saving
+
     if (isValid) {
-      syncData();
+      toast.success('✅ Token salvo e validado!');
+      await syncData(); // força sincronização imediata
+    } else {
+      toast.error('Token salvo, mas inválido. Verifique e teste novamente.');
     }
     setIsSaving(false);
   };
@@ -173,7 +176,7 @@ const ApiConfigPage = () => {
         {/* Buttons */}
         <div className="flex gap-3">
           <button
-            onClick={testConnection}
+            onClick={() => testConnection(false)}
             disabled={isTesting || !token.trim()}
             className="flex-1 flex items-center justify-center gap-2 bg-accent text-accent-foreground font-display font-semibold py-3 rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
           >
