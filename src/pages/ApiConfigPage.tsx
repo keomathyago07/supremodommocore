@@ -176,7 +176,7 @@ const ApiConfigPage = () => {
         {/* Buttons */}
         <div className="flex gap-3">
           <button
-            onClick={testConnection}
+            onClick={() => testConnection(false)}
             disabled={isTesting || !token.trim()}
             className="flex-1 flex items-center justify-center gap-2 bg-accent text-accent-foreground font-display font-semibold py-3 rounded-lg hover:opacity-90 transition-all disabled:opacity-50"
           >
