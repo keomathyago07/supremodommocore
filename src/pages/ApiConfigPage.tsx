@@ -76,7 +76,11 @@ const ApiConfigPage = () => {
   const saveToken = async () => {
     if (!user || !token.trim()) return;
     setIsSaving(true);
-    const isValid = connectionStatus === 'success';
+
+    // Força teste antes de salvar para garantir validação
+    const ok = connectionStatus === 'success' ? true : await testConnection(true);
+    const isValid = ok;
+
     const payload = {
       user_id: user.id,
       provider,
@@ -92,11 +96,12 @@ const ApiConfigPage = () => {
       if (data) setSavedTokenId(data.id);
     }
     setLastSync(isValid ? new Date().toISOString() : null);
-    toast.success('Token salvo com sucesso!');
-    
-    // Auto-sync after saving
+
     if (isValid) {
-      syncData();
+      toast.success('✅ Token salvo e validado!');
+      await syncData(); // força sincronização imediata
+    } else {
+      toast.error('Token salvo, mas inválido. Verifique e teste novamente.');
     }
     setIsSaving(false);
   };
