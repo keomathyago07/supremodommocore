@@ -5,7 +5,7 @@ import {
   Brain, LayoutDashboard, Settings, History, Trophy,
   Ticket, Bot, LogOut, ChevronLeft, ChevronRight,
   Zap, Database, Target, Activity, Cpu, MessageSquare, Download, Eye, DollarSign, Cog, BarChart3,
-  Sparkles, FileCheck, Wallet, Sliders, Atom, AlertTriangle
+  Sparkles, FileCheck, Wallet, Sliders, Atom, AlertTriangle, Bell, Brain
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { InstallButton } from '@/components/InstallButton';
@@ -23,6 +23,9 @@ const menuItems = [
   { id: 'livepanel', label: 'Painel Neural Live', icon: Eye, path: '/dashboard/livepanel' },
   { id: 'analysis', label: 'Análise de Loterias', icon: Brain, path: '/dashboard/analysis' },
   { id: 'minha-aposta', label: 'Minha Aposta', icon: Ticket, path: '/dashboard/minha-aposta' },
+  { id: 'minhas-apostas', label: '🎟️ Minhas Apostas', icon: Ticket, path: '/dashboard/minhas-apostas' },
+  { id: 'notificacoes', label: '🔔 Notificações', icon: Bell, path: '/dashboard/notificacoes' },
+  { id: 'ias-control', label: '🧠 Controle de IAS', icon: Brain, path: '/dashboard/ias-control' },
   { id: 'bets', label: 'Apostas (Legacy)', icon: Ticket, path: '/dashboard/bets' },
   { id: 'historico-gates', label: 'Histórico Gates IA', icon: FileCheck, path: '/dashboard/historico-gates' },
   { id: 'history', label: 'Histórico Gates', icon: History, path: '/dashboard/history' },
