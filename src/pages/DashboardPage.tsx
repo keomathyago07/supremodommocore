@@ -6,6 +6,7 @@ import { useAgendadorIA } from '@/hooks/useGerarJogo';
 import { usePollingResultados } from '@/hooks/usePollingResultados';
 import { useAutoConferenciaV23 } from '@/pages/ConferidorV23Page';
 import { useGodCore } from '@/hooks/useGodCore';
+import { startIASListener } from '@/lib/iasSync';
 
 const DashboardLayout = () => {
   const auto = useAutoAnalysis();
@@ -15,6 +16,8 @@ const DashboardLayout = () => {
   useAutoConferenciaV23();
   // 👁️ IASV60+ GOD CORE — Olho de Deus ativo 24/7 (anti-trava real)
   useGodCore(true, 5000);
+  // 🔗 IAS SYNC — aplica nível IAS (Máxima/Infinita) nas engines + gate_config em tempo real
+  useEffect(() => { startIASListener(); }, []);
 
   useEffect(() => {
     auto.onGateFound.current = () => {

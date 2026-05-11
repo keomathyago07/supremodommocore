@@ -49,6 +49,34 @@ export default function MinhasApostasPage() {
 
   useEffect(() => { carregar(); }, [carregar]);
 
+  // 🔴 REALTIME: atualiza a tela assim que a conferência grava resultados
+  useEffect(() => {
+    const channel = supabase
+      .channel('apostas-confirmadas-rt')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'apostas_confirmadas' },
+        (payload) => {
+          setApostas((prev) => {
+            const row = (payload.new ?? payload.old) as ApostaConfirmada;
+            if (!row?.id) return prev;
+            if (payload.eventType === 'DELETE') return prev.filter(a => a.id !== row.id);
+            const idx = prev.findIndex(a => a.id === row.id);
+            if (idx === -1) return [row as ApostaConfirmada, ...prev];
+            const next = [...prev];
+            next[idx] = { ...next[idx], ...(payload.new as ApostaConfirmada) };
+            if (payload.eventType === 'UPDATE' && (payload.new as ApostaConfirmada).status_verificacao === 'verificada') {
+              const v = payload.new as ApostaConfirmada;
+              toast.success(`✅ Conferência: ${v.loteria.toUpperCase()} — ${v.pontos_acertados ?? 0} acerto(s)`);
+            }
+            return next;
+          });
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const total = apostas.length;
   const premiadas = apostas.filter(a => (a.pontos_acertados ?? 0) > 0).length;
   const totalPremios = apostas.reduce((s, a) => s + (Number(a.valor_premio) || 0), 0);
