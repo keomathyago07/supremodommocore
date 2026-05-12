@@ -162,11 +162,10 @@ export default function MinhasApostasPage() {
               último evento: {lastEventAt.toLocaleTimeString('pt-BR')}
             </span>
           )}
+          <Button onClick={carregar} variant="outline" disabled={loading}>
+            <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />Atualizar
+          </Button>
         </div>
-      </div>
-        <Button onClick={carregar} variant="outline" disabled={loading}>
-          <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />Atualizar
-        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
