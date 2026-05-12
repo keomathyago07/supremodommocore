@@ -5,8 +5,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, RefreshCw, Trophy, Clock, CheckCircle2, XCircle, Ticket } from 'lucide-react';
+import { Loader2, RefreshCw, Trophy, Clock, CheckCircle2, XCircle, Ticket, Wifi, WifiOff, Activity } from 'lucide-react';
 import { toast } from 'sonner';
+
+type RTStatus = 'connecting' | 'connected' | 'processing' | 'failed' | 'disconnected';
+
+const rtBadge = (s: RTStatus, attempt: number) => {
+  if (s === 'connected') return <Badge className="bg-green-500/20 text-green-400 border-green-500/30"><Wifi className="w-3 h-3 mr-1" />Conectado</Badge>;
+  if (s === 'processing') return <Badge className="bg-blue-500/20 text-blue-400 border-blue-500/30"><Activity className="w-3 h-3 mr-1 animate-pulse" />Processando</Badge>;
+  if (s === 'connecting') return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30"><Loader2 className="w-3 h-3 mr-1 animate-spin" />Conectando{attempt > 0 ? ` (tentativa ${attempt})` : ''}</Badge>;
+  if (s === 'failed') return <Badge variant="destructive"><XCircle className="w-3 h-3 mr-1" />Falhou — retry {attempt}</Badge>;
+  return <Badge className="bg-muted text-muted-foreground"><WifiOff className="w-3 h-3 mr-1" />Desconectado</Badge>;
+};
 
 interface ApostaConfirmada {
   id: string;
