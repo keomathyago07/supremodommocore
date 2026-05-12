@@ -45,6 +45,9 @@ const statusBadge = (s: string) => {
 export default function MinhasApostasPage() {
   const [apostas, setApostas] = useState<ApostaConfirmada[]>([]);
   const [loading, setLoading] = useState(true);
+  const [rtStatus, setRtStatus] = useState<RTStatus>('connecting');
+  const [rtAttempt, setRtAttempt] = useState(0);
+  const [lastEventAt, setLastEventAt] = useState<Date | null>(null);
 
   const carregar = useCallback(async () => {
     setLoading(true);
@@ -59,33 +62,85 @@ export default function MinhasApostasPage() {
 
   useEffect(() => { carregar(); }, [carregar]);
 
-  // 🔴 REALTIME: atualiza a tela assim que a conferência grava resultados
+  // 🔴 REALTIME com reconexão automática + backoff exponencial (1s → 30s)
   useEffect(() => {
-    const channel = supabase
-      .channel('apostas-confirmadas-rt')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'apostas_confirmadas' },
-        (payload) => {
-          setApostas((prev) => {
-            const row = (payload.new ?? payload.old) as ApostaConfirmada;
-            if (!row?.id) return prev;
-            if (payload.eventType === 'DELETE') return prev.filter(a => a.id !== row.id);
-            const idx = prev.findIndex(a => a.id === row.id);
-            if (idx === -1) return [row as ApostaConfirmada, ...prev];
-            const next = [...prev];
-            next[idx] = { ...next[idx], ...(payload.new as ApostaConfirmada) };
-            if (payload.eventType === 'UPDATE' && (payload.new as ApostaConfirmada).status_verificacao === 'verificada') {
-              const v = payload.new as ApostaConfirmada;
-              toast.success(`✅ Conferência: ${v.loteria.toUpperCase()} — ${v.pontos_acertados ?? 0} acerto(s)`);
-            }
-            return next;
-          });
-        }
-      )
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
+    let channel: ReturnType<typeof supabase.channel> | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let attempt = 0;
+    let cancelled = false;
+
+    const connect = () => {
+      if (cancelled) return;
+      setRtStatus(attempt === 0 ? 'connecting' : 'connecting');
+      setRtAttempt(attempt);
+
+      channel = supabase
+        .channel(`apostas-confirmadas-rt-${Date.now()}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'apostas_confirmadas' },
+          (payload) => {
+            setRtStatus('processing');
+            setLastEventAt(new Date());
+            setApostas((prev) => {
+              const row = (payload.new ?? payload.old) as ApostaConfirmada;
+              if (!row?.id) return prev;
+              if (payload.eventType === 'DELETE') return prev.filter(a => a.id !== row.id);
+              const idx = prev.findIndex(a => a.id === row.id);
+              if (idx === -1) return [row as ApostaConfirmada, ...prev];
+              const next = [...prev];
+              next[idx] = { ...next[idx], ...(payload.new as ApostaConfirmada) };
+              if (payload.eventType === 'UPDATE' && (payload.new as ApostaConfirmada).status_verificacao === 'verificada') {
+                const v = payload.new as ApostaConfirmada;
+                toast.success(`✅ Conferência: ${v.loteria.toUpperCase()} — ${v.pontos_acertados ?? 0} acerto(s)`);
+              }
+              return next;
+            });
+            setTimeout(() => { if (!cancelled) setRtStatus('connected'); }, 800);
+          }
+        )
+        .subscribe((status) => {
+          if (cancelled) return;
+          if (status === 'SUBSCRIBED') {
+            attempt = 0;
+            setRtAttempt(0);
+            setRtStatus('connected');
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            setRtStatus(status === 'CLOSED' ? 'disconnected' : 'failed');
+            scheduleReconnect();
+          }
+        });
+    };
+
+    const scheduleReconnect = () => {
+      if (cancelled) return;
+      if (retryTimer) clearTimeout(retryTimer);
+      attempt += 1;
+      setRtAttempt(attempt);
+      const delay = Math.min(30000, 1000 * Math.pow(2, Math.min(attempt - 1, 5))); // 1s,2s,4s,8s,16s,30s
+      retryTimer = setTimeout(() => {
+        if (channel) supabase.removeChannel(channel);
+        // resync para não perder eventos durante o downtime
+        carregar();
+        connect();
+      }, delay);
+    };
+
+    connect();
+
+    const onOnline = () => { attempt = 0; if (channel) supabase.removeChannel(channel); connect(); };
+    const onOffline = () => setRtStatus('disconnected');
+    window.addEventListener('online', onOnline);
+    window.addEventListener('offline', onOffline);
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (channel) supabase.removeChannel(channel);
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('offline', onOffline);
+    };
+  }, [carregar]);
 
   const total = apostas.length;
   const premiadas = apostas.filter(a => (a.pontos_acertados ?? 0) > 0).length;
@@ -93,13 +148,22 @@ export default function MinhasApostasPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-3xl font-display font-bold text-primary glow-text-primary flex items-center gap-2">
             <Ticket className="w-8 h-8" /> Minhas Apostas
           </h1>
           <p className="text-muted-foreground mt-1">Apostas confirmadas e status da conferência automática</p>
         </div>
+        <div className="flex items-center gap-2">
+          {rtBadge(rtStatus, rtAttempt)}
+          {lastEventAt && (
+            <span className="text-[10px] text-muted-foreground">
+              último evento: {lastEventAt.toLocaleTimeString('pt-BR')}
+            </span>
+          )}
+        </div>
+      </div>
         <Button onClick={carregar} variant="outline" disabled={loading}>
           <RefreshCw className={`w-4 h-4 mr-2 ${loading ? 'animate-spin' : ''}`} />Atualizar
         </Button>
