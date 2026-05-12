@@ -40,6 +40,7 @@ import QuantCorePage from "./pages/QuantCorePage";
 import MinhasApostasPage from "./pages/MinhasApostasPage";
 import IASControlPage from "./pages/IASControlPage";
 import NotificacoesPage from "./pages/NotificacoesPage";
+import ConfigPage from "./pages/ConfigPage";
 import { godActivate } from "./store/godEyeStore";
 
 // 👁️ Auto-boot do God Eye v6.0 (re-execução a cada 10 min)
@@ -98,6 +99,7 @@ const App = () => (
                 <Route path="minhas-apostas" element={<MinhasApostasPage />} />
                 <Route path="ias-control" element={<IASControlPage />} />
                 <Route path="notificacoes" element={<NotificacoesPage />} />
+                <Route path="configuracoes" element={<ConfigPage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
