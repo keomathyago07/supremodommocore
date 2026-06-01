@@ -109,12 +109,14 @@ const ApiConfigPage = () => {
     }
     setLastSync(isValid ? new Date().toISOString() : null);
 
+    // 🚀 Auto-start NUNCA bloqueia — motores sobem mesmo se a API estiver fora
+    autoStartEngines(isValid ? 'token-saved-valid' : 'token-saved-api-down');
+
     if (isValid) {
       toast.success('✅ Token salvo e validado!');
-      await syncData(); // força sincronização imediata
-      await autoStartEngines('token-saved-valid'); // 🚀 inicia motores automaticamente
+      syncData().catch(() => {}); // fire-and-forget
     } else {
-      toast.error('Token salvo, mas inválido. Verifique e teste novamente.');
+      toast.warning('Token salvo. APIs indisponíveis — motores iniciados em modo resiliente.');
     }
     setIsSaving(false);
   };
