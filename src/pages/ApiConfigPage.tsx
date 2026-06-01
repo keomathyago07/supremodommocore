@@ -55,6 +55,8 @@ const ApiConfigPage = () => {
       setSavedTokenId(data.id);
       setConnectionStatus(data.is_valid ? 'success' : 'idle');
       setLastSync(data.last_sync_at);
+      // Auto-start engines se token já validado previamente
+      if (data.is_valid) autoStartEngines('token-loaded-valid');
     }
   };
 
