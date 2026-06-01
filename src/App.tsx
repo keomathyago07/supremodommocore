@@ -50,6 +50,12 @@ const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  // Inicia sync cloud das IAs assim que houver usuário
+  React.useEffect(() => {
+    if (user) {
+      import("@/lib/iaConfigCloud").then((m) => m.startIAConfigSync()).catch(() => {});
+    }
+  }, [user]);
   if (loading) return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin" />
