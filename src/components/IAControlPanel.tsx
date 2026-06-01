@@ -3,18 +3,24 @@
 // ============================================================
 import { useIAControlStore, IA_LEVELS, IALevel } from "@/store/iaControlStore";
 import { useSyncStore } from "@/store/syncStore";
+import { saveIAConfigToCloud } from "@/lib/iaConfigCloud";
+import { toast } from "sonner";
 
 export function IAControlPanel() {
   const { activeLevel, customGoals, lastSaved, setLevel, setCustomGoals, save, reset } = useIAControlStore();
   const { broadcastChange, addLog } = useSyncStore();
 
-  function handleSave() {
+  async function handleSave() {
     save();
     broadcastChange("ia_config", { activeLevel, customGoals, savedAt: new Date().toISOString() });
     addLog(`Configuração IA salva — nível ${activeLevel}`, "success");
-    // notifica engines existentes (iasSync escuta este evento)
     window.dispatchEvent(new CustomEvent("ias:config-changed", { detail: { activeLevel, customGoals } }));
+    // Persistência real no backend + sync entre dispositivos (mobile/desktop)
+    const ok = await saveIAConfigToCloud(activeLevel, customGoals);
+    if (ok) toast.success("☁️ Configuração sincronizada em todos os dispositivos");
+    else toast.warning("Configuração salva localmente — sync na nuvem indisponível");
   }
+
 
   return (
     <div className="space-y-6">

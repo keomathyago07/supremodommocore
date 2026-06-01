@@ -5,18 +5,23 @@ import { Database, CheckCircle, XCircle, Loader2, Save, RefreshCw, Wifi } from '
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { godCore } from '@/lib/godCore';
+import { testLotteryConnection } from '@/lib/apiResilient';
 
-// 🚀 Auto-inicia os motores (gate/IA/pipeline) imediatamente após token validado.
-async function autoStartEngines(reason: string) {
-  try {
-    godCore.start(5000);
-    await godCore.forcePipeline();
-    window.dispatchEvent(new CustomEvent('engines:auto-start', { detail: { reason, ts: Date.now() } }));
-    toast.success('🚀 Motores iniciados automaticamente');
-  } catch (e) {
-    console.warn('[autoStartEngines] falhou:', e);
-  }
+// 🚀 Auto-inicia os motores em background — NUNCA bloqueia a UI ou depende de uma API estar UP.
+function autoStartEngines(reason: string) {
+  // fire-and-forget: motores sobem mesmo se uma API estiver fora do ar
+  queueMicrotask(() => {
+    try {
+      godCore.start(5000);
+      godCore.forcePipeline().catch((e) => console.warn('[autoStartEngines] pipeline:', e));
+      window.dispatchEvent(new CustomEvent('engines:auto-start', { detail: { reason, ts: Date.now() } }));
+      toast.success('🚀 Motores iniciados automaticamente');
+    } catch (e) {
+      console.warn('[autoStartEngines] falhou:', e);
+    }
+  });
 }
+
 
 const ApiConfigPage = () => {
   const { user } = useAuth();
@@ -67,26 +72,18 @@ const ApiConfigPage = () => {
     }
     setIsTesting(true);
     setConnectionStatus('idle');
-    try {
-      const response = await fetch(`https://apiloterias.com.br/app/v2/resultado?loteria=megasena&token=${token}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data && (data.numero_concurso || data.concurso)) {
-          setConnectionStatus('success');
-          if (!silent) toast.success(`✅ Conexão OK! Concurso #${data.numero_concurso || data.concurso}`);
-          setIsTesting(false);
-          return true;
-        }
-      }
-      setConnectionStatus('error');
-      if (!silent) toast.error('Token inválido ou API indisponível');
-    } catch {
-      setConnectionStatus('error');
-      if (!silent) toast.error('Erro de rede — verifique sua conexão');
-    }
+    const result = await testLotteryConnection(token, { maxRetries: 3, timeoutMs: 8000 });
     setIsTesting(false);
+    if (result.ok) {
+      setConnectionStatus('success');
+      if (!silent) toast.success(`✅ Conexão OK (${result.source}) — Concurso #${result.concurso} • ${result.attempts} tentativa(s)`);
+      return true;
+    }
+    setConnectionStatus('error');
+    if (!silent) toast.error(`❌ Falha após ${result.attempts} tentativa(s): ${result.error}`);
     return false;
   };
+
 
   const saveToken = async () => {
     if (!user || !token.trim()) return;
@@ -112,12 +109,14 @@ const ApiConfigPage = () => {
     }
     setLastSync(isValid ? new Date().toISOString() : null);
 
+    // 🚀 Auto-start NUNCA bloqueia — motores sobem mesmo se a API estiver fora
+    autoStartEngines(isValid ? 'token-saved-valid' : 'token-saved-api-down');
+
     if (isValid) {
       toast.success('✅ Token salvo e validado!');
-      await syncData(); // força sincronização imediata
-      await autoStartEngines('token-saved-valid'); // 🚀 inicia motores automaticamente
+      syncData().catch(() => {}); // fire-and-forget
     } else {
-      toast.error('Token salvo, mas inválido. Verifique e teste novamente.');
+      toast.warning('Token salvo. APIs indisponíveis — motores iniciados em modo resiliente.');
     }
     setIsSaving(false);
   };
