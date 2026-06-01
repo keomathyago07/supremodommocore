@@ -72,26 +72,18 @@ const ApiConfigPage = () => {
     }
     setIsTesting(true);
     setConnectionStatus('idle');
-    try {
-      const response = await fetch(`https://apiloterias.com.br/app/v2/resultado?loteria=megasena&token=${token}`);
-      if (response.ok) {
-        const data = await response.json();
-        if (data && (data.numero_concurso || data.concurso)) {
-          setConnectionStatus('success');
-          if (!silent) toast.success(`✅ Conexão OK! Concurso #${data.numero_concurso || data.concurso}`);
-          setIsTesting(false);
-          return true;
-        }
-      }
-      setConnectionStatus('error');
-      if (!silent) toast.error('Token inválido ou API indisponível');
-    } catch {
-      setConnectionStatus('error');
-      if (!silent) toast.error('Erro de rede — verifique sua conexão');
-    }
+    const result = await testLotteryConnection(token, { maxRetries: 3, timeoutMs: 8000 });
     setIsTesting(false);
+    if (result.ok) {
+      setConnectionStatus('success');
+      if (!silent) toast.success(`✅ Conexão OK (${result.source}) — Concurso #${result.concurso} • ${result.attempts} tentativa(s)`);
+      return true;
+    }
+    setConnectionStatus('error');
+    if (!silent) toast.error(`❌ Falha após ${result.attempts} tentativa(s): ${result.error}`);
     return false;
   };
+
 
   const saveToken = async () => {
     if (!user || !token.trim()) return;
