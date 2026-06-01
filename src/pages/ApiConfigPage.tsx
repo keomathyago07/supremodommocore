@@ -4,6 +4,19 @@ import { supabase } from '@/integrations/supabase/client';
 import { Database, CheckCircle, XCircle, Loader2, Save, RefreshCw, Wifi } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { godCore } from '@/lib/godCore';
+
+// 🚀 Auto-inicia os motores (gate/IA/pipeline) imediatamente após token validado.
+async function autoStartEngines(reason: string) {
+  try {
+    godCore.start(5000);
+    await godCore.forcePipeline();
+    window.dispatchEvent(new CustomEvent('engines:auto-start', { detail: { reason, ts: Date.now() } }));
+    toast.success('🚀 Motores iniciados automaticamente');
+  } catch (e) {
+    console.warn('[autoStartEngines] falhou:', e);
+  }
+}
 
 const ApiConfigPage = () => {
   const { user } = useAuth();
@@ -42,6 +55,8 @@ const ApiConfigPage = () => {
       setSavedTokenId(data.id);
       setConnectionStatus(data.is_valid ? 'success' : 'idle');
       setLastSync(data.last_sync_at);
+      // Auto-start engines se token já validado previamente
+      if (data.is_valid) autoStartEngines('token-loaded-valid');
     }
   };
 
@@ -100,6 +115,7 @@ const ApiConfigPage = () => {
     if (isValid) {
       toast.success('✅ Token salvo e validado!');
       await syncData(); // força sincronização imediata
+      await autoStartEngines('token-saved-valid'); // 🚀 inicia motores automaticamente
     } else {
       toast.error('Token salvo, mas inválido. Verifique e teste novamente.');
     }
