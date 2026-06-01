@@ -5,18 +5,23 @@ import { Database, CheckCircle, XCircle, Loader2, Save, RefreshCw, Wifi } from '
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 import { godCore } from '@/lib/godCore';
+import { testLotteryConnection } from '@/lib/apiResilient';
 
-// 🚀 Auto-inicia os motores (gate/IA/pipeline) imediatamente após token validado.
-async function autoStartEngines(reason: string) {
-  try {
-    godCore.start(5000);
-    await godCore.forcePipeline();
-    window.dispatchEvent(new CustomEvent('engines:auto-start', { detail: { reason, ts: Date.now() } }));
-    toast.success('🚀 Motores iniciados automaticamente');
-  } catch (e) {
-    console.warn('[autoStartEngines] falhou:', e);
-  }
+// 🚀 Auto-inicia os motores em background — NUNCA bloqueia a UI ou depende de uma API estar UP.
+function autoStartEngines(reason: string) {
+  // fire-and-forget: motores sobem mesmo se uma API estiver fora do ar
+  queueMicrotask(() => {
+    try {
+      godCore.start(5000);
+      godCore.forcePipeline().catch((e) => console.warn('[autoStartEngines] pipeline:', e));
+      window.dispatchEvent(new CustomEvent('engines:auto-start', { detail: { reason, ts: Date.now() } }));
+      toast.success('🚀 Motores iniciados automaticamente');
+    } catch (e) {
+      console.warn('[autoStartEngines] falhou:', e);
+    }
+  });
 }
+
 
 const ApiConfigPage = () => {
   const { user } = useAuth();
