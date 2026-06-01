@@ -115,6 +115,7 @@ const ApiConfigPage = () => {
     if (isValid) {
       toast.success('✅ Token salvo e validado!');
       await syncData(); // força sincronização imediata
+      await autoStartEngines('token-saved-valid'); // 🚀 inicia motores automaticamente
     } else {
       toast.error('Token salvo, mas inválido. Verifique e teste novamente.');
     }
