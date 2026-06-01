@@ -627,6 +627,36 @@ export type Database = {
         }
         Relationships: []
       }
+      ia_config: {
+        Row: {
+          active_level: string
+          created_at: string
+          custom_goals: Json
+          device_id: string | null
+          id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          active_level?: string
+          created_at?: string
+          custom_goals?: Json
+          device_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          active_level?: string
+          created_at?: string
+          custom_goals?: Json
+          device_id?: string | null
+          id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       loterias_calendario: {
         Row: {
           dias_semana: number[]
