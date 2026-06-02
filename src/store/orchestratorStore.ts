@@ -11,6 +11,8 @@ import { generateDailyGame, PredictionMeta } from "../data/aiPredictionEngine";
 import { useBetStore, SavedBet } from "./betStore";
 import { useIAControlStore } from "./iaControlStore";
 import { useSyncStore } from "./syncStore";
+import { useGateHistoryStore } from "./gateHistoryStore";
+import { persistConfirmedBet, fetchLatestResult, saveResultCheck } from "@/lib/betsCloud";
 
 export type OrchestratorPhase =
   | "idle"
