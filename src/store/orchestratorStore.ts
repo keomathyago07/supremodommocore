@@ -67,6 +67,7 @@ export interface OrchestratorState {
   confirmGame: (lotteryId: string) => void;
   submitResult: (lotteryId: string, numbers: number[], extras?: number[]) => void;
   toggleAutoCheck: (v: boolean) => void;
+  scheduleAutoCheck: () => void;
   addLog: (level: OrchestratorLog["level"], message: string) => void;
   reset: () => void;
   getTask: (lotteryId: string) => OrchestratorTask | undefined;
