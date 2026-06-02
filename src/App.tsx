@@ -42,6 +42,7 @@ import MinhasApostasPage from "./pages/MinhasApostasPage";
 import IASControlPage from "./pages/IASControlPage";
 import NotificacoesPage from "./pages/NotificacoesPage";
 import ConfigPage from "./pages/ConfigPage";
+import TerrorLoteriasPage from "./pages/TerrorLoteriasPage";
 import { godActivate } from "./store/godEyeStore";
 
 // 👁️ Auto-boot do God Eye v6.0 (re-execução a cada 10 min)
@@ -107,6 +108,7 @@ const App = () => (
                 <Route path="ias-control" element={<IASControlPage />} />
                 <Route path="notificacoes" element={<NotificacoesPage />} />
                 <Route path="configuracoes" element={<ConfigPage />} />
+                <Route path="terror-loterias" element={<TerrorLoteriasPage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
