@@ -4,6 +4,7 @@
 import { useIAControlStore, IA_LEVELS, IALevel } from "@/store/iaControlStore";
 import { useSyncStore } from "@/store/syncStore";
 import { saveIAConfigToCloud } from "@/lib/iaConfigCloud";
+import { ResilientStatusPanel } from "./ResilientStatusPanel";
 import { toast } from "sonner";
 
 export function IAControlPanel() {
