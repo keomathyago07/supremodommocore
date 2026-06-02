@@ -140,6 +140,7 @@ export default function MainPage() {
         {tab === "orchestrator" && <OrchestratorPanel />}
         {tab === "daily" && <DailyGamesPanel />}
         {tab === "checker" && <AutoCheckerPanel />}
+        {tab === "gates" && <GateHistoryPanel />}
         {tab === "ia" && <IAControlPanel />}
         {tab === "rules" && <LotteryRulesPanel />}
         {tab === "sync" && <SyncPanel />}
