@@ -7,6 +7,8 @@
 // - Nunca lança: retorna { ok, data, source, error }
 // ============================================================
 
+import { useResilientStats } from "./resilientStats";
+
 export interface ResilientResult {
   ok: boolean;
   data?: any;
@@ -14,6 +16,7 @@ export interface ResilientResult {
   concurso?: number;
   attempts: number;
   error?: string;
+  latencyMs?: number;
 }
 
 const USER_AGENTS = [
