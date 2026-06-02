@@ -313,6 +313,41 @@ export const useOrchestratorStore = create<OrchestratorState>()(
         get().addLog("info", `Auto-conferência ${v ? "ativada" : "desativada"}`);
       },
 
+      // ── Watchdog de auto-conferência ───────────────────────────
+      // Faz polling em resultados_sorteios e dispara submitResult quando o
+      // sorteio do dia já estiver disponível para uma loteria com aposta confirmada.
+      scheduleAutoCheck: () => {
+        const w = window as any;
+        if (w.__terrorAutoCheckTimer) return; // idempotente
+        const { addLog } = get();
+        addLog("info", "🛰️ Watchdog de conferência ligado (polling 30s)");
+        const tick = async () => {
+          const { tasks, autoCheckEnabled } = get();
+          if (!autoCheckEnabled) return;
+          const pending = tasks.filter((t) => t.phase === "confirmed");
+          for (const t of pending) {
+            try {
+              const latest = await fetchLatestResult(t.lotteryId);
+              if (!latest || !latest.dezenas?.length) continue;
+              // Marca concurso pra persistência da conferência
+              (t as any).drawConcurso = latest.concurso;
+              get().submitResult(t.lotteryId, latest.dezenas);
+            } catch (e) {
+              addLog("warn", `Polling falhou ${t.lotteryName}: ${String(e)}`);
+            }
+          }
+          if (get().tasks.every((x) => x.phase === "done")) {
+            clearInterval(w.__terrorAutoCheckTimer);
+            w.__terrorAutoCheckTimer = null;
+            addLog("success", "✅ Watchdog encerrado — todas conferências completas");
+          }
+        };
+        w.__terrorAutoCheckTimer = setInterval(tick, 30000);
+        setTimeout(tick, 1500); // primeiro tick rápido
+      },
+
+
+
       reset: () => {
         set({ phase: "idle", tasks: [], logs: [], lastRun: null });
       },
