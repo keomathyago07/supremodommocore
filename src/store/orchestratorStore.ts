@@ -178,11 +178,9 @@ export const useOrchestratorStore = create<OrchestratorState>()(
         const { tasks, addLog } = get();
         const task = tasks.find((t) => t.lotteryId === lotteryId);
         if (!task?.prediction) return;
-
         const lottery = getTodayLotteries().find((l) => l.id === lotteryId);
         if (!lottery) return;
 
-        // Salva a aposta no betStore
         const betId = useBetStore.getState().saveBet({
           lotteryId: lottery.id,
           lotteryName: lottery.name,
@@ -197,31 +195,39 @@ export const useOrchestratorStore = create<OrchestratorState>()(
           confidence: task.prediction.game.confidence,
         });
 
+        useGateHistoryStore.getState().markSaved(task.id, betId);
+
+        persistConfirmedBet({
+          lotteryId: lottery.id,
+          numbers: task.prediction.game.numbers,
+          confidence: task.prediction.game.confidence,
+        })
+          .then((r) => {
+            if (r.ok) addLog("success", `☁️ ${lottery.name} gravada no banco (#${r.betId?.slice(0, 8)})`);
+            else addLog("warn", `⚠️ Falha ao gravar ${lottery.name} no banco: ${r.error ?? "?"}`);
+          })
+          .catch((e) => addLog("error", `Erro DB: ${String(e)}`));
+
         set((state) => ({
           tasks: state.tasks.map((t) =>
-            t.lotteryId !== lotteryId
-              ? t
-              : { ...t, phase: "confirmed", betId }
+            t.lotteryId !== lotteryId ? t : { ...t, phase: "confirmed", betId }
           ),
-          stats: {
-            ...state.stats,
-            totalBets: state.stats.totalBets + 1,
-          },
+          stats: { ...state.stats, totalBets: state.stats.totalBets + 1 },
         }));
 
         addLog("success", `✅ ${lottery.name} confirmada e salva! (ID: ${betId})`);
         useSyncStore.getState().addLog(`Aposta ${lottery.name} confirmada`, "success");
 
-        // Verifica se todos foram confirmados
         const allConfirmed = get().tasks.every(
           (t) => t.phase === "confirmed" || t.phase === "done"
         );
         if (allConfirmed) {
           set({ phase: "awaiting_draw" });
           addLog("info", `⏳ Todas as apostas confirmadas. Aguardando sorteios...`);
-          (get() as any).scheduleAutoCheck?.();
         }
+        (get() as any).scheduleAutoCheck?.();
       },
+
 
       confirmAllGames: () => {
         const { tasks, confirmGame } = get();
