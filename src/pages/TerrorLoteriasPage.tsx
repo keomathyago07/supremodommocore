@@ -11,6 +11,7 @@ import { OrchestratorPanel } from "../components/OrchestratorPanel";
 import { IAControlPanel } from "../components/IAControlPanel";
 import { LotteryRulesPanel } from "../components/LotteryRulesPanel";
 import { SyncPanel } from "../components/SyncPanel";
+import { GateHistoryPanel } from "../components/GateHistoryPanel";
 import { useBetStore } from "../store/betStore";
 import { useOrchestratorStore } from "../store/orchestratorStore";
 import { getTodayLotteries } from "../data/dailyScheduler";
@@ -19,6 +20,7 @@ type Tab =
   | "orchestrator"
   | "daily"
   | "checker"
+  | "gates"
   | "ia"
   | "rules"
   | "sync";
@@ -27,6 +29,7 @@ const TABS: { id: Tab; icon: string; label: string; shortLabel: string }[] = [
   { id: "orchestrator", icon: "🤖", label: "Orquestrador", shortLabel: "Orq." },
   { id: "daily", icon: "🎰", label: "Jogos do Dia", shortLabel: "Jogos" },
   { id: "checker", icon: "🔍", label: "Conferidor", shortLabel: "Conf." },
+  { id: "gates", icon: "🛡️", label: "Histórico Gates", shortLabel: "Gates" },
   { id: "ia", icon: "🧠", label: "Controle IA", shortLabel: "IA" },
   { id: "rules", icon: "📋", label: "Regras", shortLabel: "Regras" },
   { id: "sync", icon: "🔄", label: "Sync", shortLabel: "Sync" },
@@ -137,6 +140,7 @@ export default function MainPage() {
         {tab === "orchestrator" && <OrchestratorPanel />}
         {tab === "daily" && <DailyGamesPanel />}
         {tab === "checker" && <AutoCheckerPanel />}
+        {tab === "gates" && <GateHistoryPanel />}
         {tab === "ia" && <IAControlPanel />}
         {tab === "rules" && <LotteryRulesPanel />}
         {tab === "sync" && <SyncPanel />}

@@ -11,6 +11,8 @@ import { generateDailyGame, PredictionMeta } from "../data/aiPredictionEngine";
 import { useBetStore, SavedBet } from "./betStore";
 import { useIAControlStore } from "./iaControlStore";
 import { useSyncStore } from "./syncStore";
+import { useGateHistoryStore } from "./gateHistoryStore";
+import { persistConfirmedBet, fetchLatestResult, saveResultCheck } from "@/lib/betsCloud";
 
 export type OrchestratorPhase =
   | "idle"
@@ -65,6 +67,7 @@ export interface OrchestratorState {
   confirmGame: (lotteryId: string) => void;
   submitResult: (lotteryId: string, numbers: number[], extras?: number[]) => void;
   toggleAutoCheck: (v: boolean) => void;
+  scheduleAutoCheck: () => void;
   addLog: (level: OrchestratorLog["level"], message: string) => void;
   reset: () => void;
   getTask: (lotteryId: string) => OrchestratorTask | undefined;
@@ -129,15 +132,29 @@ export const useOrchestratorStore = create<OrchestratorState>()(
         addLog("ia", `🧠 Gerando 1 jogo otimizado por loteria com ensemble de IAs...`);
         await delay(800);
 
-        // 2. Gera 1 jogo por loteria
+        // 2. Gera 1 jogo por loteria + registra gate encontrado
+        const gateStore = useGateHistoryStore.getState();
         const tasks: OrchestratorTask[] = todayLotteries.map((lottery) => {
           const prediction = generateDailyGame(lottery, iaLevel);
           addLog(
             "ia",
             `✅ ${lottery.name}: ${prediction.game.numbers.join(", ")} — confiança ${prediction.game.confidence}%`
           );
+          const gateId = gateStore.addGate({
+            lotteryId: lottery.id,
+            lotteryName: lottery.name,
+            lotteryColor: lottery.color,
+            concurso: `${Date.now()}`,
+            numbers: prediction.game.numbers,
+            extras: prediction.game.extras,
+            confidence: prediction.game.confidence,
+            iaLevel: prediction.game.iaLevel,
+            strategies: prediction.game.strategies,
+            reasoning: prediction.reasoning,
+            status: "FOUND",
+          });
           return {
-            id: genTaskId(),
+            id: gateId,
             lotteryId: lottery.id,
             lotteryName: lottery.name,
             phase: "awaiting_confirmation" as OrchestratorPhase,
@@ -162,11 +179,9 @@ export const useOrchestratorStore = create<OrchestratorState>()(
         const { tasks, addLog } = get();
         const task = tasks.find((t) => t.lotteryId === lotteryId);
         if (!task?.prediction) return;
-
         const lottery = getTodayLotteries().find((l) => l.id === lotteryId);
         if (!lottery) return;
 
-        // Salva a aposta no betStore
         const betId = useBetStore.getState().saveBet({
           lotteryId: lottery.id,
           lotteryName: lottery.name,
@@ -181,31 +196,39 @@ export const useOrchestratorStore = create<OrchestratorState>()(
           confidence: task.prediction.game.confidence,
         });
 
+        useGateHistoryStore.getState().markSaved(task.id, betId);
+
+        persistConfirmedBet({
+          lotteryId: lottery.id,
+          numbers: task.prediction.game.numbers,
+          confidence: task.prediction.game.confidence,
+        })
+          .then((r) => {
+            if (r.ok) addLog("success", `☁️ ${lottery.name} gravada no banco (#${r.betId?.slice(0, 8)})`);
+            else addLog("warn", `⚠️ Falha ao gravar ${lottery.name} no banco: ${r.error ?? "?"}`);
+          })
+          .catch((e) => addLog("error", `Erro DB: ${String(e)}`));
+
         set((state) => ({
           tasks: state.tasks.map((t) =>
-            t.lotteryId !== lotteryId
-              ? t
-              : { ...t, phase: "confirmed", betId }
+            t.lotteryId !== lotteryId ? t : { ...t, phase: "confirmed", betId }
           ),
-          stats: {
-            ...state.stats,
-            totalBets: state.stats.totalBets + 1,
-          },
+          stats: { ...state.stats, totalBets: state.stats.totalBets + 1 },
         }));
 
         addLog("success", `✅ ${lottery.name} confirmada e salva! (ID: ${betId})`);
         useSyncStore.getState().addLog(`Aposta ${lottery.name} confirmada`, "success");
 
-        // Verifica se todos foram confirmados
         const allConfirmed = get().tasks.every(
           (t) => t.phase === "confirmed" || t.phase === "done"
         );
         if (allConfirmed) {
           set({ phase: "awaiting_draw" });
           addLog("info", `⏳ Todas as apostas confirmadas. Aguardando sorteios...`);
-          (get() as any).scheduleAutoCheck?.();
         }
+        (get() as any).scheduleAutoCheck?.();
       },
+
 
       confirmAllGames: () => {
         const { tasks, confirmGame } = get();
@@ -253,6 +276,16 @@ export const useOrchestratorStore = create<OrchestratorState>()(
               `❌ ${task.lotteryName}: ${r.acertos} acertos — não premiada neste sorteio`
             );
           }
+          // Persiste a conferência no banco (fire-and-forget)
+          saveResultCheck({
+            lotteryId,
+            concurso: Number((task as any).drawConcurso) || 0,
+            betNumbers: useBetStore.getState().getBetById(task.betId!)?.numbers ?? [],
+            drawNumbers,
+            hits: r.acertos,
+            prizeTier: r.tierId,
+            prizeValue: r.prizeEstimate,
+          }).catch(() => {});
         });
 
         set((state) => ({
@@ -280,6 +313,41 @@ export const useOrchestratorStore = create<OrchestratorState>()(
         set({ autoCheckEnabled: v });
         get().addLog("info", `Auto-conferência ${v ? "ativada" : "desativada"}`);
       },
+
+      // ── Watchdog de auto-conferência ───────────────────────────
+      // Faz polling em resultados_sorteios e dispara submitResult quando o
+      // sorteio do dia já estiver disponível para uma loteria com aposta confirmada.
+      scheduleAutoCheck: () => {
+        const w = window as any;
+        if (w.__terrorAutoCheckTimer) return; // idempotente
+        const { addLog } = get();
+        addLog("info", "🛰️ Watchdog de conferência ligado (polling 30s)");
+        const tick = async () => {
+          const { tasks, autoCheckEnabled } = get();
+          if (!autoCheckEnabled) return;
+          const pending = tasks.filter((t) => t.phase === "confirmed");
+          for (const t of pending) {
+            try {
+              const latest = await fetchLatestResult(t.lotteryId);
+              if (!latest || !latest.dezenas?.length) continue;
+              // Marca concurso pra persistência da conferência
+              (t as any).drawConcurso = latest.concurso;
+              get().submitResult(t.lotteryId, latest.dezenas);
+            } catch (e) {
+              addLog("warn", `Polling falhou ${t.lotteryName}: ${String(e)}`);
+            }
+          }
+          if (get().tasks.every((x) => x.phase === "done")) {
+            clearInterval(w.__terrorAutoCheckTimer);
+            w.__terrorAutoCheckTimer = null;
+            addLog("success", "✅ Watchdog encerrado — todas conferências completas");
+          }
+        };
+        w.__terrorAutoCheckTimer = setInterval(tick, 30000);
+        setTimeout(tick, 1500); // primeiro tick rápido
+      },
+
+
 
       reset: () => {
         set({ phase: "idle", tasks: [], logs: [], lastRun: null });
