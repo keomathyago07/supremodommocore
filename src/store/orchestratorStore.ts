@@ -131,15 +131,29 @@ export const useOrchestratorStore = create<OrchestratorState>()(
         addLog("ia", `🧠 Gerando 1 jogo otimizado por loteria com ensemble de IAs...`);
         await delay(800);
 
-        // 2. Gera 1 jogo por loteria
+        // 2. Gera 1 jogo por loteria + registra gate encontrado
+        const gateStore = useGateHistoryStore.getState();
         const tasks: OrchestratorTask[] = todayLotteries.map((lottery) => {
           const prediction = generateDailyGame(lottery, iaLevel);
           addLog(
             "ia",
             `✅ ${lottery.name}: ${prediction.game.numbers.join(", ")} — confiança ${prediction.game.confidence}%`
           );
+          const gateId = gateStore.addGate({
+            lotteryId: lottery.id,
+            lotteryName: lottery.name,
+            lotteryColor: lottery.color,
+            concurso: `${Date.now()}`,
+            numbers: prediction.game.numbers,
+            extras: prediction.game.extras,
+            confidence: prediction.game.confidence,
+            iaLevel: prediction.game.iaLevel,
+            strategies: prediction.game.strategies,
+            reasoning: prediction.reasoning,
+            status: "FOUND",
+          });
           return {
-            id: genTaskId(),
+            id: gateId,
             lotteryId: lottery.id,
             lotteryName: lottery.name,
             phase: "awaiting_confirmation" as OrchestratorPhase,
