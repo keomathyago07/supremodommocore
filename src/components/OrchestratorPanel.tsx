@@ -459,24 +459,3 @@ function StatRow({ label, value, highlight }: { label: string; value: string; hi
   );
 }
 
-const PHASE_LABELS: Record<string, string> = {
-  idle: "Aguardando",
-  analyzing: "Analisando",
-  generating: "Gerando",
-  awaiting_confirmation: "Aguard. confirmação",
-  confirmed: "Confirmado",
-  awaiting_draw: "Aguard. sorteio",
-  checking: "Conferindo",
-  done: "Concluído",
-};
-
-const PHASE_COLORS: Record<string, string> = {
-  idle: "#64748b",
-  analyzing: "#00d4ff",
-  generating: "#aa00ff",
-  awaiting_confirmation: "#ffaa00",
-  confirmed: "#00d4ff",
-  awaiting_draw: "#ffaa00",
-  checking: "#aa00ff",
-  done: "#00ff88",
-};

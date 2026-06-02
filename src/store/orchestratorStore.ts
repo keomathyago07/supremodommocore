@@ -203,7 +203,7 @@ export const useOrchestratorStore = create<OrchestratorState>()(
         if (allConfirmed) {
           set({ phase: "awaiting_draw" });
           addLog("info", `⏳ Todas as apostas confirmadas. Aguardando sorteios...`);
-          get().scheduleAutoCheck?.();
+          (get() as any).scheduleAutoCheck?.();
         }
       },
 
