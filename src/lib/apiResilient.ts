@@ -74,12 +74,27 @@ export async function testLotteryConnection(token: string, opts?: {
 
   let attempts = 0;
   let lastError = "";
+  const t0 = Date.now();
+  const record = (ok: boolean, source: string, error?: string, concurso?: number) => {
+    try {
+      useResilientStats.getState().record({
+        ts: new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo" }),
+        endpoint: source,
+        ok,
+        attempts,
+        latencyMs: Date.now() - t0,
+        error,
+        concurso,
+      });
+    } catch { /* noop */ }
+  };
 
   for (const ep of endpoints) {
     for (let i = 0; i < maxRetries; i++) {
       attempts++;
       if (opts?.signal?.aborted) {
-        return { ok: false, attempts, error: "aborted" };
+        record(false, ep.name, "aborted");
+        return { ok: false, attempts, error: "aborted", latencyMs: Date.now() - t0 };
       }
       try {
         const res = await fetchWithTimeout(ep.url, { headers: pickHeaders(attempts) }, timeoutMs);
@@ -87,23 +102,22 @@ export async function testLotteryConnection(token: string, opts?: {
           const data = await res.json().catch(() => null);
           const concurso = extractConcurso(data);
           if (data && concurso) {
-            return { ok: true, data, concurso, source: ep.name, attempts };
+            record(true, ep.name, undefined, concurso);
+            return { ok: true, data, concurso, source: ep.name, attempts, latencyMs: Date.now() - t0 };
           }
           lastError = `resposta sem concurso (${ep.name})`;
         } else {
           lastError = `HTTP ${res.status} em ${ep.name}`;
-          // 401/403 = token inválido — não adianta tentar de novo o mesmo endpoint
           if (res.status === 401 || res.status === 403) break;
         }
       } catch (e: any) {
         lastError = `${ep.name}: ${e?.message ?? "erro de rede"}`;
       }
-      // Backoff exponencial com jitter (0.5s, 1s, 2s ... + 0-300ms)
       const delay = Math.min(5000, 500 * Math.pow(2, i)) + Math.floor(Math.random() * 300);
       await new Promise((r) => setTimeout(r, delay));
     }
-    // próximo endpoint
   }
 
-  return { ok: false, attempts, error: lastError || "Todos os endpoints falharam" };
+  record(false, endpoints[endpoints.length - 1].name, lastError);
+  return { ok: false, attempts, error: lastError || "Todos os endpoints falharam", latencyMs: Date.now() - t0 };
 }
