@@ -275,6 +275,16 @@ export const useOrchestratorStore = create<OrchestratorState>()(
               `❌ ${task.lotteryName}: ${r.acertos} acertos — não premiada neste sorteio`
             );
           }
+          // Persiste a conferência no banco (fire-and-forget)
+          saveResultCheck({
+            lotteryId,
+            concurso: Number((task as any).drawConcurso) || 0,
+            betNumbers: useBetStore.getState().getBetById(task.betId!)?.numbers ?? [],
+            drawNumbers,
+            hits: r.acertos,
+            prizeTier: r.tierId,
+            prizeValue: r.prizeEstimate,
+          }).catch(() => {});
         });
 
         set((state) => ({
