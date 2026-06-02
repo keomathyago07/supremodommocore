@@ -82,6 +82,8 @@ export function IAControlPanel() {
           ✅ Salvo em {new Date(lastSaved).toLocaleString("pt-BR")} — sincronizado com todos os dispositivos
         </p>
       )}
+
+      <ResilientStatusPanel />
     </div>
   );
 }
