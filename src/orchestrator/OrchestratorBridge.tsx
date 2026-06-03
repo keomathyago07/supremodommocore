@@ -54,6 +54,7 @@ export function OrchestratorBridge() {
     window.addEventListener("orchestrator:generate", onGenerate as EventListener);
     window.addEventListener("orchestrator:check", onCheck as EventListener);
     window.addEventListener("orchestrator:sync_all", onSyncAll as EventListener);
+    window.addEventListener("orchestrator:auto_confirm_all", onAutoConfirm as EventListener);
     window.addEventListener("orchestrator:update_rules", onUpdateRules as EventListener);
     window.addEventListener("program:bets_updated", onBetsUpdated as EventListener);
     window.addEventListener("program:check_result", onCheckResult as EventListener);
