@@ -30,6 +30,14 @@ export function OrchestratorBridge() {
       try { useSyncStore.getState().addLog?.("Sync global via orquestrador","info"); } catch {}
     };
 
+    const onAutoConfirm = (e: CustomEvent) => {
+      const lotteries: string[] = e.detail?.lotteries ?? [];
+      masterOrch.addLog("system","bet_manager",`🤖 Auto-confirmação: ${lotteries.length} loteria(s)`);
+      try { useOrchestratorStore.getState().confirmAllGames(); } catch (err) {
+        masterOrch.addLog("error","bet_manager",String(err));
+      }
+    };
+
     const onUpdateRules = () => masterOrch.addLog("system","rules_engine","📋 Regras atualizadas");
 
     const onBetsUpdated = (e: CustomEvent) => {
@@ -46,6 +54,7 @@ export function OrchestratorBridge() {
     window.addEventListener("orchestrator:generate", onGenerate as EventListener);
     window.addEventListener("orchestrator:check", onCheck as EventListener);
     window.addEventListener("orchestrator:sync_all", onSyncAll as EventListener);
+    window.addEventListener("orchestrator:auto_confirm_all", onAutoConfirm as EventListener);
     window.addEventListener("orchestrator:update_rules", onUpdateRules as EventListener);
     window.addEventListener("program:bets_updated", onBetsUpdated as EventListener);
     window.addEventListener("program:check_result", onCheckResult as EventListener);
@@ -56,6 +65,7 @@ export function OrchestratorBridge() {
       window.removeEventListener("orchestrator:generate", onGenerate as EventListener);
       window.removeEventListener("orchestrator:check", onCheck as EventListener);
       window.removeEventListener("orchestrator:sync_all", onSyncAll as EventListener);
+      window.removeEventListener("orchestrator:auto_confirm_all", onAutoConfirm as EventListener);
       window.removeEventListener("orchestrator:update_rules", onUpdateRules as EventListener);
       window.removeEventListener("program:bets_updated", onBetsUpdated as EventListener);
       window.removeEventListener("program:check_result", onCheckResult as EventListener);

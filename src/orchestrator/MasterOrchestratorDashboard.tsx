@@ -201,6 +201,10 @@ function OverviewTab() {
       {/* Pipeline visual */}
       <PipelineVisual phase={phase} />
 
+      {/* Plano Ultra-Sync do dia */}
+      <DailyPlanCard />
+
+
       {/* Cards de status */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <SectionCard title="🎓 Treinamento" color="#aa00ff">
@@ -864,3 +868,97 @@ const smallBtnStyle = (color: string) => ({
   background: color + "15", border: `1px solid ${color}33`,
   color, fontSize: 10, fontWeight: 700, cursor: "pointer",
 });
+
+// ─── Ultra-Sync Daily Plan ───────────────────────────────────
+function DailyPlanCard() {
+  const { dailyPlan, config, syncDailyPlan, updateConfig, ultraSyncTick } = useMasterOrchestrator();
+
+  const statusColor: Record<string, string> = {
+    pending: "#64748b", generated: "#00d4ff", confirmed: "#aa00ff",
+    drawn: "#ffaa00", checked: "#00ff88", skipped: "#475569",
+  };
+  const statusLabel: Record<string, string> = {
+    pending: "Aguardando", generated: "Gerado", confirmed: "Confirmado",
+    drawn: "Sorteado", checked: "Conferido", skipped: "Pulado",
+  };
+
+  return (
+    <div style={{
+      background: "rgba(255,255,255,0.04)",
+      border: "1px solid rgba(0,212,255,0.15)",
+      borderRadius: 12, padding: "12px 14px",
+    }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 14 }}>📅</span>
+          <span style={{ fontSize: 12, fontWeight: 700, color: "#e2e8f0" }}>
+            Ultra-Sync • Plano do Dia ({dailyPlan.length})
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 6 }}>
+          <button onClick={syncDailyPlan} style={smallBtnStyle("#00d4ff")}>↻ Resync</button>
+          <button onClick={() => ultraSyncTick()} style={smallBtnStyle("#aa00ff")}>⚡ Tick</button>
+        </div>
+      </div>
+
+      <div style={{
+        display: "flex", gap: 6, marginBottom: 10,
+        padding: "6px 8px", borderRadius: 8,
+        background: "rgba(0,0,0,0.2)", fontSize: 10, color: "#94a3b8",
+        flexWrap: "wrap", alignItems: "center",
+      }}>
+        <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <input type="checkbox" checked={config.perLotteryAutoSync}
+            onChange={(e) => updateConfig({ perLotteryAutoSync: e.target.checked })} />
+          Auto-Sync por loteria
+        </label>
+        <label style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          <input type="checkbox" checked={config.autoConfirmGenerated}
+            onChange={(e) => updateConfig({ autoConfirmGenerated: e.target.checked })} />
+          Auto-confirmar
+        </label>
+        <span>
+          Lead:&nbsp;
+          <input type="number" min={5} max={240} value={config.generationLeadMinutes}
+            onChange={(e) => updateConfig({ generationLeadMinutes: +e.target.value || 60 })}
+            style={{ width: 50, padding: "2px 4px", background: "#0a0f1c", color: "#00d4ff",
+              border: "1px solid rgba(0,212,255,0.2)", borderRadius: 4, fontSize: 10 }} />
+          &nbsp;min
+        </span>
+      </div>
+
+      {dailyPlan.length === 0 ? (
+        <div style={{ fontSize: 11, color: "#475569", textAlign: "center", padding: 12 }}>
+          Sem loterias sorteando hoje. Clique em <strong>Resync</strong> para recalcular.
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {dailyPlan.map((p) => (
+            <div key={p.lotteryId} style={{
+              display: "flex", alignItems: "center", justifyContent: "space-between",
+              padding: "8px 10px", borderRadius: 8,
+              background: "rgba(255,255,255,0.03)",
+              border: `1px solid ${statusColor[p.status]}33`,
+            }}>
+              <div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#e2e8f0" }}>{p.lotteryName}</div>
+                <div style={{ fontSize: 9, color: "#64748b", marginTop: 2 }}>
+                  Gerar: <span style={{ color: "#00d4ff" }}>{p.generateAt}</span>
+                  &nbsp;· Sorteio: <span style={{ color: "#ffaa00" }}>{p.drawTime}</span>
+                </div>
+              </div>
+              <span style={{
+                fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 12,
+                color: statusColor[p.status],
+                background: statusColor[p.status] + "15",
+                border: `1px solid ${statusColor[p.status]}33`,
+              }}>
+                {statusLabel[p.status]}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}

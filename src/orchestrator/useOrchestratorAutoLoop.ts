@@ -36,6 +36,8 @@ export function useOrchestratorAutoLoop(options: AutoLoopOptions = {}) {
     isWithinCheckingWindow,
     isWithinTrainingWindow,
     getCurrentPhaseByTime,
+    ultraSyncTick,
+    syncDailyPlan,
   } = useMasterOrchestrator();
 
   const lastActionRef = useRef<Record<string, string>>({});
@@ -56,6 +58,16 @@ export function useOrchestratorAutoLoop(options: AutoLoopOptions = {}) {
       const now = new Date();
       const dateKey = now.toISOString().split("T")[0];
       const hourKey = `${dateKey}_${now.getHours()}`;
+
+      // 0. ULTRA-SYNC por loteria — re-sincroniza plano diário e
+      // dispara geração X minutos antes de cada drawTime
+      if (config.perLotteryAutoSync) {
+        if (lastActionRef.current["plan_sync"] !== dateKey) {
+          lastActionRef.current["plan_sync"] = dateKey;
+          syncDailyPlan();
+        }
+        await ultraSyncTick();
+      }
 
       // 1. JANELA DE TREINAMENTO (madrugada) ─────────────────
       if (
