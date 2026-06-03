@@ -241,6 +241,11 @@ export const useMasterOrchestrator = create<MasterOrchestratorState>()(
         iaEnsembleMode: "parallel",
         minConfidenceThreshold: 75,
         targetPrizeTiers: ["lf_14","lf_15","mega_5","mega_6","quina_5","mil_6_2t"],
+        // Ultra-Sync defaults
+        perLotteryAutoSync: true,
+        generationLeadMinutes: 60,
+        autoConfirmGenerated: false,
+        ultraSyncTickSeconds: 60,
       },
       trainingMetrics: {
         totalCycles: 0,
