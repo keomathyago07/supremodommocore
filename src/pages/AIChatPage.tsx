@@ -148,6 +148,15 @@ const AIChatPage = () => {
         <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="glass rounded-xl p-5 mb-4 space-y-4">
           <h3 className="text-sm font-display font-semibold text-primary">Configuração da API</h3>
           <p className="text-xs text-muted-foreground">Insira sua chave de API (OpenAI, Claude, ou qualquer API compatível)</p>
+          <div className="rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-xs text-destructive space-y-1">
+            <p className="font-semibold">⚠️ Aviso de segurança</p>
+            <p className="text-destructive/90">
+              Sua chave fica armazenada apenas neste navegador (localStorage) e é enviada
+              diretamente ao provedor escolhido. Use somente chaves com escopo/limite restrito.
+              Qualquer extensão maliciosa ou XSS poderia exfiltrá-la. Para produção,
+              recomende-se rotear via edge function.
+            </p>
+          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             {PROVIDERS.map(p => (
