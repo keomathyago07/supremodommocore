@@ -30,6 +30,14 @@ export function OrchestratorBridge() {
       try { useSyncStore.getState().addLog?.("Sync global via orquestrador","info"); } catch {}
     };
 
+    const onAutoConfirm = (e: CustomEvent) => {
+      const lotteries: string[] = e.detail?.lotteries ?? [];
+      masterOrch.addLog("system","bet_manager",`🤖 Auto-confirmação: ${lotteries.length} loteria(s)`);
+      try { useOrchestratorStore.getState().confirmAllGames(); } catch (err) {
+        masterOrch.addLog("error","bet_manager",String(err));
+      }
+    };
+
     const onUpdateRules = () => masterOrch.addLog("system","rules_engine","📋 Regras atualizadas");
 
     const onBetsUpdated = (e: CustomEvent) => {
