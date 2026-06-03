@@ -555,7 +555,7 @@ export const useMasterOrchestrator = create<MasterOrchestratorState>()(
 
         set({ phase: "learning" });
         await delay(400);
-        await get().runLearningFromResults();
+        await (get() as any).runLearningFromResults();
       },
 
       // ── Aprendizado com resultados ─────────────────────────
