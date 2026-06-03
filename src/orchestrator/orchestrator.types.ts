@@ -112,16 +112,33 @@ export interface OrchestratorLog {
 
 // ── Configurações do orquestrador ────────────────────────────
 export interface OrchestratorConfig {
-  autoManageAll: boolean;           // gerencia tudo automaticamente
-  autoTrain: boolean;               // IAs treinam automaticamente
-  autoStudy: boolean;               // IAs estudam automaticamente
-  autoGenerateOnSchedule: boolean;  // gera jogos no horário definido
-  autoCheckAfterDraw: boolean;      // confere automaticamente após 21h
-  autoLearnFromResults: boolean;    // aprende com resultados do dia
-  syncAllModules: boolean;          // sincroniza todos os módulos
-  enforceDrawTime: boolean;         // só confere com sorteios do dia atual
+  autoManageAll: boolean;
+  autoTrain: boolean;
+  autoStudy: boolean;
+  autoGenerateOnSchedule: boolean;
+  autoCheckAfterDraw: boolean;
+  autoLearnFromResults: boolean;
+  syncAllModules: boolean;
+  enforceDrawTime: boolean;
   schedule: OperationSchedule;
   iaEnsembleMode: "parallel" | "sequential" | "hierarchical";
-  minConfidenceThreshold: number;   // 0–100
-  targetPrizeTiers: string[];       // faixas alvo
+  minConfidenceThreshold: number;
+  targetPrizeTiers: string[];
+  // ── Ultra-Sync (novo) ──────────────────────────────────────
+  perLotteryAutoSync: boolean;
+  generationLeadMinutes: number;
+  autoConfirmGenerated: boolean;
+  ultraSyncTickSeconds: number;
+}
+
+// ── Plano diário por loteria (Ultra-Sync) ────────────────────
+export interface LotteryDailyPlan {
+  lotteryId: string;
+  lotteryName: string;
+  drawTime: string;        // "20:00"
+  generateAt: string;      // drawTime - leadMinutes
+  status: "pending" | "generated" | "confirmed" | "drawn" | "checked" | "skipped";
+  generatedAt?: string;
+  confirmedAt?: string;
+  checkedAt?: string;
 }

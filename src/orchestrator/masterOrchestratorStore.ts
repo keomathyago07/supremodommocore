@@ -17,7 +17,9 @@ import {
   OrchestratorLog,
   OrchestratorConfig,
   OperationSchedule,
+  LotteryDailyPlan,
 } from "./orchestrator.types";
+import { getTodayLotteries } from "@/data/dailyScheduler";
 
 // ── Configuração padrão dos horários ────────────────────────
 const DEFAULT_SCHEDULE: OperationSchedule = {
