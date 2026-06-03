@@ -265,6 +265,8 @@ export const useMasterOrchestrator = create<MasterOrchestratorState>()(
       },
       cycles: [],
       currentCycle: null,
+      dailyPlan: [],
+      lastPlanSyncDate: null,
 
       // ── Helpers ────────────────────────────────────────────
       addLog: (level, module, message, detail) =>
