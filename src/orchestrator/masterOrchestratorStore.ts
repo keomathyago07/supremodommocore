@@ -373,6 +373,7 @@ export const useMasterOrchestrator = create<MasterOrchestratorState>()(
         const phase = get().getCurrentPhaseByTime();
         set({ phase, isRunning: true });
 
+        get().syncDailyPlan();
         addLog("system", "orchestrator", `⚙️ Fase atual detectada: ${phase.toUpperCase()}`);
       },
 
