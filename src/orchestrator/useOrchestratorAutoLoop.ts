@@ -36,6 +36,8 @@ export function useOrchestratorAutoLoop(options: AutoLoopOptions = {}) {
     isWithinCheckingWindow,
     isWithinTrainingWindow,
     getCurrentPhaseByTime,
+    ultraSyncTick,
+    syncDailyPlan,
   } = useMasterOrchestrator();
 
   const lastActionRef = useRef<Record<string, string>>({});
