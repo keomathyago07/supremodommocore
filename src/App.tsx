@@ -43,6 +43,8 @@ import IASControlPage from "./pages/IASControlPage";
 import NotificacoesPage from "./pages/NotificacoesPage";
 import ConfigPage from "./pages/ConfigPage";
 import TerrorLoteriasPage from "./pages/TerrorLoteriasPage";
+import OrchestratorPage from "./orchestrator/OrchestratorPage";
+import { OrchestratorBridge } from "./orchestrator/OrchestratorBridge";
 import { godActivate } from "./store/godEyeStore";
 
 // 👁️ Auto-boot do God Eye v6.0 (re-execução a cada 10 min)
@@ -81,6 +83,7 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <OrchestratorBridge />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<PublicRoute><LoginPage /></PublicRoute>} />
@@ -109,6 +112,7 @@ const App = () => (
                 <Route path="notificacoes" element={<NotificacoesPage />} />
                 <Route path="configuracoes" element={<ConfigPage />} />
                 <Route path="terror-loterias" element={<TerrorLoteriasPage />} />
+                <Route path="orquestrador" element={<OrchestratorPage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
