@@ -201,6 +201,10 @@ function OverviewTab() {
       {/* Pipeline visual */}
       <PipelineVisual phase={phase} />
 
+      {/* Plano Ultra-Sync do dia */}
+      <DailyPlanCard />
+
+
       {/* Cards de status */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
         <SectionCard title="🎓 Treinamento" color="#aa00ff">
