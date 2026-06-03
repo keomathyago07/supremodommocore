@@ -7,8 +7,8 @@ import { Zap, Shield, Brain } from 'lucide-react';
 import { AI_SPECIALISTS } from '@/lib/lotteryConstants';
 import { supabase } from '@/integrations/supabase/client';
 
-const VALID_EMAIL = 'keomatiago@gmail.com';
-const VALID_PIN = '834589';
+// Credenciais validadas exclusivamente no servidor (edge function recover-private-access + Supabase Auth).
+// Nenhum email/PIN é embutido no bundle do cliente.
 
 const LoginPage = () => {
   const { signIn, signUp } = useAuth();
@@ -36,13 +36,8 @@ const LoginPage = () => {
     const normalizedEmail = email.trim().toLowerCase();
     const normalizedPin = pin.replace(/\D/g, '');
 
-    if (normalizedEmail !== VALID_EMAIL.toLowerCase()) {
-      setError('Acesso negado — email não autorizado');
-      return;
-    }
-
-    if (normalizedPin !== VALID_PIN) {
-      setError('PIN incorreto');
+    if (!normalizedEmail || normalizedPin.length !== 6) {
+      setError('Informe o email e o PIN de 6 dígitos');
       return;
     }
 

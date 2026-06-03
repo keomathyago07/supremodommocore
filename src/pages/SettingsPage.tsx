@@ -28,7 +28,11 @@ const SettingsPage = () => {
   });
 
   const handleChangePin = async () => {
-    if (!user) return;
+    if (!user?.email) return;
+    if (currentPin.length !== 6 || !/^\d{6}$/.test(currentPin)) {
+      toast.error('Informe o PIN atual (6 dígitos)');
+      return;
+    }
     if (newPin.length !== 6 || !/^\d{6}$/.test(newPin)) {
       toast.error('O novo PIN deve ter exatamente 6 dígitos');
       return;
@@ -37,8 +41,22 @@ const SettingsPage = () => {
       toast.error('Os PINs não coincidem');
       return;
     }
+    if (newPin === currentPin) {
+      toast.error('O novo PIN deve ser diferente do atual');
+      return;
+    }
     setChangingPin(true);
     try {
+      // Re-autentica com o PIN atual antes de aceitar a troca
+      const currentPassword = `DommoSupremo#${currentPin}#2026`;
+      const { error: reauthError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (reauthError) {
+        toast.error('PIN atual incorreto');
+        return;
+      }
       const newPassword = `DommoSupremo#${newPin}#2026`;
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
