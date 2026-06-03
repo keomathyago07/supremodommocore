@@ -656,6 +656,86 @@ export const useMasterOrchestrator = create<MasterOrchestratorState>()(
             schedule: { ...state.config.schedule, ...schedule },
           },
         })),
+
+      // ── Ultra-Sync: plano diário por loteria ───────────────
+      markPlanStatus: (lotteryId, status) =>
+        set((state) => ({
+          dailyPlan: state.dailyPlan.map((p) =>
+            p.lotteryId !== lotteryId ? p : {
+              ...p,
+              status,
+              generatedAt: status === "generated" ? new Date().toISOString() : p.generatedAt,
+              confirmedAt: status === "confirmed" ? new Date().toISOString() : p.confirmedAt,
+              checkedAt: status === "checked" ? new Date().toISOString() : p.checkedAt,
+            }
+          ),
+        })),
+
+      syncDailyPlan: () => {
+        const { addLog, config } = get();
+        const today = todayStr();
+        const lotteries = getTodayLotteries();
+        const lead = config.generationLeadMinutes ?? 60;
+
+        const plan: LotteryDailyPlan[] = lotteries.map((l) => {
+          const drawMins = parseTime(l.drawTime);
+          const genMins = Math.max(parseTime(config.schedule.generationWindowStart), drawMins - lead);
+          const hh = String(Math.floor(genMins / 60)).padStart(2, "0");
+          const mm = String(genMins % 60).padStart(2, "0");
+          return {
+            lotteryId: l.id,
+            lotteryName: l.name,
+            drawTime: l.drawTime,
+            generateAt: `${hh}:${mm}`,
+            status: "pending" as const,
+          };
+        });
+
+        set({ dailyPlan: plan, lastPlanSyncDate: today });
+        addLog("system", "scheduler",
+          `📅 Ultra-Sync: ${plan.length} loteria(s) hoje — ${plan.map(p => `${p.lotteryName} ${p.generateAt}→${p.drawTime}`).join(" | ")}`
+        );
+      },
+
+      ultraSyncTick: async () => {
+        const { config, dailyPlan, lastPlanSyncDate, syncDailyPlan, addLog,
+                triggerGeneration, markPlanStatus, isRunning } = get();
+        if (!isRunning || !config.perLotteryAutoSync) return;
+
+        const today = todayStr();
+        if (lastPlanSyncDate !== today) {
+          syncDailyPlan();
+        }
+
+        const now = parseTime(timeStr());
+        const plan = get().dailyPlan;
+
+        // Dispara geração quando qualquer loteria entrar na janela "generateAt"
+        const due = plan.filter((p) =>
+          p.status === "pending" && parseTime(p.generateAt) <= now && now < parseTime(p.drawTime)
+        );
+
+        if (due.length > 0) {
+          addLog("system", "scheduler",
+            `⚡ Ultra-Sync disparou geração: ${due.map(d => d.lotteryName).join(", ")}`
+          );
+          due.forEach((d) => markPlanStatus(d.lotteryId, "generated"));
+          await triggerGeneration();
+
+          if (config.autoConfirmGenerated) {
+            addLog("system", "bet_manager", "✅ Auto-confirmação ativa — confirmando jogos gerados");
+            window.dispatchEvent(new CustomEvent("orchestrator:auto_confirm_all", {
+              detail: { lotteries: due.map(d => d.lotteryId), ts: new Date().toISOString() }
+            }));
+            due.forEach((d) => markPlanStatus(d.lotteryId, "confirmed"));
+          }
+        }
+
+        // Marca como "drawn" depois do drawTime
+        plan
+          .filter((p) => parseTime(p.drawTime) <= now && (p.status === "pending" || p.status === "generated" || p.status === "confirmed"))
+          .forEach((p) => markPlanStatus(p.lotteryId, "drawn"));
+      },
     }),
     {
       name: "terror-loterias-master-orchestrator",
@@ -665,6 +745,8 @@ export const useMasterOrchestrator = create<MasterOrchestratorState>()(
         trainingMetrics: state.trainingMetrics,
         cycles: state.cycles.slice(-30),
         agents: state.agents,
+        dailyPlan: state.dailyPlan,
+        lastPlanSyncDate: state.lastPlanSyncDate,
       }),
     }
   )
