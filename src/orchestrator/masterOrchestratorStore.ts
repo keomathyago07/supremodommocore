@@ -165,6 +165,8 @@ export interface MasterOrchestratorState {
   trainingMetrics: TrainingMetrics;
   cycles: DailyCycle[];
   currentCycle: DailyCycle | null;
+  dailyPlan: LotteryDailyPlan[];
+  lastPlanSyncDate: string | null;
 
   // Controles
   boot: () => Promise<void>;
@@ -176,6 +178,10 @@ export interface MasterOrchestratorState {
   runFullDailyCycle: () => Promise<void>;
   updateConfig: (config: Partial<OrchestratorConfig>) => void;
   updateSchedule: (schedule: Partial<OperationSchedule>) => void;
+  // Ultra-Sync
+  syncDailyPlan: () => void;
+  ultraSyncTick: () => Promise<void>;
+  markPlanStatus: (lotteryId: string, status: LotteryDailyPlan["status"]) => void;
 
   // Helpers
   addLog: (level: OrchestratorLog["level"], module: OrchestratorLog["module"], message: string, detail?: string) => void;
