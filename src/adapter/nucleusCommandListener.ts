@@ -16,7 +16,7 @@ import {
   reportTrainingDone,
   reportSyncDone,
   reportNucleusError,
-} from "../orchestrator/NucleusBridge";
+} from "./NucleusBridge";
 
 // ── Tipo dos comandos recebidos ──────────────────────────────
 type OrchestratorCommand =
