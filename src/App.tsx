@@ -47,6 +47,8 @@ import OrchestratorPage from "./orchestrator/OrchestratorPage";
 import { OrchestratorBridge } from "./orchestrator/OrchestratorBridge";
 import OrchestratorAdapterPage from "./adapter/OrchestratorAdapterPage";
 import { NucleusBridge } from "./adapter/NucleusBridge";
+import TitanPage from "./titan/TitanPage";
+import { TitanBridge } from "./titan/TitanBridge";
 import { godActivate } from "./store/godEyeStore";
 
 // 👁️ Auto-boot do God Eye v6.0 (re-execução a cada 10 min)
@@ -87,6 +89,7 @@ const App = () => (
           <Sonner />
           <OrchestratorBridge />
           <NucleusBridge />
+          <TitanBridge />
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<PublicRoute><LoginPage /></PublicRoute>} />
@@ -117,6 +120,7 @@ const App = () => (
                 <Route path="terror-loterias" element={<TerrorLoteriasPage />} />
                 <Route path="orquestrador" element={<OrchestratorPage />} />
                 <Route path="adapter" element={<OrchestratorAdapterPage />} />
+                <Route path="titan" element={<TitanPage />} />
                 <Route path="engine" element={<AnalyticalEnginePage />} />
                 <Route path="motor" element={<MotorAnaliticoPage />} />
                 <Route path="ai" element={<AISpecialistsPage />} />
