@@ -42,7 +42,7 @@ import MinhasApostasPage from "./pages/MinhasApostasPage";
 import IASControlPage from "./pages/IASControlPage";
 import NotificacoesPage from "./pages/NotificacoesPage";
 import ConfigPage from "./pages/ConfigPage";
-import TerrorLoteriasPage from "./pages/TerrorLoteriasPage";
+
 import OrchestratorPage from "./orchestrator/OrchestratorPage";
 import { OrchestratorBridge } from "./orchestrator/OrchestratorBridge";
 import OrchestratorAdapterPage from "./adapter/OrchestratorAdapterPage";
@@ -117,7 +117,7 @@ const App = () => (
                 <Route path="ias-control" element={<IASControlPage />} />
                 <Route path="notificacoes" element={<NotificacoesPage />} />
                 <Route path="configuracoes" element={<ConfigPage />} />
-                <Route path="terror-loterias" element={<TerrorLoteriasPage />} />
+                
                 <Route path="orquestrador" element={<OrchestratorPage />} />
                 <Route path="adapter" element={<OrchestratorAdapterPage />} />
                 <Route path="titan" element={<TitanPage />} />
