@@ -28,7 +28,7 @@ const menuItems = [
   { id: 'ias-control', label: '🧠 Controle de IAS', icon: Brain, path: '/dashboard/ias-control' },
   { id: 'configuracoes', label: '⚙️ Config Ultra Avançadas', icon: Sliders, path: '/dashboard/configuracoes' },
   { id: 'orquestrador', label: '🤖 Orquestrador Master', icon: Cpu, path: '/dashboard/orquestrador' },
-  { id: 'terror-loterias', label: '🎰 Terror das Loterias', icon: Trophy, path: '/dashboard/terror-loterias' },
+  
   { id: 'bets', label: 'Apostas (Legacy)', icon: Ticket, path: '/dashboard/bets' },
   { id: 'historico-gates', label: 'Histórico Gates IA', icon: FileCheck, path: '/dashboard/historico-gates' },
   { id: 'history', label: 'Histórico Gates', icon: History, path: '/dashboard/history' },
