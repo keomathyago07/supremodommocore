@@ -6,6 +6,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useTitanCore } from "./titanCoreStore";
 import { TitanConfirmTab } from "./TitanConfirmTab";
+import { TitanBacktestTab } from "./TitanBacktestTab";
 import { SystemState } from "./titanCore.types";
 
 const STATE_META: Record<SystemState, { label: string; color: string; icon: string }> = {
@@ -28,7 +29,7 @@ const LAYER_COLORS: Record<string,string> = {
   check:"#00ff88", sync:"#ffaa00", evolution:"#ff00ff",
 };
 
-type Tab = "overview"|"pipeline"|"engines"|"modules"|"evolution"|"confirm"|"log";
+type Tab = "overview"|"pipeline"|"engines"|"modules"|"evolution"|"confirm"|"backtest"|"log";
 
 export function TitanCoreDashboard() {
   const titan = useTitanCore();
@@ -60,6 +61,7 @@ export function TitanCoreDashboard() {
     {id:"modules",   icon:"⚙️",  label:"38 Módulos"},
     {id:"evolution", icon:"🧬", label:"Evolução"},
     {id:"confirm",   icon:"🎟️", label:"Confirmados"},
+    {id:"backtest",  icon:"🧪", label:"Backtest"},
     {id:"log",       icon:"📋", label:"Log"},
   ];
 
@@ -142,6 +144,7 @@ export function TitanCoreDashboard() {
       {tab==="modules"   && <ModulesTab titan={titan} />}
       {tab==="evolution" && <EvolutionTab titan={titan} />}
       {tab==="confirm"   && <TitanConfirmTab />}
+      {tab==="backtest"  && <TitanBacktestTab />}
       {tab==="log"       && <LogTab titan={titan} logRef={logRef} />}
 
       <style>{`
