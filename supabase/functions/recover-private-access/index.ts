@@ -5,8 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PRIVATE_EMAIL = 'keomatiago@gmail.com';
-const PRIVATE_PIN = '834589';
+const PRIVATE_EMAIL = (Deno.env.get('PRIVATE_EMAIL') ?? '').trim().toLowerCase();
+const PRIVATE_PIN = (Deno.env.get('PRIVATE_PIN') ?? '').replace(/\D/g, '');
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
