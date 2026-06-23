@@ -921,6 +921,75 @@ export type Database = {
         }
         Relationships: []
       }
+      titan_backtest_runs: {
+        Row: {
+          acertos_total: number
+          algoritmo: string
+          amostras: number
+          brier_score: number
+          calibracao: Json
+          ci_high: number
+          ci_low: number
+          created_at: string
+          faixa_acertos: Json
+          garantia_nivel: string
+          hit_rate: number
+          ia_engine: string
+          id: string
+          loteria: string
+          observacoes: string | null
+          parametros: Json
+          precisao: number
+          risk_level: string
+          roi_simulado: number
+          user_id: string
+        }
+        Insert: {
+          acertos_total?: number
+          algoritmo: string
+          amostras?: number
+          brier_score?: number
+          calibracao?: Json
+          ci_high?: number
+          ci_low?: number
+          created_at?: string
+          faixa_acertos?: Json
+          garantia_nivel?: string
+          hit_rate?: number
+          ia_engine: string
+          id?: string
+          loteria: string
+          observacoes?: string | null
+          parametros?: Json
+          precisao?: number
+          risk_level?: string
+          roi_simulado?: number
+          user_id?: string
+        }
+        Update: {
+          acertos_total?: number
+          algoritmo?: string
+          amostras?: number
+          brier_score?: number
+          calibracao?: Json
+          ci_high?: number
+          ci_low?: number
+          created_at?: string
+          faixa_acertos?: Json
+          garantia_nivel?: string
+          hit_rate?: number
+          ia_engine?: string
+          id?: string
+          loteria?: string
+          observacoes?: string | null
+          parametros?: Json
+          precisao?: number
+          risk_level?: string
+          roi_simulado?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       verificacoes_sorteio: {
         Row: {
           acertos_s1: number
