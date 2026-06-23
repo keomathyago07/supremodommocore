@@ -4,4 +4,5 @@
 export * from "./ingestion";
 export * from "./features";
 export * from "./monteCarlo";
-export * from "./mcmc";
+export { metropolisHastings, defaultDesirability } from "./mcmc";
+export type { DesirabilityFn } from "./mcmc";
