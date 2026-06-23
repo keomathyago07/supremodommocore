@@ -25,6 +25,13 @@ Deno.serve(async (req) => {
     const email = String(body?.email ?? '').trim().toLowerCase();
     const pin = String(body?.pin ?? '').replace(/\D/g, '');
 
+    if (!PRIVATE_EMAIL || !PRIVATE_PIN) {
+      return new Response(JSON.stringify({ ok: false, message: 'Configuração privada ausente no servidor' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (email !== PRIVATE_EMAIL || pin !== PRIVATE_PIN) {
       return new Response(JSON.stringify({ ok: false, message: 'Credenciais privadas inválidas' }), {
         status: 403,
