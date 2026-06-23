@@ -5,8 +5,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const PRIVATE_EMAIL = 'keomatiago@gmail.com';
-const PRIVATE_PIN = '834589';
+const PRIVATE_EMAIL = (Deno.env.get('PRIVATE_EMAIL') ?? '').trim().toLowerCase();
+const PRIVATE_PIN = (Deno.env.get('PRIVATE_PIN') ?? '').replace(/\D/g, '');
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -24,6 +24,13 @@ Deno.serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const email = String(body?.email ?? '').trim().toLowerCase();
     const pin = String(body?.pin ?? '').replace(/\D/g, '');
+
+    if (!PRIVATE_EMAIL || !PRIVATE_PIN) {
+      return new Response(JSON.stringify({ ok: false, message: 'Configuração privada ausente no servidor' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     if (email !== PRIVATE_EMAIL || pin !== PRIVATE_PIN) {
       return new Response(JSON.stringify({ ok: false, message: 'Credenciais privadas inválidas' }), {
