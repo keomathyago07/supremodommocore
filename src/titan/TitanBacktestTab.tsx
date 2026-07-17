@@ -37,6 +37,7 @@ export function TitanBacktestTab() {
   const [history, setHistory] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [autoSave, setAutoSave] = useState(true);
+  const [drillOpen, setDrillOpen] = useState<BacktestResult | null>(null);
 
   useEffect(() => { refreshHistory(); }, []);
 
