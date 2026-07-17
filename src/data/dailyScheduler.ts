@@ -147,7 +147,7 @@ export const LOTTERIES: LotteryMeta[] = [
     id: "diasorte",
     name: "Dia de Sorte",
     color: "#ffd600",
-    drawDays: [2, 4, 6],
+    drawDays: [1, 2, 3, 4, 5, 6],
     numbersRange: [1, 31],
     numbersToChoose: 7,
     extras: { type: "mes" },

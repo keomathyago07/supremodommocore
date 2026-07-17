@@ -94,7 +94,7 @@ export const LOTTERIES: LotteryConfig[] = [
     numbersCount: 7, maxNumber: 31, color: '#CB852B',
     lockedPatterns: ['7 acertos', '6 acertos'],
     drawTime: '21:00',
-    drawDays: [2, 4, 6],
+    drawDays: [1, 2, 3, 4, 5, 6],
   },
   {
     id: 'supersete', name: 'Super Sete', apiName: 'super-sete',
