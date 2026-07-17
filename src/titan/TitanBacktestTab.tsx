@@ -10,6 +10,10 @@ import {
   rankResults, LOTERIA_CONFIG, PREDICTORS,
   type BacktestResult, type LoteriaKey,
 } from "./engines/backtest";
+import { exportBacktestSummaryCsv } from "./backtest/exportCsv";
+import { exportBacktestSummaryPdf } from "./backtest/exportPdf";
+import { BacktestDrillDown } from "./backtest/BacktestDrillDown";
+import { BacktestSchedulerPanel } from "./backtest/BacktestSchedulerPanel";
 
 const LOTERIAS = Object.keys(LOTERIA_CONFIG) as LoteriaKey[];
 const PREDICTOR_KEYS = Object.keys(PREDICTORS) as (keyof typeof PREDICTORS)[];
