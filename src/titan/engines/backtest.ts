@@ -28,6 +28,16 @@ export interface BacktestSample {
   data: string;
 }
 
+export interface BacktestRoundDetail {
+  concurso: number;
+  data: string;
+  sorteados: number[];
+  previstos: number[];
+  acertos: number;
+  premio: number;
+  confidence: number;
+}
+
 export interface BacktestResult {
   loteria: LoteriaKey;
   iaEngine: string;
@@ -44,6 +54,7 @@ export interface BacktestResult {
   faixaAcertos: Record<number, number>;
   calibracao: { bins: { p: number; observado: number; n: number }[] };
   parametros: Record<string, unknown>;
+  rounds?: BacktestRoundDetail[]; // drill-down opcional
 }
 
 // ============================================================
