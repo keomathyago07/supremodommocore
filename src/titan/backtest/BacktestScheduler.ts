@@ -34,7 +34,7 @@ const TABLE = "titan_backtest_schedules" as const;
 export async function listSchedules(): Promise<BacktestSchedule[]> {
   const { data, error } = await supabase.from(TABLE as any).select("*").order("created_at", { ascending: false });
   if (error) throw new Error(error.message);
-  return (data ?? []) as BacktestSchedule[];
+  return ((data ?? []) as unknown) as BacktestSchedule[];
 }
 
 export async function createSchedule(p: NewSchedulePayload) {
