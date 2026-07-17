@@ -990,6 +990,66 @@ export type Database = {
         }
         Relationships: []
       }
+      titan_backtest_schedules: {
+        Row: {
+          algoritmos: string[]
+          ativo: boolean
+          created_at: string
+          execucoes_total: number
+          ia_engine: string
+          id: string
+          interval_hours: number
+          loterias: string[]
+          max_samples: number
+          nome: string
+          proxima_execucao: string
+          ultima_execucao: string | null
+          ultimo_resumo: Json | null
+          ultimo_status: string | null
+          updated_at: string
+          user_id: string
+          window_size: number
+        }
+        Insert: {
+          algoritmos?: string[]
+          ativo?: boolean
+          created_at?: string
+          execucoes_total?: number
+          ia_engine?: string
+          id?: string
+          interval_hours?: number
+          loterias?: string[]
+          max_samples?: number
+          nome?: string
+          proxima_execucao?: string
+          ultima_execucao?: string | null
+          ultimo_resumo?: Json | null
+          ultimo_status?: string | null
+          updated_at?: string
+          user_id: string
+          window_size?: number
+        }
+        Update: {
+          algoritmos?: string[]
+          ativo?: boolean
+          created_at?: string
+          execucoes_total?: number
+          ia_engine?: string
+          id?: string
+          interval_hours?: number
+          loterias?: string[]
+          max_samples?: number
+          nome?: string
+          proxima_execucao?: string
+          ultima_execucao?: string | null
+          ultimo_resumo?: Json | null
+          ultimo_status?: string | null
+          updated_at?: string
+          user_id?: string
+          window_size?: number
+        }
+        Relationships: []
+      }
       verificacoes_sorteio: {
         Row: {
           acertos_s1: number

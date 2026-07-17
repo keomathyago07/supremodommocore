@@ -10,6 +10,10 @@ import {
   rankResults, LOTERIA_CONFIG, PREDICTORS,
   type BacktestResult, type LoteriaKey,
 } from "./engines/backtest";
+import { exportBacktestSummaryCsv } from "./backtest/exportCsv";
+import { exportBacktestSummaryPdf } from "./backtest/exportPdf";
+import { BacktestDrillDown } from "./backtest/BacktestDrillDown";
+import { BacktestSchedulerPanel } from "./backtest/BacktestSchedulerPanel";
 
 const LOTERIAS = Object.keys(LOTERIA_CONFIG) as LoteriaKey[];
 const PREDICTOR_KEYS = Object.keys(PREDICTORS) as (keyof typeof PREDICTORS)[];
@@ -33,6 +37,7 @@ export function TitanBacktestTab() {
   const [history, setHistory] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [autoSave, setAutoSave] = useState(true);
+  const [drillOpen, setDrillOpen] = useState<BacktestResult | null>(null);
 
   useEffect(() => { refreshHistory(); }, []);
 
@@ -124,6 +129,8 @@ export function TitanBacktestTab() {
             {running ? `▶ Executando... ${progress}%` : `▶ Executar Backtest (${selectedLot.length * selectedAlg.length} combinações)`}
           </button>
           <button onClick={refreshHistory} style={btnSec}>↻ Histórico</button>
+          <button onClick={() => exportBacktestSummaryCsv(results)} disabled={!results.length} style={btnSec}>⬇ CSV</button>
+          <button onClick={() => exportBacktestSummaryPdf(results)} disabled={!results.length} style={btnSec}>⬇ PDF</button>
         </div>
         {error && <div style={{marginTop:8,color:"#ff6b6b",fontSize:10}}>⚠ {error}</div>}
       </Box>
@@ -141,7 +148,9 @@ export function TitanBacktestTab() {
             </thead>
             <tbody>
               {ranked.map((r:any,i)=>(
-                <tr key={i} style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+                <tr key={i} onClick={() => setDrillOpen(r)}
+                  title="Clique para abrir drill-down"
+                  style={{borderTop:"1px solid rgba(255,255,255,0.04)",cursor:"pointer"}}>
                   <td style={td}>{i+1}</td>
                   <td style={td}>{r.loteria}</td>
                   <td style={td}>{r.algoritmo}</td>
@@ -216,6 +225,10 @@ export function TitanBacktestTab() {
           </div>
         )}
       </Box>
+
+      <BacktestSchedulerPanel />
+
+      {drillOpen && <BacktestDrillDown result={drillOpen} onClose={() => setDrillOpen(null)} />}
     </div>
   );
 }
