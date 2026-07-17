@@ -225,6 +225,10 @@ export function TitanBacktestTab() {
           </div>
         )}
       </Box>
+
+      <BacktestSchedulerPanel />
+
+      {drillOpen && <BacktestDrillDown result={drillOpen} onClose={() => setDrillOpen(null)} />}
     </div>
   );
 }
