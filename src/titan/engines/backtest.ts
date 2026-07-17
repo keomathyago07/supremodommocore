@@ -157,11 +157,13 @@ export async function runBacktest(opts: {
   iaEngine: string;
   windowSize?: number;       // janela mínima de histórico
   maxSamples?: number;       // limita amostras (perf)
+  collectRounds?: boolean;   // habilita drill-down por concurso
 }): Promise<BacktestResult> {
   const cfg = LOTERIA_CONFIG[opts.loteria];
   const predictor = PREDICTORS[opts.predictor];
   const windowSize = opts.windowSize ?? 20;
   const maxSamples = opts.maxSamples ?? 500;
+  const collectRounds = opts.collectRounds ?? true;
 
   const { data, error } = await supabase
     .from("resultados_sorteios")
