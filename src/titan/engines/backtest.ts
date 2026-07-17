@@ -185,6 +185,7 @@ export async function runBacktest(opts: {
 
   const faixa: Record<number, number> = {};
   const calibPreds: { p: number; outcome: 0 | 1 }[] = [];
+  const rounds: BacktestRoundDetail[] = [];
   let totalHits = 0;
   let totalRevenue = 0;
   let totalCost = 0;
@@ -206,9 +207,20 @@ export async function runBacktest(opts: {
     amostras += 1;
     if (hits >= minTier) aciertosFaixa += 1;
 
-    // Calibração: trata cada número previsto como predição binária
     const pPerNumber = Math.max(0.01, Math.min(0.99, confidence));
     numbers.forEach(n => calibPreds.push({ p: pPerNumber, outcome: target.dezenas.includes(n) ? 1 : 0 }));
+
+    if (collectRounds) {
+      rounds.push({
+        concurso: target.concurso,
+        data: target.data,
+        sorteados: target.dezenas,
+        previstos: numbers,
+        acertos: hits,
+        premio: prize,
+        confidence: pPerNumber,
+      });
+    }
   }
 
   const hitRate = (totalHits / (amostras * cfg.pick)) * 100;
@@ -238,6 +250,7 @@ export async function runBacktest(opts: {
     faixaAcertos: faixa,
     calibracao: { bins: calib },
     parametros: { windowSize, maxSamples, ticket: cfg.ticket, pick: cfg.pick, pool: cfg.pool },
+    rounds: collectRounds ? rounds : undefined,
   };
 }
 
