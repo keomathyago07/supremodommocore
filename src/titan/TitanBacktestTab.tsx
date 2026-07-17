@@ -148,7 +148,9 @@ export function TitanBacktestTab() {
             </thead>
             <tbody>
               {ranked.map((r:any,i)=>(
-                <tr key={i} style={{borderTop:"1px solid rgba(255,255,255,0.04)"}}>
+                <tr key={i} onClick={() => setDrillOpen(r)}
+                  title="Clique para abrir drill-down"
+                  style={{borderTop:"1px solid rgba(255,255,255,0.04)",cursor:"pointer"}}>
                   <td style={td}>{i+1}</td>
                   <td style={td}>{r.loteria}</td>
                   <td style={td}>{r.algoritmo}</td>
