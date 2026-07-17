@@ -113,7 +113,7 @@ export const LOTTERY_RULES: LotteryRule[] = [
     id: "diasorte",
     name: "Dia de Sorte",
     color: "#ffd600",
-    drawDays: ["Terça-feira", "Quinta-feira", "Sábado"],
+    drawDays: ["Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"],
     prizeTiers: [
       { id: "ds_7m", description: "7 acertos + mês da sorte", enabled: true },
       { id: "ds_7", description: "7 acertos", enabled: true },
