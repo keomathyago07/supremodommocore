@@ -5,6 +5,11 @@
 // ============================================================
 
 import { supabase } from "@/integrations/supabase/client";
+import {
+  fitCalibration, brierScore as brierPost, expectedCalibrationError,
+  type CalibrationMethod, type CalibrationSample,
+} from "@/titan/calibration/methods";
+import { wilson95, wilson99 } from "@/titan/calibration/intervals";
 
 export type LoteriaKey =
   | "megasena" | "lotofacil" | "quina" | "lotomania"
