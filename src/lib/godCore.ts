@@ -107,26 +107,36 @@ class GodCore {
       // 🔍 MONITORAMENTO TOTAL
       if (this.state.ingest !== "OK") {
         this.log("⚠️ INGEST FALHOU → REINICIANDO");
+        void this.persistEvent("module_restart", "Ingest reiniciando", "warn", "ingest");
         await this.restartIngest();
       }
 
       if (this.state.pipeline !== "RUNNING") {
         this.log("⚠️ PIPELINE TRAVADO → FORÇANDO EXECUÇÃO");
+        void this.persistEvent("watchdog_trip", "Pipeline forçado", "warn", "pipeline");
         await this.forcePipeline();
       }
 
       if (this.state.models !== "RUNNING") {
         this.log("⚠️ MODELOS PARADOS → RESTART");
+        void this.persistEvent("module_restart", "Modelos reiniciando", "warn", "models");
         await this.restartModels();
       }
 
       // 🧠 AUTO CORREÇÃO
       if (this.state.fail_count > 3) {
         this.log("🔥 RESET TOTAL DO SISTEMA");
+        void this.persistEvent("full_reset", `Auto-recovery: fail_count=${this.state.fail_count}`, "error", "core", { fail_count: this.state.fail_count });
         await this.fullReset();
       }
+
+      // Heartbeats de cada módulo a cada tick
+      void this.persistHeartbeat("ingest", this.state.ingest);
+      void this.persistHeartbeat("pipeline", this.state.pipeline);
+      void this.persistHeartbeat("models", this.state.models);
     } catch (e: any) {
       this.set({ last_error: String(e?.message ?? e), fail_count: this.state.fail_count + 1 });
+      void this.persistEvent("core_error", String(e?.message ?? e), "error", "core");
     }
   }
 
