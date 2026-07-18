@@ -306,7 +306,7 @@ function round(n: number, digits = 2) {
 // ============================================================
 
 export async function saveBacktestRun(result: BacktestResult, observacoes?: string) {
-  const { error } = await supabase.from("titan_backtest_runs" as any).insert({
+  const { data, error } = await supabase.from("titan_backtest_runs" as any).insert({
     loteria: result.loteria,
     ia_engine: result.iaEngine,
     algoritmo: result.algoritmo,
@@ -322,10 +322,30 @@ export async function saveBacktestRun(result: BacktestResult, observacoes?: stri
     garantia_nivel: result.garantia,
     faixa_acertos: result.faixaAcertos,
     calibracao: result.calibracao,
-    parametros: result.parametros,
+    parametros: { ...result.parametros, ci99: result.ci99 },
     observacoes: observacoes ?? null,
-  });
+  }).select("id").maybeSingle();
   if (error) throw new Error(`Falha ao salvar backtest: ${error.message}`);
+
+  // Persistência da calibração (temperature/platt/isotonic)
+  if (result.calibrationRun) {
+    const bins = result.calibracao.bins;
+    const ci95 = bins.map(b => ({ p: b.p, ...wilson95(b.observado, b.n) }));
+    const ci99 = bins.map(b => ({ p: b.p, ...wilson99(b.observado, b.n) }));
+    try {
+      await supabase.from("titan_calibration_runs" as any).insert({
+        backtest_run_id: (data as any)?.id ?? null,
+        loteria: result.loteria,
+        algoritmo: result.algoritmo,
+        metodo: result.calibrationRun.metodo,
+        parametros: result.calibrationRun.parametros,
+        brier_pre: result.calibrationRun.brier_pre,
+        brier_post: result.calibrationRun.brier_post,
+        ece: result.calibrationRun.ece,
+        ci95, ci99, amostras: result.amostras,
+      });
+    } catch { /* silent */ }
+  }
 }
 
 export async function loadBacktestHistory(loteria?: LoteriaKey, limit = 50) {
