@@ -79,23 +79,59 @@ async function markExecution(id: string, status: string, resumo: any, intervalHo
   }).eq("id", id);
 }
 
+async function logRun(scheduleId: string, runId: string, nivel: string, mensagem: string, extra?: { duracao_ms?: number; tentativa?: number; contexto?: any }) {
+  try {
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) return;
+    await supabase.from("titan_backtest_run_logs" as any).insert({
+      user_id: userData.user.id,
+      schedule_id: scheduleId, run_id: runId,
+      nivel, mensagem,
+      duracao_ms: extra?.duracao_ms ?? null,
+      tentativa: extra?.tentativa ?? 1,
+      contexto: extra?.contexto ?? {},
+    });
+  } catch { /* silent */ }
+}
+
 export async function runSchedule(s: BacktestSchedule): Promise<{ ok: boolean; runs: number; error?: string }> {
+  const runId = crypto.randomUUID();
+  const t0 = Date.now();
+  await logRun(s.id, runId, "INFO", `▶ Iniciando "${s.nome}" · ${s.loterias.length}×${s.algoritmos.length} combinações`);
   try {
     const results: BacktestResult[] = [];
     for (const lot of s.loterias) {
       for (const alg of s.algoritmos) {
-        if (!PREDICTORS[alg as keyof typeof PREDICTORS]) continue;
-        const r = await runBacktest({
-          loteria: lot as LoteriaKey,
-          predictor: alg as keyof typeof PREDICTORS,
-          iaEngine: s.ia_engine,
-          windowSize: s.window_size,
-          maxSamples: s.max_samples,
-          collectRounds: false,
-        });
-        results.push(r);
-        if (r.amostras > 0) {
-          try { await saveBacktestRun(r, `Scheduler: ${s.nome}`); } catch { /* ignore */ }
+        if (!PREDICTORS[alg as keyof typeof PREDICTORS]) {
+          await logRun(s.id, runId, "WARN", `Algoritmo desconhecido: ${alg}`);
+          continue;
+        }
+        const tCombo = Date.now();
+        let attempt = 0, ok = false, lastErr: any = null;
+        while (attempt < 3 && !ok) {
+          attempt++;
+          try {
+            const r = await runBacktest({
+              loteria: lot as LoteriaKey, predictor: alg as keyof typeof PREDICTORS,
+              iaEngine: s.ia_engine, windowSize: s.window_size, maxSamples: s.max_samples,
+              collectRounds: false,
+            });
+            results.push(r);
+            if (r.amostras > 0) {
+              try { await saveBacktestRun(r, `Scheduler: ${s.nome}`); } catch { /* ignore */ }
+            }
+            await logRun(s.id, runId, "INFO", `✓ ${lot}/${alg} · amostras=${r.amostras} · precisão=${r.precisao}%`,
+              { duracao_ms: Date.now() - tCombo, tentativa: attempt, contexto: { hit: r.hitRate, roi: r.roiSimulado } });
+            ok = true;
+          } catch (e: any) {
+            lastErr = e;
+            await logRun(s.id, runId, "WARN", `Retry ${lot}/${alg}: ${e?.message ?? e}`, { tentativa: attempt });
+            await new Promise(r => setTimeout(r, 300 * attempt));
+          }
+        }
+        if (!ok) {
+          await logRun(s.id, runId, "ERROR", `Falha ${lot}/${alg}: ${lastErr?.message ?? lastErr}`,
+            { duracao_ms: Date.now() - tCombo, tentativa: attempt, contexto: { error: String(lastErr) } });
         }
       }
     }
@@ -104,15 +140,15 @@ export async function runSchedule(s: BacktestSchedule): Promise<{ ok: boolean; r
       hitRateAvg: avg(results.map(r => r.hitRate)),
       roiAvg: avg(results.map(r => r.roiSimulado)),
       brierAvg: avg(results.map(r => r.brierScore)),
-      melhores: results
-        .sort((a, b) => b.precisao - a.precisao)
-        .slice(0, 3)
+      melhores: results.sort((a, b) => b.precisao - a.precisao).slice(0, 3)
         .map(r => ({ loteria: r.loteria, algoritmo: r.algoritmo, precisao: r.precisao, roi: r.roiSimulado })),
     };
     await markExecution(s.id, "done", resumo, s.interval_hours, s.execucoes_total);
+    await logRun(s.id, runId, "INFO", `✅ Concluído em ${Date.now() - t0}ms`, { duracao_ms: Date.now() - t0, contexto: resumo });
     return { ok: true, runs: results.length };
   } catch (e: any) {
     await markExecution(s.id, "failed", { error: e?.message ?? String(e) }, s.interval_hours, s.execucoes_total);
+    await logRun(s.id, runId, "ERROR", `❌ ${e?.message ?? e}`, { duracao_ms: Date.now() - t0, contexto: { stack: e?.stack } });
     return { ok: false, runs: 0, error: e?.message ?? String(e) };
   }
 }
