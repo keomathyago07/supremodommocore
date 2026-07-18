@@ -316,6 +316,7 @@ class GodCore {
     await this.restartModels();
     await this.restartPipeline();
     this.log("✅ SISTEMA RECUPERADO");
+    void this.persistEvent("auto_recovery", "Sistema recuperado após reset total", "success", "core");
   }
 
   /** 👁️ "OLHO DE DEUS" (MONITOR TOTAL) */
