@@ -61,11 +61,33 @@ class GodCore {
     console.log(`[GOD-CORE] ${msg}`);
   }
 
+  private async persistEvent(tipo: string, mensagem: string, severidade: "info"|"warn"|"error"|"success" = "info", modulo?: string, payload: any = {}) {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      await supabase.from("god_core_events" as any).insert({
+        user_id: userData.user.id, tipo, modulo: modulo ?? null, severidade, mensagem, payload,
+      });
+    } catch { /* silent */ }
+  }
+
+  private async persistHeartbeat(modulo: string, status: GodStatus, latencia_ms?: number, mensagem?: string) {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      await supabase.from("god_core_heartbeats" as any).insert({
+        user_id: userData.user.id, modulo, status, latencia_ms: latencia_ms ?? null,
+        mensagem: mensagem ?? null, ciclos: this.state.cycles,
+      });
+    } catch { /* silent */ }
+  }
+
   /** Inicia o ciclo de monitoramento contínuo (a cada 5s). */
   start(intervalMs = 5000) {
     if (this.running) return;
     this.running = true;
     this.log("👁️ OLHO DE DEUS ATIVADO");
+    void this.persistEvent("core_start", "God Core iniciado", "success", "core");
     this.tick();
     this.timer = window.setInterval(() => this.tick(), intervalMs);
   }
@@ -75,6 +97,7 @@ class GodCore {
     if (this.timer) window.clearInterval(this.timer);
     this.timer = null;
     this.log("OLHO DE DEUS pausado");
+    void this.persistEvent("core_stop", "God Core pausado", "warn", "core");
   }
 
   private async tick() {
