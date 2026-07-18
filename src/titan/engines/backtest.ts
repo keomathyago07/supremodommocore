@@ -54,10 +54,18 @@ export interface BacktestResult {
   roiSimulado: number;    // % retorno
   brierScore: number;     // calibração (menor = melhor)
   ci: { low: number; high: number; level: 0.95 };
+  ci99?: { low: number; high: number };
   risk: "low" | "medium" | "high";
   garantia: "alta" | "media" | "baixa";
   faixaAcertos: Record<number, number>;
   calibracao: { bins: { p: number; observado: number; n: number }[] };
+  calibrationRun?: {
+    metodo: CalibrationMethod;
+    brier_pre: number;
+    brier_post: number;
+    ece: number;
+    parametros: Record<string, unknown>;
+  };
   parametros: Record<string, unknown>;
   rounds?: BacktestRoundDetail[]; // drill-down opcional
 }
