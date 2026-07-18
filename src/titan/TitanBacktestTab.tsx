@@ -80,7 +80,21 @@ export function TitanBacktestTab() {
 
   return (
     <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      <div style={{display:"flex",gap:6}}>
+        {(["run","compare","logs"] as const).map(t => (
+          <button key={t} onClick={()=>setTab(t)} style={{
+            padding:"6px 14px",borderRadius:8,fontSize:10,fontWeight:800,cursor:"pointer",fontFamily:"inherit",
+            border:`1px solid ${tab===t?"rgba(0,212,255,0.5)":"rgba(255,255,255,0.08)"}`,
+            background:tab===t?"rgba(0,212,255,0.15)":"rgba(255,255,255,0.03)",
+            color:tab===t?"#00d4ff":"#64748b",
+          }}>{t==="run"?"🧪 Executar":t==="compare"?"📈 Comparar Runs":"📜 Logs"}</button>
+        ))}
+      </div>
+      {tab==="compare" && <TitanBacktestCompareTab />}
+      {tab==="logs" && <BacktestRunLogsPanel />}
+      {tab==="run" && <>
       <Box c="#00d4ff" title="🧪 Configuração Backtest Ultra-Avançado">
+
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:10}}>
           <Field label="IA / Engine">
             <select value={selectedIA} onChange={e=>setSelectedIA(e.target.value)} style={selStyle}>
