@@ -1,81 +1,76 @@
-# Plano de implementação — 4 blocos aprovados
+## Escopo
 
-Todos os 4 blocos serão entregues em fases sequenciais e independentes. Cada fase pode ser publicada isoladamente. Nenhum módulo existente (Titan, Orchestrator, Adapter, God Core, IA Control, Sync) será alterado — só extensões novas.
+Sete entregas coordenadas em `/titan-core`, no God Core e no módulo Candidatos+XAI, com persistência no banco, calibração estatística real e telemetria/notificações em tempo real.
 
----
+## Fases
 
-## FASE 1 — Backtest Completo (aba `/titan-core → 🧪 Backtest`)
+### FASE 1 — Banco (migração única)
+Novas tabelas com RLS + GRANT + triggers `updated_at`:
+- `titan_backtest_run_logs` — logs por execução do scheduler (schedule_id, run_id, nível INFO/WARN/ERROR, mensagem, duração_ms, tentativa, contexto jsonb, timestamps BRT).
+- `titan_calibration_runs` — método (temperature/platt/isotonic), parâmetros, Brier antes/depois, ECE, CI95 e CI99 por bin, referência ao `backtest_run_id`.
+- `god_core_heartbeats` — módulo, status (OK/FAIL/RESET/RUNNING), latência, mensagem, ts.
+- `god_core_events` — tipo (auto_recovery, module_restart, strategy_switch, config_change, watchdog), payload, severidade.
+- `god_core_notifications` — fila de notificações in-app (lida/não lida) alimentada por trigger em `god_core_events` para eventos de recovery.
 
-**Entregas**
-- Botões **Exportar CSV** e **Exportar PDF** com métricas: acertos, taxa, precisão, ROI, Brier, IC Wilson 95%, ranking por confiança.
-- **Drill-down**: clicar numa loteria abre modal com lista de concursos usados, números sorteados vs previstos, acertos/erros por IA.
-- **Scheduler**: cron interno (`setInterval` + persistência em `titan_backtest_schedules`) para rodar backtest a cada X dias/horas. Salva status (`running/done/failed`) e logs.
-- Painel de **status do scheduler** (última execução, próxima, últimos 10 runs).
+### FASE 2 — Calibração real (`src/titan/calibration/`)
+- `methods.ts`: Temperature Scaling (NLL/LBFGS 1D), Platt Scaling (sigmoid A/B via IRLS), Isotonic Regression (PAV).
+- `intervals.ts`: Wilson score CI 95% e 99% + bootstrap opcional.
+- Integração em `engines/backtest.ts`: gera `calibrated_probs`, `ci95`, `ci99`, `brier_pre/post`, `ece`. Persiste linha em `titan_calibration_runs` ao final de cada run.
 
-**Arquivos novos** (nenhum existente alterado exceto `TitanBacktestTab.tsx` p/ adicionar botões):
-- `src/titan/backtest/exportCsv.ts`, `exportPdf.ts` (jsPDF)
-- `src/titan/backtest/BacktestDrillDown.tsx`
-- `src/titan/backtest/BacktestScheduler.ts` + `BacktestSchedulerPanel.tsx`
-- Migração: tabela `titan_backtest_schedules`
+### FASE 3 — Scheduler logs & status
+- `BacktestScheduler.ts`: passa a gravar em `titan_backtest_run_logs` (start, cada tentativa/retry, erro, duração, fim).
+- Nova aba `BacktestRunLogsPanel.tsx` no `TitanBacktestTab`: lista com filtros (schedule, status, data BRT), expansão de contexto/erro, badge de tentativa e duração.
 
----
+### FASE 4 — Comparação de runs
+- `TitanBacktestCompareTab.tsx`: seleciona 2..N runs (`titan_backtest_runs`), gráficos (recharts) de ROI/hitRate/precisão/Brier ao longo do tempo, tabela pivô por loteria×algoritmo, destaque da melhor configuração por métrica e por loteria. Export CSV/PDF.
+- Nova sub-aba no `TitanBacktestTab`.
 
-## FASE 2 — Tela de Calibração (nova rota `/dashboard/titan/calibration`)
+### FASE 5 — Calibração em Candidatos+XAI
+- Localizar painel Candidatos+XAI existente e injetar:
+  - Faixa de probabilidade calibrada (barra ci95/ci99).
+  - Badge de risco (low/medium/high) e garantia (alta/media/baixa) usando limiares do run mais recente de calibração.
+  - Ordenação por risco/garantia.
 
-**Entregas**
-- Métodos: **Temperature scaling**, **Platt scaling**, **Isotonic regression**.
-- Roda calibração sobre `titan_backtest_runs` mais recente por loteria.
-- Comparação **antes vs depois**: Brier, ECE, reliability diagram lado a lado.
-- Persiste em nova tabela `titan_calibration_runs` (método, params, métricas pré/pós, timestamp).
-- Botão "aplicar calibração aos próximos gates" (grava params em `ia_config`).
+### FASE 6 — Logs em tempo real do God Core
+- `godCore.ts`: emitir eventos para `god_core_events` e heartbeats a cada tick para `god_core_heartbeats`. Ao detectar `fullReset`/`restartX`, gravar evento `auto_recovery` + criar notificação.
+- `GodCoreLogsPage.tsx` (rota `/dashboard/godcore/logs`): stream via Supabase Realtime, filtros por módulo/data/tipo, colunas BRT.
+- Item na sidebar.
 
-**Arquivos novos**:
-- `src/titan/calibration/methods.ts` (temperature/platt/isotonic puros TS)
-- `src/titan/calibration/TitanCalibrationPage.tsx`
-- Migração: tabela `titan_calibration_runs`
+### FASE 7 — Notificações auto-recovery
+- Hook `useGodCoreNotifications`: subscribe realtime em `god_core_notifications`, toast + badge no header. Persistência de leitura.
 
----
+## Detalhes técnicos
 
-## FASE 3 — TITAN 10.0 Institucional (God Core residente + Event Bus + Watchdog + Self-Healing)
+- Realtime: `ALTER PUBLICATION supabase_realtime ADD TABLE …` para as 4 novas tabelas.
+- Todas as tabelas com policy `auth.uid() = user_id` (leitura/escrita autenticada) + `service_role ALL`.
+- BRT em toda UI: `toLocaleString("pt-BR",{timeZone:"America/Sao_Paulo"})`.
+- Calibração: implementação pura TS, sem dependências extras.
+- Gráficos: usar `recharts` (já presente no shadcn stack).
+- Sem tocar em `client.ts`/`types.ts`/`.env`/`config.toml`.
 
-Camada nova em `src/titan10/` — não toca em `src/titan/` nem `src/orchestrator/`. Comunica com eles via eventos.
+## Arquivos novos principais
+```
+src/titan/calibration/{methods.ts,intervals.ts,calibrationStore.ts}
+src/titan/backtest/BacktestRunLogsPanel.tsx
+src/titan/backtest/TitanBacktestCompareTab.tsx
+src/titan/candidates/CandidatesCalibrationBadge.tsx
+src/pages/GodCoreLogsPage.tsx
+src/hooks/useGodCoreNotifications.ts
+src/components/GodCoreNotificationBell.tsx
+```
 
-**Entregas**
-- **God Core residente**: `titan10Supervisor.ts` com heartbeat 1s (Web Worker + SharedWorker onde possível), monitora: memória, latência API, pipeline stall, WS, scheduler.
-- **Event Bus** central (`titan10Bus.ts`) — pub/sub tipado, todos os módulos existentes podem publicar via wrapper opcional.
-- **Watchdog de APIs**: teste em cascata (DNS→SSL→Timeout→Latência→Endpoint), retry exponencial, failover entre endpoints já existentes em `apiResilient.ts`.
-- **Self-Healing**: detecta pipeline travado (>N min sem tick) → dispara restart via eventos já existentes (`nucleus:restart`, `engines:auto-start`).
-- Painel `/dashboard/titan/supervisor` com heartbeat, uptime, healings executados.
-- **Shutdown Zero**: Service Worker (`sw-advanced.js`) estende para background sync mantendo heartbeat + scheduler quando aba fechada.
+## Arquivos editados
+```
+src/titan/engines/backtest.ts        (calibração + CI99)
+src/titan/backtest/BacktestScheduler.ts (logs)
+src/titan/TitanBacktestTab.tsx       (novas sub-abas)
+src/lib/godCore.ts                   (heartbeat + eventos)
+src/App.tsx                          (rota /godcore/logs)
+src/components/DashboardSidebar.tsx  (item Logs Core)
+```
 
-**Arquivos novos**: `src/titan10/*` (supervisor, bus, watchdog, healer, page). Pequeno append em `public/sw-advanced.js` para background sync do supervisor.
+## Validação
+- `tsgo` typecheck ao final.
+- Verificação visual das 3 novas abas e da rota de logs no preview.
 
----
-
-## FASE 4 — Análise Global Ativa + Auditoria + Versionamento
-
-**Entregas**
-- **Análise Global Ativa** (job cron a cada 30min): registra por loteria em `analise_global_ativa` (loteria, timestamp, gate_atingido, confiança, motivo, versão_modelo).
-- **Auditoria detalhada**: tabela `titan_audit_log` — cada decisão IA (consenso, drift detectado, ajuste de peso, versão trocada) grava linha com JSON completo. Nova aba `/dashboard/titan/auditoria` com filtros por tipo/loteria/data + export CSV.
-- **Versionamento de modelos**: tabela `titan_model_versions` (versão, loteria, métricas, criado_em, ativo). Ao rodar backtest ou calibração, cria nova versão; painel mostra histórico e permite ativar/rollback.
-
-**Arquivos novos**:
-- Migração: 3 tabelas + GRANTs + RLS por `user_id`
-- `src/titan/auditoria/TitanAuditPage.tsx`
-- `src/titan/versioning/ModelVersionsPanel.tsx`
-- `src/titan/globalActive/globalActiveJob.ts`
-
----
-
-## Ordem de execução
-
-1. Aprovar este plano.
-2. Executo FASE 1 completa → você testa → publica.
-3. FASE 2 → testa → publica.
-4. FASE 3 (mais delicada, camada nova isolada) → testa → publica.
-5. FASE 4 → testa → publica.
-
-## Fora deste plano (para pedir depois se quiser)
-
-- Itens de infra S3 (fila/backoff/dedupe ETag) — só fazem sentido se seu deploy usa S3 direto; a hospedagem Lovable não expõe esse pipeline ao app.
-- "Auto-Scale de workers", "GPU Monitor", Celery, Redis, FastAPI — não aplicáveis: seu app é 100% frontend React + edge functions Deno. Posso emular no cliente (workers dinâmicos + fila) se quiser, mas o comportamento é diferente do institucional Python.
+Confirmar para eu iniciar pela migração da FASE 1?
