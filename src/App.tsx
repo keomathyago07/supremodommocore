@@ -42,6 +42,8 @@ import MinhasApostasPage from "./pages/MinhasApostasPage";
 import IASControlPage from "./pages/IASControlPage";
 import NotificacoesPage from "./pages/NotificacoesPage";
 import ConfigPage from "./pages/ConfigPage";
+import GodCoreLogsPage from "./pages/GodCoreLogsPage";
+import { GodCoreNotificationBell } from "./components/GodCoreNotificationBell";
 
 import OrchestratorPage from "./orchestrator/OrchestratorPage";
 import { OrchestratorBridge } from "./orchestrator/OrchestratorBridge";
