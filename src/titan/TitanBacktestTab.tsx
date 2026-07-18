@@ -14,6 +14,8 @@ import { exportBacktestSummaryCsv } from "./backtest/exportCsv";
 import { exportBacktestSummaryPdf } from "./backtest/exportPdf";
 import { BacktestDrillDown } from "./backtest/BacktestDrillDown";
 import { BacktestSchedulerPanel } from "./backtest/BacktestSchedulerPanel";
+import { BacktestRunLogsPanel } from "./backtest/BacktestRunLogsPanel";
+import { TitanBacktestCompareTab } from "./backtest/TitanBacktestCompareTab";
 
 const LOTERIAS = Object.keys(LOTERIA_CONFIG) as LoteriaKey[];
 const PREDICTOR_KEYS = Object.keys(PREDICTORS) as (keyof typeof PREDICTORS)[];
