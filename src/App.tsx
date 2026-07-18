@@ -42,6 +42,8 @@ import MinhasApostasPage from "./pages/MinhasApostasPage";
 import IASControlPage from "./pages/IASControlPage";
 import NotificacoesPage from "./pages/NotificacoesPage";
 import ConfigPage from "./pages/ConfigPage";
+import GodCoreLogsPage from "./pages/GodCoreLogsPage";
+import { GodCoreNotificationBell } from "./components/GodCoreNotificationBell";
 
 import OrchestratorPage from "./orchestrator/OrchestratorPage";
 import { OrchestratorBridge } from "./orchestrator/OrchestratorBridge";
@@ -87,6 +89,9 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <div style={{ position: "fixed", top: 12, right: 12, zIndex: 9999 }}>
+            <GodCoreNotificationBell />
+          </div>
           <OrchestratorBridge />
           <NucleusBridge />
           <TitanBridge />
@@ -117,6 +122,8 @@ const App = () => (
                 <Route path="ias-control" element={<IASControlPage />} />
                 <Route path="notificacoes" element={<NotificacoesPage />} />
                 <Route path="configuracoes" element={<ConfigPage />} />
+                <Route path="godcore-logs" element={<GodCoreLogsPage />} />
+
                 
                 <Route path="orquestrador" element={<OrchestratorPage />} />
                 <Route path="adapter" element={<OrchestratorAdapterPage />} />

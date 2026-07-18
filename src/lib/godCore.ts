@@ -61,11 +61,33 @@ class GodCore {
     console.log(`[GOD-CORE] ${msg}`);
   }
 
+  private async persistEvent(tipo: string, mensagem: string, severidade: "info"|"warn"|"error"|"success" = "info", modulo?: string, payload: any = {}) {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      await supabase.from("god_core_events" as any).insert({
+        user_id: userData.user.id, tipo, modulo: modulo ?? null, severidade, mensagem, payload,
+      });
+    } catch { /* silent */ }
+  }
+
+  private async persistHeartbeat(modulo: string, status: GodStatus, latencia_ms?: number, mensagem?: string) {
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) return;
+      await supabase.from("god_core_heartbeats" as any).insert({
+        user_id: userData.user.id, modulo, status, latencia_ms: latencia_ms ?? null,
+        mensagem: mensagem ?? null, ciclos: this.state.cycles,
+      });
+    } catch { /* silent */ }
+  }
+
   /** Inicia o ciclo de monitoramento contínuo (a cada 5s). */
   start(intervalMs = 5000) {
     if (this.running) return;
     this.running = true;
     this.log("👁️ OLHO DE DEUS ATIVADO");
+    void this.persistEvent("core_start", "God Core iniciado", "success", "core");
     this.tick();
     this.timer = window.setInterval(() => this.tick(), intervalMs);
   }
@@ -75,6 +97,7 @@ class GodCore {
     if (this.timer) window.clearInterval(this.timer);
     this.timer = null;
     this.log("OLHO DE DEUS pausado");
+    void this.persistEvent("core_stop", "God Core pausado", "warn", "core");
   }
 
   private async tick() {
@@ -84,26 +107,36 @@ class GodCore {
       // 🔍 MONITORAMENTO TOTAL
       if (this.state.ingest !== "OK") {
         this.log("⚠️ INGEST FALHOU → REINICIANDO");
+        void this.persistEvent("module_restart", "Ingest reiniciando", "warn", "ingest");
         await this.restartIngest();
       }
 
       if (this.state.pipeline !== "RUNNING") {
         this.log("⚠️ PIPELINE TRAVADO → FORÇANDO EXECUÇÃO");
+        void this.persistEvent("watchdog_trip", "Pipeline forçado", "warn", "pipeline");
         await this.forcePipeline();
       }
 
       if (this.state.models !== "RUNNING") {
         this.log("⚠️ MODELOS PARADOS → RESTART");
+        void this.persistEvent("module_restart", "Modelos reiniciando", "warn", "models");
         await this.restartModels();
       }
 
       // 🧠 AUTO CORREÇÃO
       if (this.state.fail_count > 3) {
         this.log("🔥 RESET TOTAL DO SISTEMA");
+        void this.persistEvent("full_reset", `Auto-recovery: fail_count=${this.state.fail_count}`, "error", "core", { fail_count: this.state.fail_count });
         await this.fullReset();
       }
+
+      // Heartbeats de cada módulo a cada tick
+      void this.persistHeartbeat("ingest", this.state.ingest);
+      void this.persistHeartbeat("pipeline", this.state.pipeline);
+      void this.persistHeartbeat("models", this.state.models);
     } catch (e: any) {
       this.set({ last_error: String(e?.message ?? e), fail_count: this.state.fail_count + 1 });
+      void this.persistEvent("core_error", String(e?.message ?? e), "error", "core");
     }
   }
 
@@ -283,6 +316,7 @@ class GodCore {
     await this.restartModels();
     await this.restartPipeline();
     this.log("✅ SISTEMA RECUPERADO");
+    void this.persistEvent("auto_recovery", "Sistema recuperado após reset total", "success", "core");
   }
 
   /** 👁️ "OLHO DE DEUS" (MONITOR TOTAL) */

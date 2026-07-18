@@ -627,6 +627,105 @@ export type Database = {
         }
         Relationships: []
       }
+      god_core_events: {
+        Row: {
+          created_at: string
+          id: string
+          mensagem: string
+          modulo: string | null
+          payload: Json | null
+          severidade: string
+          tipo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          mensagem: string
+          modulo?: string | null
+          payload?: Json | null
+          severidade?: string
+          tipo: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          mensagem?: string
+          modulo?: string | null
+          payload?: Json | null
+          severidade?: string
+          tipo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      god_core_heartbeats: {
+        Row: {
+          ciclos: number | null
+          created_at: string
+          id: string
+          latencia_ms: number | null
+          mensagem: string | null
+          modulo: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          ciclos?: number | null
+          created_at?: string
+          id?: string
+          latencia_ms?: number | null
+          mensagem?: string | null
+          modulo: string
+          status: string
+          user_id?: string
+        }
+        Update: {
+          ciclos?: number | null
+          created_at?: string
+          id?: string
+          latencia_ms?: number | null
+          mensagem?: string | null
+          modulo?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      god_core_notifications: {
+        Row: {
+          created_at: string
+          event_id: string | null
+          id: string
+          lida: boolean
+          mensagem: string
+          severidade: string
+          titulo: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          lida?: boolean
+          mensagem: string
+          severidade?: string
+          titulo: string
+          user_id?: string
+        }
+        Update: {
+          created_at?: string
+          event_id?: string | null
+          id?: string
+          lida?: boolean
+          mensagem?: string
+          severidade?: string
+          titulo?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ia_config: {
         Row: {
           active_level: string
@@ -921,6 +1020,45 @@ export type Database = {
         }
         Relationships: []
       }
+      titan_backtest_run_logs: {
+        Row: {
+          contexto: Json | null
+          created_at: string
+          duracao_ms: number | null
+          id: string
+          mensagem: string
+          nivel: string
+          run_id: string | null
+          schedule_id: string | null
+          tentativa: number | null
+          user_id: string
+        }
+        Insert: {
+          contexto?: Json | null
+          created_at?: string
+          duracao_ms?: number | null
+          id?: string
+          mensagem: string
+          nivel?: string
+          run_id?: string | null
+          schedule_id?: string | null
+          tentativa?: number | null
+          user_id?: string
+        }
+        Update: {
+          contexto?: Json | null
+          created_at?: string
+          duracao_ms?: number | null
+          id?: string
+          mensagem?: string
+          nivel?: string
+          run_id?: string | null
+          schedule_id?: string | null
+          tentativa?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       titan_backtest_runs: {
         Row: {
           acertos_total: number
@@ -1047,6 +1185,60 @@ export type Database = {
           updated_at?: string
           user_id?: string
           window_size?: number
+        }
+        Relationships: []
+      }
+      titan_calibration_runs: {
+        Row: {
+          algoritmo: string
+          amostras: number | null
+          backtest_run_id: string | null
+          brier_post: number | null
+          brier_pre: number | null
+          ci95: Json | null
+          ci99: Json | null
+          created_at: string
+          ece: number | null
+          id: string
+          loteria: string
+          metodo: string
+          parametros: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          algoritmo: string
+          amostras?: number | null
+          backtest_run_id?: string | null
+          brier_post?: number | null
+          brier_pre?: number | null
+          ci95?: Json | null
+          ci99?: Json | null
+          created_at?: string
+          ece?: number | null
+          id?: string
+          loteria: string
+          metodo: string
+          parametros?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Update: {
+          algoritmo?: string
+          amostras?: number | null
+          backtest_run_id?: string | null
+          brier_post?: number | null
+          brier_pre?: number | null
+          ci95?: Json | null
+          ci99?: Json | null
+          created_at?: string
+          ece?: number | null
+          id?: string
+          loteria?: string
+          metodo?: string
+          parametros?: Json | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }

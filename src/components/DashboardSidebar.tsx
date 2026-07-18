@@ -14,6 +14,7 @@ const menuItems = [
   { id: 'dashboard', label: 'Painel Principal', icon: LayoutDashboard, path: '/dashboard' },
   { id: 'god-eye', label: '👁️ Olho de Deus IASV60+', icon: Eye, path: '/dashboard/god-eye' },
   { id: 'god-eye-v6', label: '👁️ God Eye v6.0 Triple', icon: Eye, path: '/dashboard/god-eye-v6' },
+  { id: 'godcore-logs', label: '📜 God Core · Logs', icon: Activity, path: '/dashboard/godcore-logs' },
   { id: 'quant-core', label: '🏦 Quant Core v17', icon: Atom, path: '/dashboard/quant-core' },
   { id: 'dashboard-ia', label: 'Dashboard IA', icon: Sparkles, path: '/dashboard/dashboard-ia' },
   { id: 'score-ultra', label: 'Score Ultra v17', icon: Atom, path: '/dashboard/score-ultra' },
