@@ -119,6 +119,8 @@ const App = () => (
                 <Route path="ias-control" element={<IASControlPage />} />
                 <Route path="notificacoes" element={<NotificacoesPage />} />
                 <Route path="configuracoes" element={<ConfigPage />} />
+                <Route path="godcore-logs" element={<GodCoreLogsPage />} />
+
                 
                 <Route path="orquestrador" element={<OrchestratorPage />} />
                 <Route path="adapter" element={<OrchestratorAdapterPage />} />
