@@ -242,7 +242,17 @@ export async function runBacktest(opts: {
   const brierScore = brier(calibPreds);
   const observedRate = aciertosFaixa / amostras;
   const wilson = wilsonInterval(observedRate, amostras);
+  const wilson99R = wilson99(observedRate, amostras);
   const calib = calibrationBins(calibPreds, 10);
+
+  // Calibração ultra-avançada (Temperature) — padrão; Platt/Isotonic aplicáveis via calibrateResult()
+  const calibSamples: CalibrationSample[] = calibPreds.map(x => ({ p: x.p, y: x.outcome }));
+  const brier_pre = brierScore;
+  const method: CalibrationMethod = "temperature";
+  const fit = fitCalibration(method, calibSamples);
+  const calibrated: CalibrationSample[] = calibSamples.map(s => ({ p: fit.calibrate(s.p), y: s.y }));
+  const brier_post = brierPost(calibrated);
+  const ece = expectedCalibrationError(calibrated, 10);
 
   const risk = roi >= 0 ? "low" : roi >= -50 ? "medium" : "high";
   const garantia = brierScore <= 0.18 && precisao >= 5 ? "alta" : brierScore <= 0.25 ? "media" : "baixa";
@@ -258,10 +268,18 @@ export async function runBacktest(opts: {
     roiSimulado: round(roi),
     brierScore: round(brierScore, 4),
     ci: { low: round(wilson.low * 100), high: round(wilson.high * 100), level: 0.95 },
+    ci99: { low: round(wilson99R.low * 100), high: round(wilson99R.high * 100) },
     risk,
     garantia,
     faixaAcertos: faixa,
     calibracao: { bins: calib },
+    calibrationRun: {
+      metodo: method,
+      brier_pre: round(brier_pre, 4),
+      brier_post: round(brier_post, 4),
+      ece: round(ece, 4),
+      parametros: (fit as any).T ? { T: (fit as any).T } : (fit as any).A ? { A: (fit as any).A, B: (fit as any).B } : { knots: (fit as any).knots?.length ?? 0 },
+    },
     parametros: { windowSize, maxSamples, ticket: cfg.ticket, pick: cfg.pick, pool: cfg.pool },
     rounds: collectRounds ? rounds : undefined,
   };
