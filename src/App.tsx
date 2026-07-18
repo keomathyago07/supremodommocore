@@ -89,6 +89,9 @@ const App = () => (
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <div style={{ position: "fixed", top: 12, right: 12, zIndex: 9999 }}>
+            <GodCoreNotificationBell />
+          </div>
           <OrchestratorBridge />
           <NucleusBridge />
           <TitanBridge />
