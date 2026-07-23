@@ -5,9 +5,13 @@
 
 import { useEffect } from "react";
 import { useTitanCore } from "./titanCoreStore";
+import { persistentCore } from "./persistentCore";
+import { titanGuardian } from "./titanGuardian";
+import { useTitanSync } from "./useTitanSync";
 
 export function TitanBridge() {
   const titan = useTitanCore();
+  useTitanSync(); // reconecta em backoff automaticamente
 
   useEffect(() => {
     const onDrawResult = (e: Event) => {
