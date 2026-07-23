@@ -7,6 +7,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useTitanCore } from "./titanCoreStore";
 import { TitanConfirmTab } from "./TitanConfirmTab";
 import { TitanBacktestTab } from "./TitanBacktestTab";
+import { OperationalPanel } from "./OperationalPanel";
 import { SystemState } from "./titanCore.types";
 
 const STATE_META: Record<SystemState, { label: string; color: string; icon: string }> = {
