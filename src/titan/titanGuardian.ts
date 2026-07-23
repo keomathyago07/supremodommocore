@@ -59,7 +59,7 @@ class TitanGuardian {
 
     // Reinicia apenas o módulo afetado.
     if (!report.scheduler) this.recover("scheduler", () => persistentCore.start());
-    if (!report.pipeline)  this.recover("pipeline",  () => useTitanCore.getState().runPipeline?.());
+    if (!report.pipeline)  this.recover("pipeline",  () => useTitanCore.getState().runFullPipeline?.());
   }
 
   private recover(modulo: string, fn: () => void) {
