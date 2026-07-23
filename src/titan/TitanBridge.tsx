@@ -5,9 +5,13 @@
 
 import { useEffect } from "react";
 import { useTitanCore } from "./titanCoreStore";
+import { persistentCore } from "./persistentCore";
+import { titanGuardian } from "./titanGuardian";
+import { useTitanSync } from "./useTitanSync";
 
 export function TitanBridge() {
   const titan = useTitanCore();
+  useTitanSync(); // reconecta em backoff automaticamente
 
   useEffect(() => {
     const onDrawResult = (e: Event) => {
@@ -65,6 +69,11 @@ export function TitanBridge() {
     window.addEventListener("program:request_train", onRequestTrain);
 
     titan.log("system", "🌉 TitanBridge conectada ao programa");
+
+    // Boot institucional: Persistent Core + Guardian.
+    persistentCore.start();
+    titanGuardian.start(30_000);
+    titan.log("system", "🏛️ Persistent Core + Guardian ativos (modo institucional)");
 
     return () => {
       window.removeEventListener("nucleus:draw_result", onDrawResult);
