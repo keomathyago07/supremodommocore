@@ -30,7 +30,7 @@ const LAYER_COLORS: Record<string,string> = {
   check:"#00ff88", sync:"#ffaa00", evolution:"#ff00ff",
 };
 
-type Tab = "overview"|"pipeline"|"engines"|"modules"|"evolution"|"confirm"|"backtest"|"log";
+type Tab = "overview"|"operational"|"pipeline"|"engines"|"modules"|"evolution"|"confirm"|"backtest"|"log";
 
 export function TitanCoreDashboard() {
   const titan = useTitanCore();
@@ -56,8 +56,9 @@ export function TitanCoreDashboard() {
   }
 
   const TABS: {id:Tab;icon:string;label:string}[] = [
-    {id:"overview",  icon:"📊", label:"Overview"},
-    {id:"pipeline",  icon:"🔮", label:"Pipeline"},
+    {id:"overview",    icon:"📊", label:"Overview"},
+    {id:"operational", icon:"🛰️", label:"Operacional"},
+    {id:"pipeline",    icon:"🔮", label:"Pipeline"},
     {id:"engines",   icon:"🧠", label:"22 Engines"},
     {id:"modules",   icon:"⚙️",  label:"38 Módulos"},
     {id:"evolution", icon:"🧬", label:"Evolução"},
@@ -139,8 +140,9 @@ export function TitanCoreDashboard() {
         ))}
       </div>
 
-      {tab==="overview"  && <OverviewTab titan={titan} />}
-      {tab==="pipeline"  && <PipelineTab titan={titan} />}
+      {tab==="overview"    && <OverviewTab titan={titan} />}
+      {tab==="operational" && <OperationalPanel />}
+      {tab==="pipeline"    && <PipelineTab titan={titan} />}
       {tab==="engines"   && <EnginesTab titan={titan} />}
       {tab==="modules"   && <ModulesTab titan={titan} />}
       {tab==="evolution" && <EvolutionTab titan={titan} />}
