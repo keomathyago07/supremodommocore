@@ -70,6 +70,11 @@ export function TitanBridge() {
 
     titan.log("system", "🌉 TitanBridge conectada ao programa");
 
+    // Boot institucional: Persistent Core + Guardian.
+    persistentCore.start();
+    titanGuardian.start(30_000);
+    titan.log("system", "🏛️ Persistent Core + Guardian ativos (modo institucional)");
+
     return () => {
       window.removeEventListener("nucleus:draw_result", onDrawResult);
       window.removeEventListener("nucleus:check_complete", onCheckComplete);
