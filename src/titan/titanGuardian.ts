@@ -5,6 +5,8 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useTitanCore } from "./titanCoreStore";
 import { persistentCore } from "./persistentCore";
+import { durableQueue } from "./queue/durableQueue";
+import { evaluateMetrics, raiseAlert } from "./alerts/guardianAlerts";
 
 interface HealthReport {
   api: boolean;
@@ -29,6 +31,9 @@ class TitanGuardian {
   private timer: ReturnType<typeof setInterval> | null = null;
   private failCounts: Record<string, number> = {};
   private lastReport: HealthReport | null = null;
+  private reconnects = 0;
+
+  getReconnects() { return this.reconnects; }
 
   isRunning() { return this.running; }
   getLastReport() { return this.lastReport; }
@@ -57,6 +62,18 @@ class TitanGuardian {
     };
     this.lastReport = report;
 
+    // Alertas com severidade + histórico por módulo.
+    const qs = durableQueue.stats();
+    const memInfo = (performance as any).memory;
+    if (!report.realtime) this.reconnects += 1;
+    evaluateMetrics({
+      memoryPct: memInfo ? (memInfo.usedJSHeapSize / memInfo.jsHeapSizeLimit) * 100 : undefined,
+      queuePending: qs.pending,
+      dlqCount: qs.dead,
+      reconnects: this.reconnects,
+      modulesDown: Object.entries(report).filter(([, ok]) => !ok).map(([k]) => k),
+    });
+
     // Reinicia apenas o módulo afetado.
     if (!report.scheduler) this.recover("scheduler", () => persistentCore.start());
     if (!report.pipeline)  this.recover("pipeline",  () => useTitanCore.getState().runFullPipeline?.());
@@ -65,6 +82,11 @@ class TitanGuardian {
   private recover(modulo: string, fn: () => void) {
     this.failCounts[modulo] = (this.failCounts[modulo] ?? 0) + 1;
     auditEvent("module_restart", `🔄 Guardian reiniciando módulo "${modulo}" (falha #${this.failCounts[modulo]})`, "warn", modulo);
+    raiseAlert({
+      modulo, tipo: "recovery", severidade: "warn",
+      mensagem: `🔄 Recuperação cirúrgica do módulo "${modulo}" (falha #${this.failCounts[modulo]})`,
+      valor: this.failCounts[modulo],
+    });
     try { fn(); } catch (e) {
       auditEvent("watchdog_trip", `⚠️ Falha ao reiniciar "${modulo}": ${(e as Error).message}`, "error", modulo);
     }

@@ -8,6 +8,7 @@ import { useTitanCore } from "./titanCoreStore";
 import { TitanConfirmTab } from "./TitanConfirmTab";
 import { TitanBacktestTab } from "./TitanBacktestTab";
 import { OperationalPanel } from "./OperationalPanel";
+import { AuditLogPanel } from "./AuditLogPanel";
 import { SystemState } from "./titanCore.types";
 
 const STATE_META: Record<SystemState, { label: string; color: string; icon: string }> = {
@@ -30,7 +31,7 @@ const LAYER_COLORS: Record<string,string> = {
   check:"#00ff88", sync:"#ffaa00", evolution:"#ff00ff",
 };
 
-type Tab = "overview"|"operational"|"pipeline"|"engines"|"modules"|"evolution"|"confirm"|"backtest"|"log";
+type Tab = "overview"|"operational"|"pipeline"|"engines"|"modules"|"evolution"|"confirm"|"backtest"|"audit"|"log";
 
 export function TitanCoreDashboard() {
   const titan = useTitanCore();
@@ -64,6 +65,7 @@ export function TitanCoreDashboard() {
     {id:"evolution", icon:"🧬", label:"Evolução"},
     {id:"confirm",   icon:"🎟️", label:"Confirmados"},
     {id:"backtest",  icon:"🧪", label:"Backtest"},
+    {id:"audit",     icon:"🗂️", label:"Auditoria"},
     {id:"log",       icon:"📋", label:"Log"},
   ];
 
@@ -148,6 +150,7 @@ export function TitanCoreDashboard() {
       {tab==="evolution" && <EvolutionTab titan={titan} />}
       {tab==="confirm"   && <TitanConfirmTab />}
       {tab==="backtest"  && <TitanBacktestTab />}
+      {tab==="audit"     && <AuditLogPanel />}
       {tab==="log"       && <LogTab titan={titan} logRef={logRef} />}
 
       <style>{`
