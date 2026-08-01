@@ -8,6 +8,10 @@ import { useTitanCore } from "./titanCoreStore";
 import { persistentCore } from "./persistentCore";
 import { titanGuardian } from "./titanGuardian";
 import { useTitanSync } from "./useTitanSync";
+import { registerQueueHandlers } from "./queue/handlers";
+import { durableQueue } from "./queue/durableQueue";
+import { titanPersistence } from "./state/titanPersistence";
+import { emitTitanEvent, onTitanEvent } from "./sync/titanEventBus";
 
 export function TitanBridge() {
   const titan = useTitanCore();
@@ -45,6 +49,7 @@ export function TitanBridge() {
     const onBetConfirmed = (e: Event) => {
       const ev = e as CustomEvent;
       titan.log("engine", `🎟️ Aposta confirmada — ${ev.detail.lotteryId} Concurso ${ev.detail.contestNumber}`);
+      void emitTitanEvent("aposta", { loteria: ev.detail.lotteryId, concurso: ev.detail.contestNumber });
     };
 
     const onSyncDone = () => titan.log("system", "🔄 Sincronização multi-device concluída");
@@ -70,12 +75,20 @@ export function TitanBridge() {
 
     titan.log("system", "🌉 TitanBridge conectada ao programa");
 
-    // Boot institucional: Persistent Core + Guardian.
+    // Boot institucional: estado persistido + filas + Persistent Core + Guardian.
+    registerQueueHandlers();
+    durableQueue.start();
+    void titanPersistence.hydrateFromCloud();
+    const offBus = onTitanEvent((evt) => {
+      if (evt.origin === (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? "mobile" : "desktop")) return;
+      titan.log("system", `🔗 Sync recebido (${evt.kind}) de ${evt.origin}`);
+    });
     persistentCore.start();
     titanGuardian.start(30_000);
     titan.log("system", "🏛️ Persistent Core + Guardian ativos (modo institucional)");
 
     return () => {
+      offBus();
       window.removeEventListener("nucleus:draw_result", onDrawResult);
       window.removeEventListener("nucleus:check_complete", onCheckComplete);
       window.removeEventListener("nucleus:bet_confirmed", onBetConfirmed);

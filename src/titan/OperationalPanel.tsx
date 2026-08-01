@@ -5,6 +5,70 @@ import { titanGuardian } from "./titanGuardian";
 import { useTitanSync } from "./useTitanSync";
 import { useTitanCore } from "./titanCoreStore";
 import { dentroDaJanelaOficial } from "./conference";
+import { durableQueue } from "./queue/durableQueue";
+import { titanPersistence } from "./state/titanPersistence";
+import { getAlerts, subscribeAlerts, clearAlerts, GuardianAlert } from "./alerts/guardianAlerts";
+
+const SEV_COLOR: Record<string, string> = { info: "#00d4ff", warn: "#ffaa00", error: "#ff6b6b", critical: "#ff2222" };
+
+function AlertsSection() {
+  const [alerts, setAlerts] = useState<GuardianAlert[]>(getAlerts());
+  useEffect(() => { const un = subscribeAlerts(setAlerts); return () => { un(); }; }, []);
+  const byModule = alerts.reduce<Record<string, GuardianAlert[]>>((a, x) => { (a[x.modulo] ??= []).push(x); return a; }, {});
+  const qs = durableQueue.stats();
+  const st = titanPersistence.get();
+
+  return (
+    <div style={{ marginTop: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", margin: "0 0 8px" }}>
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#ffaa00" }}>🚨 ALERTAS DO TITANGUARDIAN · HISTÓRICO POR MÓDULO</div>
+        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+          <span style={{ fontSize: 10, color: "#94a3b8" }}>
+            ciclos {st.cycles} · fila {qs.pending} · DLQ {qs.dead} · conferências {st.conferenciasConcluidas.length}
+          </span>
+          {qs.dead > 0 && (
+            <button onClick={() => durableQueue.requeueDlq()} style={{
+              background: "rgba(255,68,68,0.12)", border: "1px solid rgba(255,68,68,0.3)",
+              color: "#ff6b6b", borderRadius: 6, fontSize: 9, fontWeight: 700, padding: "4px 8px", cursor: "pointer",
+            }}>♻️ Reprocessar DLQ</button>
+          )}
+          {alerts.length > 0 && (
+            <button onClick={clearAlerts} style={{
+              background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+              color: "#94a3b8", borderRadius: 6, fontSize: 9, fontWeight: 700, padding: "4px 8px", cursor: "pointer",
+            }}>limpar</button>
+          )}
+        </div>
+      </div>
+      {!alerts.length ? (
+        <div style={{ fontSize: 10, color: "#00ff88", padding: 10, background: "rgba(0,255,136,0.05)", border: "1px solid rgba(0,255,136,0.15)", borderRadius: 8 }}>
+          ● Nenhuma degradação detectada — latência, memória, filas e reconexões dentro dos limites.
+        </div>
+      ) : (
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(240px,1fr))", gap: 8 }}>
+          {Object.entries(byModule).map(([mod, list]) => (
+            <div key={mod} style={{ padding: 10, borderRadius: 8, background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)" }}>
+              <div style={{ fontSize: 10, fontWeight: 800, color: "#e2e8f0", marginBottom: 6 }}>
+                {mod.toUpperCase()} · {list.length}
+              </div>
+              <div style={{ maxHeight: 130, overflow: "auto", display: "grid", gap: 4 }}>
+                {[...list].reverse().slice(0, 12).map(a => (
+                  <div key={a.id} style={{ fontSize: 9, color: "#cbd5e1" }}>
+                    <span style={{ color: SEV_COLOR[a.severidade] ?? "#94a3b8", fontWeight: 700 }}>[{a.severidade}]</span>{" "}
+                    <span style={{ color: "#64748b" }}>
+                      {new Date(a.at).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })}
+                    </span>{" "}
+                    {a.mensagem}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const LOTERIAS = [
   "megasena","quina","lotofacil","lotomania",
@@ -94,6 +158,8 @@ export function OperationalPanel() {
           </div>
         ))}
       </div>
+
+      <AlertsSection />
 
       <div style={{ marginTop: 16, padding: 10, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", borderRadius: 8 }}>
         <div style={{ fontSize: 10, fontWeight: 700, color: "#94a3b8", marginBottom: 6 }}>ESTATÍSTICAS DE ESTÁGIOS</div>
