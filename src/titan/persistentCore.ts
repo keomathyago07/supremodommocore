@@ -6,6 +6,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { useTitanCore } from "./titanCoreStore";
 import { dentroDaJanelaOficial } from "./conference";
+import { titanPersistence } from "./state/titanPersistence";
+import { durableQueue } from "./queue/durableQueue";
+import { emitTitanEvent } from "./sync/titanEventBus";
+import { evaluateMetrics } from "./alerts/guardianAlerts";
 
 type StageFn = () => Promise<void> | void;
 
@@ -54,6 +58,15 @@ class PersistentCore {
   start() {
     if (this.running) return;
     this.running = true;
+    // Restaura ciclos/verificações/consenso persistidos (nunca perde estado).
+    const persisted = titanPersistence.get();
+    this.tickCount = persisted.cycles;
+    this.stageStats = persisted.stageStats ?? {};
+    void titanPersistence.hydrateFromCloud().then(s => {
+      this.tickCount = Math.max(this.tickCount, s.cycles);
+      this.stageStats = Object.keys(this.stageStats).length ? this.stageStats : (s.stageStats ?? {});
+    });
+    durableQueue.start();
     audit("persistent_core_start", "🟢 Persistent Core iniciado");
     this.loop();
   }
@@ -103,15 +116,28 @@ class PersistentCore {
     const totalMs = Math.round(performance.now() - t0);
     await heartbeat(this.lastError ? "degraded" : "ok", totalMs);
 
+    // Persiste ciclo + avalia degradação (latência, memória, filas).
+    titanPersistence.bumpCycle(this.stageStats);
+    const qs = durableQueue.stats();
+    const memInfo = (performance as any).memory;
+    evaluateMetrics({
+      latencyMs: totalMs,
+      memoryPct: memInfo ? (memInfo.usedJSHeapSize / memInfo.jsHeapSizeLimit) * 100 : undefined,
+      queuePending: qs.pending,
+      dlqCount: qs.dead,
+    });
+
     const wait = dynamicIntervalMs();
     this.timer = setTimeout(() => this.loop(), wait);
   }
 
   // ── Estágios ────────────────────────────────────────────────
   private async syncApi() {
-    // Dispara sync-e-confere apenas dentro da janela oficial.
+    // Dispara sync-e-confere apenas dentro da janela oficial — via fila durável
+    // (retry exponencial + DLQ), nunca perde a sincronização.
     if (!dentroDaJanelaOficial()) return;
-    try { await supabase.functions.invoke("sync-e-confere", { body: {} }); } catch { /* resiliente */ }
+    durableQueue.enqueue("sync", "sync_e_confere", { at: Date.now() });
+    await durableQueue.drain();
   }
 
   private async updateResults() {
@@ -142,12 +168,8 @@ class PersistentCore {
   }
 
   private async syncDevices() {
-    // Publica marcador no canal titan-sync (todas as abas/dispositivos ouvem).
-    try {
-      const ch = supabase.channel("titan-sync");
-      await ch.send({ type: "broadcast", event: "tick", payload: { at: Date.now() } });
-      supabase.removeChannel(ch);
-    } catch { /* silencioso */ }
+    // Propagação imediata Desktop → Servidor → WebSocket → Mobile (e volta).
+    await emitTitanEvent("config", { tick: this.tickCount, at: Date.now() });
   }
 
   private saveState() {
