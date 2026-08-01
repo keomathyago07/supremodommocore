@@ -46,7 +46,7 @@ export function AuditLogPanel() {
   const [ate, setAte] = useState("");
   const [alerts, setAlerts] = useState<GuardianAlert[]>(getAlerts());
 
-  useEffect(() => subscribeAlerts(setAlerts), []);
+  useEffect(() => { const un = subscribeAlerts(setAlerts); return () => { un(); }; }, []);
 
   async function load() {
     setLoading(true);
