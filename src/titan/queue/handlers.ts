@@ -2,7 +2,10 @@
 import { supabase } from "@/integrations/supabase/client";
 import { durableQueue } from "./durableQueue";
 import { emitTitanEvent } from "@/titan/sync/titanEventBus";
-import { conferirIdempotente } from "@/titan/conference/idempotency";
+import {
+  conferirIdempotente, acquireReprocessLock, releaseReprocessLock, resetConferenciaConcurso,
+} from "@/titan/conference/idempotency";
+import { titanTelemetry } from "@/titan/metrics/titanTelemetry";
 import type { Bet, OfficialResult } from "@/titan/conference/types";
 
 let registered = false;
