@@ -153,6 +153,27 @@ export const titanPersistence = {
 
   hasConferencia(key: string) { return state.conferenciasConcluidas.includes(key); },
 
+  /**
+   * Limpa a idempotência de um concurso (modalidade+concurso), permitindo
+   * reprocessamento controlado. Retorna as chaves removidas.
+   */
+  clearConferenciasDoConcurso(loteria: string, concurso: number): string[] {
+    const prefix = `${loteria}:${concurso}`;
+    const removidas = state.conferenciasConcluidas.filter(k => k === prefix || k.startsWith(`${prefix}:`));
+    if (!removidas.length) return [];
+    const verifs = { ...state.ultimasVerificacoes };
+    Object.keys(verifs).forEach(k => { if (k === prefix || k.startsWith(`${prefix}:`)) delete verifs[k]; });
+    state = {
+      ...state,
+      conferenciasConcluidas: state.conferenciasConcluidas.filter(k => !removidas.includes(k)),
+      ultimasVerificacoes: verifs,
+      updatedAt: Date.now(),
+    };
+    scheduleFlush();
+    return removidas;
+  },
+
+
   /** Restaura da nuvem no boot (se a nuvem estiver mais recente). */
   async hydrateFromCloud() {
     try {
