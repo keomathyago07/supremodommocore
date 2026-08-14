@@ -27,7 +27,8 @@ export function registerQueueHandlers() {
     }
   });
 
-  // Reprocessamento idempotente de um concurso específico.
+  // Reprocessamento idempotente de um concurso específico:
+  // trava por modalidade+concurso → limpa idempotência → reenfileira conferência.
   durableQueue.register("reprocessar_concurso", async (job) => {
     const loteria = String(job.payload.loteria ?? "");
     const concurso = Number(job.payload.concurso ?? 0);
@@ -35,12 +36,29 @@ export function registerQueueHandlers() {
     if (!loteria || !Number.isFinite(concurso) || concurso <= 0) {
       throw new Error("payload inválido: loteria/concurso ausentes");
     }
-    const { error } = await supabase.functions.invoke("sync-e-confere", {
-      body: { loteria, concurso, motivo, force: true },
-    });
-    if (error) throw new Error(`reprocessar_concurso: ${error.message}`);
-    await emitTitanEvent("resultado", { source: "reprocessar_concurso", loteria, concurso, motivo });
+    if (!acquireReprocessLock(loteria, concurso)) {
+      throw new Error(`reprocessamento já em andamento para ${loteria} #${concurso}`);
+    }
+    const span = titanTelemetry.startSpan("reprocess", "reprocessar_concurso", `${loteria}:${concurso}`, { motivo });
+    try {
+      const chaves = await resetConferenciaConcurso(loteria, concurso, motivo);
+      titanTelemetry.incr("reprocessos");
+      const { error } = await supabase.functions.invoke("sync-e-confere", {
+        body: { loteria, concurso, motivo, force: true },
+      });
+      if (error) throw new Error(`reprocessar_concurso: ${error.message}`);
+      titanTelemetry.endSpan(span, "ok");
+      await emitTitanEvent("resultado", {
+        source: "reprocessar_concurso", loteria, concurso, motivo, chavesLimpas: chaves.length,
+      });
+    } catch (err) {
+      titanTelemetry.endSpan(span, "error", (err as Error)?.message ?? String(err));
+      throw err;
+    } finally {
+      releaseReprocessLock(loteria, concurso);
+    }
   });
+
 }
 
 
