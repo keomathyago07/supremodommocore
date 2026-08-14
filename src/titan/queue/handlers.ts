@@ -52,3 +52,20 @@ export function enqueueConferencia(bet: Bet, result: OfficialResult) {
     result: result as unknown as Record<string, unknown>,
   }, 8);
 }
+
+/** Enfileira o reprocessamento idempotente de um concurso, auditando o motivo. */
+export function enqueueReprocessoConcurso(loteria: string, concurso: number, motivo: string) {
+  registerQueueHandlers();
+  void supabase.auth.getUser().then(({ data }) => {
+    if (!data.user) return;
+    return supabase.from("god_core_events" as any).insert({
+      user_id: data.user.id,
+      tipo: "reprocess_request",
+      modulo: "titan_queue",
+      severidade: "info",
+      mensagem: `🔁 Reprocessamento solicitado para ${loteria} #${concurso} — ${motivo}`,
+      payload: { loteria, concurso, motivo },
+    });
+  }).catch(() => undefined);
+  return durableQueue.enqueue("conference", "reprocessar_concurso", { loteria, concurso, motivo }, 5);
+}
