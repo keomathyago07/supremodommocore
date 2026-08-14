@@ -38,16 +38,48 @@ export function DlqPanel() {
   const [rConcurso, setRConcurso] = useState("");
   const [rMotivo, setRMotivo] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
+  const [watched, setWatched] = useState<Record<string, { label: string; at: number }>>({});
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     registerQueueHandlers();
     const un = durableQueue.subscribe(() => setTick(t => t + 1));
-    const iv = setInterval(() => setTick(t => t + 1), 4_000);
+    const iv = setInterval(() => setTick(t => t + 1), 2_000);
     return () => { un(); clearInterval(iv); };
   }, []);
 
   const stats = durableQueue.stats();
   const dlq = stats.dlq as DeadLetter[];
+
+  /** Estado de reprocessamento derivado das filas: em fila → processando → concluído/erro. */
+  type RState = "queued" | "processing" | "done" | "error";
+  const reprocessState = (id: string): RState | null => {
+    if (!watched[id]) return null;
+    const job = stats.jobs.find(j => j.id === id);
+    if (job) return job.attempts > 0 ? "processing" : "queued";
+    if (dlq.some(d => d.id === id)) return "error";
+    return "done";
+  };
+  const R_META: Record<RState, { label: string; color: string }> = {
+    queued:     { label: "⏳ em fila",   color: "#ffaa00" },
+    processing: { label: "⚙️ processando", color: "#00d4ff" },
+    done:       { label: "✅ concluído", color: "#00ff88" },
+    error:      { label: "❌ erro",      color: "#ff6b6b" },
+  };
+
+  const watchedList = Object.entries(watched)
+    .map(([id, w]) => ({ id, ...w, state: reprocessState(id) }))
+    .filter(w => w.state)
+    .sort((a, b) => b.at - a.at)
+    .slice(0, 12);
+
+  function track(ids: { id: string; label: string }[]) {
+    setWatched(prev => {
+      const next = { ...prev };
+      ids.forEach(({ id, label }) => { next[id] = { label, at: Date.now() }; });
+      return next;
+    });
+  }
 
   const filtered = useMemo(() => dlq
     .filter(d => !tipo || d.type === tipo)
@@ -57,19 +89,56 @@ export function DlqPanel() {
   const tipos = Array.from(new Set(dlq.map(d => d.type)));
 
   async function reprocess(id?: string) {
-    const n = await durableQueue.requeueDlq(id, motivo.trim() || "reprocessamento manual da DLQ (painel institucional)");
-    setMsg(`♻️ ${n} mensagem(ns) reenfileirada(s) — auditoria registrada.`);
+    const alvo = id ? filtered.filter(d => d.id === id) : filtered;
+    if (!alvo.length) { setMsg("⚠️ Nenhuma mensagem elegível para reprocessamento."); return; }
+    setBusy(true);
+    try {
+      const razao = motivo.trim() || "reprocessamento manual da DLQ (painel institucional)";
+      track(alvo.map(d => ({ id: d.id, label: `${d.type} · ${d.traceKey ?? "-"}` })));
+      let n = 0;
+      if (id) {
+        n = await durableQueue.requeueDlq(id, razao);
+      } else {
+        // lote: reprocessa apenas os itens filtrados, com feedback individual
+        for (const d of alvo) n += await durableQueue.requeueDlq(d.id, razao);
+      }
+      await durableQueue.drain();
+      setMsg(`♻️ ${n} mensagem(ns) reenfileirada(s) — motivo auditado: "${razao}".`);
+    } catch (err) {
+      setMsg(`❌ Falha ao reprocessar: ${(err as Error)?.message ?? String(err)}`);
+    } finally { setBusy(false); }
   }
   async function discard(id?: string) {
-    const n = await durableQueue.discardDlq(id, motivo.trim() || "descarte manual da DLQ (painel institucional)");
-    setMsg(`🗑️ ${n} mensagem(ns) descartada(s) — auditoria registrada.`);
+    const alvo = id ? filtered.filter(d => d.id === id) : filtered;
+    if (!alvo.length) { setMsg("⚠️ Nenhuma mensagem elegível para descarte."); return; }
+    setBusy(true);
+    try {
+      const razao = motivo.trim() || "descarte manual da DLQ (painel institucional)";
+      let n = 0;
+      for (const d of alvo) n += await durableQueue.discardDlq(d.id, razao);
+      setMsg(`🗑️ ${n} mensagem(ns) descartada(s) — motivo auditado: "${razao}".`);
+    } catch (err) {
+      setMsg(`❌ Falha ao descartar: ${(err as Error)?.message ?? String(err)}`);
+    } finally { setBusy(false); }
   }
   async function reprocessConcurso() {
     const c = Number(rConcurso);
-    if (!Number.isFinite(c) || c <= 0) { setMsg("⚠️ Informe um concurso válido."); return; }
-    await enqueueReprocessoConcurso(rLoteria, c, rMotivo.trim() || "reprocessamento solicitado no painel institucional");
-    setMsg(`🔁 Reprocessamento idempotente enfileirado para ${rLoteria} #${c}.`);
+    if (!rLoteria) { setMsg("⚠️ Selecione a modalidade."); return; }
+    if (!Number.isFinite(c) || c <= 0 || !Number.isInteger(c)) {
+      setMsg("⚠️ Informe um concurso válido (número inteiro positivo)."); return;
+    }
+    setBusy(true);
+    try {
+      const razao = rMotivo.trim() || "reprocessamento solicitado no painel institucional";
+      const job = enqueueReprocessoConcurso(rLoteria, c, razao);
+      track([{ id: job.id, label: `reprocessar ${rLoteria} #${c}` }]);
+      await durableQueue.drain();
+      setMsg(`🔁 Reprocessamento idempotente enfileirado para ${rLoteria} #${c} — motivo auditado.`);
+    } catch (err) {
+      setMsg(`❌ Falha ao enfileirar reprocessamento: ${(err as Error)?.message ?? String(err)}`);
+    } finally { setBusy(false); }
   }
+
 
   return (
     <div style={{ fontSize: 11 }}>
