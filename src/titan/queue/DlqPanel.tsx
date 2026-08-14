@@ -167,7 +167,9 @@ export function DlqPanel() {
           </select>
           <input style={{ ...inputStyle, width: 110 }} placeholder="Concurso" value={rConcurso} onChange={e => setRConcurso(e.target.value)} />
           <input style={{ ...inputStyle, flex: 1, minWidth: 180 }} placeholder="Motivo do reprocessamento (auditoria)" value={rMotivo} onChange={e => setRMotivo(e.target.value)} />
-          <button style={btn} onClick={() => void reprocessConcurso()}>Reprocessar</button>
+          <button style={{ ...btn, opacity: busy ? 0.5 : 1 }} disabled={busy} onClick={() => void reprocessConcurso()}>
+            {busy ? "..." : "Reprocessar"}
+          </button>
         </div>
       </div>
 
@@ -178,13 +180,34 @@ export function DlqPanel() {
           {tipos.map(t => <option key={t} value={t}>{t}</option>)}
         </select>
         <input style={{ ...inputStyle, minWidth: 180 }} placeholder="Motivo (registrado na auditoria)" value={motivo} onChange={e => setMotivo(e.target.value)} />
-        <button style={btn} disabled={!filtered.length} onClick={() => void reprocess()}>♻️ Reprocessar tudo</button>
-        <button style={btnDanger} disabled={!filtered.length} onClick={() => void discard()}>🗑️ Descartar tudo</button>
+        <button style={{ ...btn, opacity: busy || !filtered.length ? 0.5 : 1 }} disabled={busy || !filtered.length} onClick={() => void reprocess()}>
+          ♻️ Reprocessar lote ({filtered.length})
+        </button>
+        <button style={{ ...btnDanger, opacity: busy || !filtered.length ? 0.5 : 1 }} disabled={busy || !filtered.length} onClick={() => void discard()}>
+          🗑️ Descartar lote ({filtered.length})
+        </button>
       </div>
 
       {msg && (
-        <div style={{ ...card, marginBottom: 10, color: "#00ff88", fontSize: 10 }}>{msg}</div>
+        <div style={{ ...card, marginBottom: 10, color: msg.startsWith("❌") || msg.startsWith("⚠️") ? "#ffaa00" : "#00ff88", fontSize: 10 }}>{msg}</div>
       )}
+
+      {!!watchedList.length && (
+        <div style={{ ...card, marginBottom: 10 }}>
+          <div style={{ color: "#00d4ff", fontWeight: 800, fontSize: 10, marginBottom: 6 }}>📡 STATUS DOS REPROCESSAMENTOS</div>
+          {watchedList.map(w => {
+            const meta = R_META[w.state as RState];
+            return (
+              <div key={w.id} style={{ display: "flex", justifyContent: "space-between", gap: 8, padding: "3px 0", borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                <span style={{ color: "#cbd5e1" }}>{w.label}</span>
+                <span style={{ color: "#475569", fontSize: 9 }}>{BRT(w.at)}</span>
+                <span style={{ color: meta.color, fontWeight: 700, minWidth: 92, textAlign: "right" }}>{meta.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
 
       <div style={{ maxHeight: 460, overflow: "auto", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 8 }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 10 }}>
