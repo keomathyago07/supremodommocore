@@ -116,3 +116,54 @@ export async function conferirIdempotente(
     releaseDrawLock(bet.lottery, bet.concurso);
   }
 }
+
+// ------------------------------------------------------------
+// Reprocessamento idempotente por modalidade+concurso
+// ------------------------------------------------------------
+const reprocessInFlight = new Set<string>();
+
+/** Chave de idempotência do reprocessamento (modalidade+concurso). */
+export function reprocessKey(loteria: string, concurso: number) {
+  return `reprocess:${loteria}:${concurso}`;
+}
+
+export function isReprocessing(loteria: string, concurso: number) {
+  return reprocessInFlight.has(reprocessKey(loteria, concurso));
+}
+
+/** Trava exclusiva de reprocessamento — duplicidade vai para a auditoria. */
+export function acquireReprocessLock(loteria: string, concurso: number): boolean {
+  const k = reprocessKey(loteria, concurso);
+  if (reprocessInFlight.has(k)) {
+    void auditDuplicate(k, "reprocessamento já em andamento para este concurso");
+    return false;
+  }
+  reprocessInFlight.add(k);
+  return true;
+}
+export function releaseReprocessLock(loteria: string, concurso: number) {
+  reprocessInFlight.delete(reprocessKey(loteria, concurso));
+}
+
+/**
+ * Limpa a idempotência do concurso para permitir nova conferência,
+ * registrando o motivo do reprocessamento na auditoria.
+ */
+export async function resetConferenciaConcurso(loteria: string, concurso: number, motivo: string) {
+  const removidas = titanPersistence.clearConferenciasDoConcurso(loteria, concurso);
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      await supabase.from("god_core_events" as any).insert({
+        user_id: user.id,
+        tipo: "conference_reset",
+        modulo: "conference",
+        severidade: "info",
+        mensagem: `🧽 Idempotência limpa para ${loteria} #${concurso} (${removidas.length} chave(s)) — ${motivo}`,
+        payload: { loteria, concurso, motivo, chaves: removidas },
+      });
+    }
+  } catch { /* nunca throw */ }
+  void emitTitanEvent("conferencia", { loteria, concurso, motivo, acao: "reset_idempotencia", chaves: removidas.length });
+  return removidas;
+}
