@@ -9,6 +9,10 @@ import { titanTelemetry, SlaSample } from "./titanTelemetry";
 import { durableQueue } from "@/titan/queue/durableQueue";
 import { queueConfig } from "@/titan/queue/queueConfig";
 import { getAlerts, subscribeAlerts, GuardianAlert, THRESHOLDS } from "@/titan/alerts/guardianAlerts";
+import {
+  evaluateSlaAlerts, startSlaWatchdog, getSlaBreaches, subscribeSlaBreaches,
+  clearSlaBreaches, slaBreachesByModule, slaBreachesByConcurso, SlaBreach, SLA_THRESHOLDS,
+} from "@/titan/alerts/slaAlerts";
 
 const SEV_COLOR: Record<string, string> = {
   info: "#00d4ff", warn: "#ffaa00", error: "#ff6b6b", critical: "#ff2222", ok: "#00ff88",
@@ -64,13 +68,18 @@ export function QueueSlaPanel() {
   const [, setTick] = useState(0);
   const [alerts, setAlerts] = useState<GuardianAlert[]>(getAlerts());
   const [mem, setMem] = useState<number | null>(memoryPct());
+  const [breaches, setBreaches] = useState<SlaBreach[]>(getSlaBreaches());
 
   useEffect(() => {
     const unTel = titanTelemetry.subscribe(() => setTick(t => t + 1));
     const unQ = durableQueue.subscribe(() => setTick(t => t + 1));
     const unA = subscribeAlerts(setAlerts);
+    const unB = subscribeSlaBreaches(setBreaches);
     const it = setInterval(() => { setMem(memoryPct()); setTick(t => t + 1); }, 2_000);
-    return () => { unTel(); unQ(); unA(); clearInterval(it); };
+    // Alertas automáticos de SLA: avaliação imediata + watchdog contínuo
+    evaluateSlaAlerts();
+    const stopWatchdog = startSlaWatchdog(15_000);
+    return () => { unTel(); unQ(); unA(); unB(); clearInterval(it); stopWatchdog(); };
   }, []);
 
   const stats = durableQueue.stats();
@@ -226,8 +235,69 @@ export function QueueSlaPanel() {
             }) : <div style={{ fontSize: 9, color: "#00ff88" }}>● Nenhuma degradação detectada.</div>}
         </Box>
       </div>
+
+      <Box title="🛰️ Alertas automáticos de SLA · histórico por módulo e concurso" color="#ffaa00">
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <span style={{ fontSize: 8, color: "#475569" }}>
+            limiares: p95 {SLA_THRESHOLDS.p95WarnMs}/{SLA_THRESHOLDS.p95ErrorMs}/{SLA_THRESHOLDS.p95CriticalMs}ms ·
+            falhas {SLA_THRESHOLDS.failWarnPct}/{SLA_THRESHOLDS.failErrorPct}/{SLA_THRESHOLDS.failCriticalPct}% ·
+            retry {SLA_THRESHOLDS.retryWarnPct}/{SLA_THRESHOLDS.retryErrorPct}%
+          </span>
+          <div style={{ display: "flex", gap: 6 }}>
+            <button onClick={() => evaluateSlaAlerts()} style={btnStyle("#00d4ff")}>🔍 Avaliar agora</button>
+            {breaches.length > 0 && (
+              <button onClick={clearSlaBreaches} style={btnStyle("#94a3b8")}>limpar</button>
+            )}
+          </div>
+        </div>
+        {!breaches.length ? (
+          <div style={{ fontSize: 9, color: "#00ff88" }}>● Nenhuma violação de SLA registrada.</div>
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+            <div>
+              <div style={{ fontSize: 9, color: "#64748b", marginBottom: 4 }}>POR MÓDULO</div>
+              {Object.entries(slaBreachesByModule()).map(([mod, list]) => (
+                <div key={mod} style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#e2e8f0" }}>{mod} · {list.length}</div>
+                  {[...list].reverse().slice(0, 4).map(b => (
+                    <div key={b.id} style={{ fontSize: 8, color: "#cbd5e1" }}>
+                      <span style={{ color: SEV_COLOR[b.severidade], fontWeight: 700 }}>[{b.severidade}]</span>{" "}
+                      <span style={{ color: "#64748b" }}>{new Date(b.at).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo" })}</span>{" "}
+                      {b.metrica} {b.valor} (lim {b.limite}, n={b.amostras}) — {b.mensagem}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+            <div>
+              <div style={{ fontSize: 9, color: "#64748b", marginBottom: 4 }}>POR CONCURSO</div>
+              {Object.keys(slaBreachesByConcurso()).length === 0 ? (
+                <div style={{ fontSize: 8, color: "#475569" }}>Sem correlação por concurso.</div>
+              ) : Object.entries(slaBreachesByConcurso()).map(([trace, list]) => (
+                <div key={trace} style={{ marginBottom: 4 }}>
+                  <div style={{ fontSize: 9, fontWeight: 800, color: "#ff9800" }}>{trace} · {list.length}</div>
+                  {[...list].reverse().slice(0, 4).map(b => (
+                    <div key={b.id} style={{ fontSize: 8, color: "#cbd5e1" }}>
+                      <span style={{ color: SEV_COLOR[b.severidade], fontWeight: 700 }}>[{b.severidade}]</span>{" "}
+                      {b.modulo} · {b.metrica} {b.valor}
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </Box>
     </div>
   );
+}
+
+function btnStyle(color: string): React.CSSProperties {
+  return {
+    background: `${color}1a`, border: `1px solid ${color}44`, color,
+    borderRadius: 6, fontSize: 9, fontWeight: 700, padding: "4px 8px", cursor: "pointer",
+    fontFamily: "inherit",
+  };
 }
 
 function Box({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
