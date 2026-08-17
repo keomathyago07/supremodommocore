@@ -5,14 +5,16 @@
 // ============================================================
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const sendMock = vi.fn().mockResolvedValue(undefined);
-const insertMock = vi.fn().mockResolvedValue({ error: null });
-const invokeMock = vi.fn().mockResolvedValue({ data: { ok: true }, error: null });
-const removeChannelMock = vi.fn();
+const { sendMock, insertMock, invokeMock, removeChannelMock, subscribers } = vi.hoisted(() => ({
+  sendMock: vi.fn().mockResolvedValue(undefined),
+  insertMock: vi.fn().mockResolvedValue({ error: null }),
+  invokeMock: vi.fn().mockResolvedValue({ data: { ok: true }, error: null }),
+  removeChannelMock: vi.fn(),
+  subscribers: new Set<(msg: { event: string; payload: unknown }) => void>(),
+}));
 
 // Canal Realtime simulado: broadcasts enviados são entregues aos assinantes.
 type BroadcastCb = (msg: { event: string; payload: unknown }) => void;
-const subscribers = new Set<BroadcastCb>();
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
