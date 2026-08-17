@@ -5,9 +5,11 @@
 // ============================================================
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 
-const insertMock = vi.fn().mockResolvedValue({ error: null });
-const sendMock = vi.fn().mockResolvedValue(undefined);
-const invokeMock = vi.fn().mockResolvedValue({ data: { ok: true }, error: null });
+const { insertMock, sendMock, invokeMock } = vi.hoisted(() => ({
+  insertMock: vi.fn().mockResolvedValue({ error: null }),
+  sendMock: vi.fn().mockResolvedValue(undefined),
+  invokeMock: vi.fn().mockResolvedValue({ data: { ok: true }, error: null }),
+}));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {

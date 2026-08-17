@@ -1,8 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
 // ---- Mock do client (auditoria/edge function) ---------------------------
-const insertMock = vi.fn().mockResolvedValue({ error: null });
-const invokeMock = vi.fn().mockResolvedValue({ data: { ok: true }, error: null });
+const { insertMock, invokeMock } = vi.hoisted(() => ({
+  insertMock: vi.fn().mockResolvedValue({ error: null }),
+  invokeMock: vi.fn().mockResolvedValue({ data: { ok: true }, error: null }),
+}));
 
 vi.mock("@/integrations/supabase/client", () => ({
   supabase: {
