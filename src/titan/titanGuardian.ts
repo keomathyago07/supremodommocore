@@ -97,7 +97,7 @@ class TitanGuardian {
    */
   private reviveTitanPipeline() {
     const s = useTitanCore.getState();
-    if (!s.isOnline || s.systemState === "STANDBY" || s.systemState === "IDLE") {
+    if (!s.isOnline || s.systemState === "STANDBY" || s.systemState === "BOOT") {
       void s.boot?.();
       return;
     }
