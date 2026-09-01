@@ -83,6 +83,10 @@ export function TitanBridge() {
       if (evt.origin === (/Android|iPhone|iPad|Mobile/i.test(navigator.userAgent) ? "mobile" : "desktop")) return;
       titan.log("system", `🔗 Sync recebido (${evt.kind}) de ${evt.origin}`);
     });
+    // Boot do core ANTES do watchdog: sem isOnline=true o Guardian entendia o
+    // pipeline como caído e reiniciava em loop (falha #101).
+    const st0 = useTitanCore.getState();
+    if (!st0.isOnline) void st0.boot?.();
     persistentCore.start();
     titanGuardian.start(30_000);
     titan.log("system", "🏛️ Persistent Core + Guardian ativos (modo institucional)");

@@ -2,6 +2,24 @@ import { useEffect, useRef, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { dentroDaJanelaOficial } from "@/titan/conference";
+
+/** Data de hoje em BRT no formato dd/mm/yyyy (padrão da Caixa). */
+function hojeBRT(): string {
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(new Date());
+}
+
+/** Normaliza qualquer formato de data da API para dd/mm/yyyy BRT. */
+function normalizarData(raw?: string): string {
+  if (!raw) return "";
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return raw;
+  const d = new Date(raw);
+  if (isNaN(d.getTime())) return raw;
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo" }).format(d);
+}
+
+/** Imposto de renda retido (30%) — valor líquido a receber. */
+const TAXA_IR = 0.3;
 
 const SLUG_LOTERIA: Record<string, string> = {
   Quina: "quina",
@@ -105,6 +123,14 @@ async function verificarAposta(
   const resultado = await buscarResultadoCaixa(aposta.loteria, aposta.concurso ?? undefined);
   if (!resultado || !resultado.dezenas?.length) return;
 
+  // IAS Guard: confere SOMENTE com o sorteio do dia corrente (BRT).
+  // Resultado antigo => permanece aguardando_sorteio, nunca conferido com concurso anterior.
+  const dataResultado = normalizarData(resultado.dataApuracao);
+  if (dataResultado !== hojeBRT()) {
+    console.info(`[conferencia] ${aposta.loteria}: resultado ${dataResultado} não é do dia (${hojeBRT()}) — aguardando oficial`);
+    return;
+  }
+
   const dezenas = resultado.dezenas.map(Number);
   const acertos = contarAcertos(aposta.numeros, dezenas);
   const minAcertos = MIN_ACERTOS_FINANCEIRO[aposta.loteria] ?? 3;
@@ -124,6 +150,9 @@ async function verificarAposta(
     })
     .eq("id", aposta.id);
 
+  const liquido = valorPremio * (1 - TAXA_IR);
+  const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+
   if (acertos >= minAcertos && valorPremio > 0) {
     await supabase.from("financeiro_premiacoes" as any).insert({
       user_id: aposta.user_id,
@@ -140,13 +169,21 @@ async function verificarAposta(
       status_pagamento: "a_receber",
     });
 
-    toast.success(`🏆 Prêmio na ${aposta.loteria}!`, {
-      description: `${acertos} acertos — ${premioParcial?.descricao} — R$ ${valorPremio.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
-      duration: 8000,
+    toast.success(`🏆 PREMIADO — ${aposta.loteria}`, {
+      description:
+        `Concurso #${resultado.numero} · ${dataResultado}\n` +
+        `Pontos: ${acertos}/${aposta.numeros.length} — ${premioParcial?.descricao}\n` +
+        `Dezenas sorteadas: ${dezenas.join(" · ")}\n` +
+        `Bruto: ${brl(valorPremio)} · IR 30%: ${brl(valorPremio - liquido)} · Líquido: ${brl(liquido)}`,
+      duration: 15000,
     });
   } else {
-    toast.info(`📊 ${aposta.loteria} verificada`, {
-      description: `${acertos} acerto(s) no concurso ${resultado.numero}`,
+    toast.info(`📊 ${aposta.loteria} conferida`, {
+      description:
+        `Concurso #${resultado.numero} · ${dataResultado}\n` +
+        `Pontos: ${acertos}/${aposta.numeros.length} — sem faixa premiada\n` +
+        `Dezenas sorteadas: ${dezenas.join(" · ")}`,
+      duration: 9000,
     });
   }
 
@@ -158,11 +195,8 @@ export function useVerificacaoSorteios() {
   const qc = useQueryClient();
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const eHorarioSorteio = useCallback((): boolean => {
-    const now = new Date();
-    const brasilia = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-    return brasilia.getHours() >= 21 && brasilia.getHours() <= 23;
-  }, []);
+  // Janela oficial institucional: Seg–Sáb após 21:00 BRT, Domingo após 11:00 BRT.
+  const eHorarioSorteio = useCallback((): boolean => dentroDaJanelaOficial(), []);
 
   const executarVerificacao = useCallback(async () => {
     if (!eHorarioSorteio()) return;

@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -285,7 +286,9 @@ function CardAposta({
 }
 
 export default function MinhaApostaPage() {
+  const navigate = useNavigate();
   const [pendentes, setPendentes] = useState<ApostaPendente[]>([]);
+
   const [confirmadas, setConfirmadas] = useState<ApostaConfirmada[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
@@ -331,8 +334,13 @@ export default function MinhaApostaPage() {
       const { data: ok, error } = await supabase.rpc('confirmar_aposta_ia', { p_aposta_id: id });
       if (error) throw error;
       if (!ok) throw new Error('Aposta não encontrada ou já confirmada.');
-      toast({ title: '✅ Confirmada!', description: 'Verificação automática às 21h (BRT).' });
+      toast({
+        title: '✅ Aposta confirmada!',
+        description: 'Indo para a Conferência — Seg–Sáb após 21h BRT · Dom após 11h BRT, sempre com o sorteio do dia.',
+      });
       carregar();
+      // Fluxo institucional: confirmar → conferência automática do dia.
+      setTimeout(() => navigate('/dashboard/conferidor-v23'), 700);
     } catch (err: any) {
       toast({ title: 'Erro', description: err.message, variant: 'destructive' });
     } finally {
