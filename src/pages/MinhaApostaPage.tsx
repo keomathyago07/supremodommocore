@@ -286,7 +286,9 @@ function CardAposta({
 }
 
 export default function MinhaApostaPage() {
+  const navigate = useNavigate();
   const [pendentes, setPendentes] = useState<ApostaPendente[]>([]);
+
   const [confirmadas, setConfirmadas] = useState<ApostaConfirmada[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [confirmandoId, setConfirmandoId] = useState<string | null>(null);
