@@ -756,6 +756,42 @@ export type Database = {
         }
         Relationships: []
       }
+      ingest_jobs: {
+        Row: {
+          job: string
+          last_run_at: string | null
+          last_status: string | null
+          last_summary: Json | null
+          lease_until: string
+          pause_reason: string | null
+          paused: boolean
+          runs_total: number
+          updated_at: string
+        }
+        Insert: {
+          job: string
+          last_run_at?: string | null
+          last_status?: string | null
+          last_summary?: Json | null
+          lease_until?: string
+          pause_reason?: string | null
+          paused?: boolean
+          runs_total?: number
+          updated_at?: string
+        }
+        Update: {
+          job?: string
+          last_run_at?: string | null
+          last_status?: string | null
+          last_summary?: Json | null
+          lease_until?: string
+          pause_reason?: string | null
+          paused?: boolean
+          runs_total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       loterias_calendario: {
         Row: {
           dias_semana: number[]
