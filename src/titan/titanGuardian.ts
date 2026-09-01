@@ -26,12 +26,19 @@ async function auditEvent(tipo: string, mensagem: string, severidade: "info"|"wa
   } catch { /* silencioso */ }
 }
 
+/** Teto de tentativas de recuperação por módulo antes de pausar e sondar. */
+const MAX_RECOVERY_ATTEMPTS = 5;
+
 class TitanGuardian {
   private running = false;
   private timer: ReturnType<typeof setInterval> | null = null;
   private failCounts: Record<string, number> = {};
+  private nextAttemptAt: Record<string, number> = {};
   private lastReport: HealthReport | null = null;
   private reconnects = 0;
+
+  getFailCounts() { return { ...this.failCounts }; }
+
 
   getReconnects() { return this.reconnects; }
 
