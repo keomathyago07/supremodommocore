@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { amostrarPonderado, getIntel, getPesosHistoricos, type LoteriaSlug } from '@/lib/historicalIntel';
 
 export const TIMES_TIMEMANIA = [
   'Flamengo','Fluminense','Vasco','Botafogo','Palmeiras','Corinthians',
@@ -152,10 +153,21 @@ function contarConsecutivos(numeros: number[]): number {
   return max;
 }
 
+// ─── Cruzamento histórico (banco de sorteios persistido) ──────
+// Quando PESOS_ATIVOS está carregado, a geração deixa de ser aleatória
+// e passa a usar amostragem ponderada pelo score histórico ULTRA
+// (frequência + atraso maduro + momentum + fase de ciclo).
+let PESOS_ATIVOS: Map<number, number> | null = null;
+let INTEL_ATIVO: { indice: number; amostras: number } | null = null;
+
 function gerarNumerosBase(min: number, max: number, qtd: number): number[] {
+  if (PESOS_ATIVOS && PESOS_ATIVOS.size) {
+    return amostrarPonderado(PESOS_ATIVOS, min, max, qtd);
+  }
   const pool = Array.from({ length: max - min + 1 }, (_, i) => i + min);
   return shuffle(pool).slice(0, qtd).sort((a, b) => a - b);
 }
+
 
 function gerarNumerosIA(cfg: typeof CONFIG_LOTERIAS[LoteriaNome]): number[] {
   for (let tentativa = 0; tentativa < 200; tentativa++) {
@@ -199,7 +211,7 @@ export function gerarJogoIA(loteria: LoteriaNome): ApostaGerada {
   // Lotomania — Jogo Duplo (50 + 50 invertidos)
   if (loteria === 'lotomania') {
     const todos = Array.from({ length: 100 }, (_, i) => i);
-    const principal = shuffle(todos).slice(0, 50).sort((a, b) => a - b);
+    const principal = gerarNumerosBase(0, 99, 50);
     const invertido = todos.filter(n => !principal.includes(n)).sort((a, b) => a - b);
     const { dom, prec, qual } = calcularScore(principal, 0, 99);
     return { loteria, numeros: principal, numerosInvertido: invertido, tipoJogo: 'duplo', dominancia: dom, precisao: prec, scoreQualidade: qual };
@@ -210,7 +222,9 @@ export function gerarJogoIA(loteria: LoteriaNome): ApostaGerada {
     const colunas: Record<string, number> = {};
     const numeros: number[] = [];
     for (let col = 1; col <= 7; col++) {
-      const n = Math.floor(Math.random() * 10);
+      const n = PESOS_ATIVOS && PESOS_ATIVOS.size
+        ? amostrarPonderado(PESOS_ATIVOS, 0, 9, 1)[0]
+        : Math.floor(Math.random() * 10);
       colunas[`col${col}`] = n;
       numeros.push(n);
     }
@@ -246,6 +260,37 @@ export function gerarJogoIA(loteria: LoteriaNome): ApostaGerada {
   const nums = gerarNumerosBase(cfg.min, cfg.max, cfg.qtd);
   const { dom, prec, qual } = calcularScore(nums, cfg.min, cfg.max);
   return { loteria, numeros: nums, tipoJogo: 'simples', dominancia: dom, precisao: prec, scoreQualidade: qual };
+}
+
+// ─── Geração com CRUZAMENTO HISTÓRICO (banco + API) ───────────
+/**
+ * Gera o jogo usando os sorteios persistidos no banco
+ * (public.resultados_sorteios) cruzados com as regras estatísticas
+ * da modalidade. Se o banco não tiver histórico suficiente, cai no
+ * modo heurístico puro — nunca bloqueia a geração.
+ */
+export async function gerarJogoIAHistorico(loteria: LoteriaNome): Promise<ApostaGerada> {
+  try {
+    const intel = await getIntel(loteria as LoteriaSlug);
+    PESOS_ATIVOS = await getPesosHistoricos(loteria as LoteriaSlug);
+    INTEL_ATIVO = intel ? { indice: intel.indicePrevisibilidade, amostras: intel.amostras } : null;
+  } catch {
+    PESOS_ATIVOS = null;
+    INTEL_ATIVO = null;
+  }
+  try {
+    const jogo = gerarJogoIA(loteria);
+    if (INTEL_ATIVO) {
+      // Precisão ganha reforço proporcional ao sinal histórico do banco.
+      const reforco = Math.min(12, (INTEL_ATIVO.indice / 100) * 8 + Math.min(4, INTEL_ATIVO.amostras / 100));
+      jogo.precisao = parseFloat(Math.min(99.9, jogo.precisao + reforco).toFixed(2));
+      jogo.scoreQualidade = parseFloat(((jogo.dominancia * 0.4) + (jogo.precisao * 0.6)).toFixed(2));
+    }
+    return jogo;
+  } finally {
+    PESOS_ATIVOS = null;
+    INTEL_ATIVO = null;
+  }
 }
 
 // ─── Hook: Gerador de jogos ───────────────────────────────────
@@ -295,7 +340,7 @@ export function useGerarJogo() {
 
   const gerarJogo = useCallback(async (loteria: LoteriaNome): Promise<boolean> => {
     const cfg = CONFIG_LOTERIAS[loteria];
-    const jogo = gerarJogoIA(loteria);
+    const jogo = await gerarJogoIAHistorico(loteria);
     const id = await salvarAposta(jogo);
     if (!id) return false;
 
