@@ -152,10 +152,21 @@ function contarConsecutivos(numeros: number[]): number {
   return max;
 }
 
+// ─── Cruzamento histórico (banco de sorteios persistido) ──────
+// Quando PESOS_ATIVOS está carregado, a geração deixa de ser aleatória
+// e passa a usar amostragem ponderada pelo score histórico ULTRA
+// (frequência + atraso maduro + momentum + fase de ciclo).
+let PESOS_ATIVOS: Map<number, number> | null = null;
+let INTEL_ATIVO: { indice: number; amostras: number } | null = null;
+
 function gerarNumerosBase(min: number, max: number, qtd: number): number[] {
+  if (PESOS_ATIVOS && PESOS_ATIVOS.size) {
+    return amostrarPonderado(PESOS_ATIVOS, min, max, qtd);
+  }
   const pool = Array.from({ length: max - min + 1 }, (_, i) => i + min);
   return shuffle(pool).slice(0, qtd).sort((a, b) => a - b);
 }
+
 
 function gerarNumerosIA(cfg: typeof CONFIG_LOTERIAS[LoteriaNome]): number[] {
   for (let tentativa = 0; tentativa < 200; tentativa++) {
