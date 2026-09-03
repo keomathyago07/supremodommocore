@@ -25,6 +25,7 @@ import FinancialPage from "./pages/FinancialPage";
 import AnalyticalEnginePage from "./pages/AnalyticalEnginePage";
 import MotorAnaliticoPage from "./pages/MotorAnaliticoPage";
 import InstallPage from "./pages/InstallPage";
+import PredictionsPage from "./pages/PredictionsPage";
 import NotFound from "./pages/NotFound";
 // New v10 pages
 import MinhaApostaPage from "./pages/MinhaApostaPage";
