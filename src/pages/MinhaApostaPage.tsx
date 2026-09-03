@@ -400,6 +400,8 @@ export default function MinhaApostaPage() {
         </div>
       )}
 
+      <PrevisaoIAPanel loteria={loteriaManual as LoteriaSlug} qtdSugestoes={3} />
+
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
           <div className="text-2xl font-black text-yellow-400">{pendentes.length}</div>
