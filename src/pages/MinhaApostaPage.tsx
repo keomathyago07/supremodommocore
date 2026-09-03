@@ -23,6 +23,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { CONFIG_LOTERIAS, type LoteriaNome, useGerarJogo } from '@/hooks/useGerarJogo';
+import PrevisaoIAPanel from '@/components/PrevisaoIAPanel';
+import type { LoteriaSlug } from '@/lib/historicalIntel';
 
 interface ApostaPendente {
   id: string;
