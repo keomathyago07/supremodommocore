@@ -16,6 +16,7 @@ const menuItems = [
   { id: 'god-eye-v6', label: '👁️ God Eye v6.0 Triple', icon: Eye, path: '/dashboard/god-eye-v6' },
   { id: 'godcore-logs', label: '📜 God Core · Logs', icon: Activity, path: '/dashboard/godcore-logs' },
   { id: 'quant-core', label: '🏦 Quant Core v17', icon: Atom, path: '/dashboard/quant-core' },
+  { id: 'previsoes', label: '🔮 Previsões Inteligentes', icon: BarChart3, path: '/dashboard/previsoes' },
   { id: 'dashboard-ia', label: 'Dashboard IA', icon: Sparkles, path: '/dashboard/dashboard-ia' },
   { id: 'score-ultra', label: 'Score Ultra v17', icon: Atom, path: '/dashboard/score-ultra' },
   { id: 'alertas', label: 'Alertas Críticos v18', icon: AlertTriangle, path: '/dashboard/alertas' },
