@@ -23,6 +23,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { CONFIG_LOTERIAS, type LoteriaNome, useGerarJogo } from '@/hooks/useGerarJogo';
+import PrevisaoIAPanel from '@/components/PrevisaoIAPanel';
+import type { LoteriaSlug } from '@/lib/historicalIntel';
 
 interface ApostaPendente {
   id: string;
@@ -397,6 +399,8 @@ export default function MinhaApostaPage() {
           </div>
         </div>
       )}
+
+      <PrevisaoIAPanel loteria={loteriaManual as LoteriaSlug} qtdSugestoes={3} />
 
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-center">
