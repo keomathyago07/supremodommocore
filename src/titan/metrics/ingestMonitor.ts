@@ -40,7 +40,7 @@ export interface IngestSnapshot {
 }
 
 const JOB = "atlas_ingest_diario";
-/** Cron real: */10 23,0,1,2 * * * (UTC) ⇒ 20h–23h BRT, a cada 10 min. */
+// Cron real (UTC): a cada 10 min nas horas 23,0,1,2 ⇒ 20h–23h BRT.
 export const INGEST_SLA = {
   atrasoWarnMin: 25,       // 2 ciclos perdidos
   atrasoErrorMin: 70,      // 7 ciclos perdidos
