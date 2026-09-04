@@ -13,6 +13,8 @@ import {
   evaluateSlaAlerts, startSlaWatchdog, getSlaBreaches, subscribeSlaBreaches,
   clearSlaBreaches, slaBreachesByModule, slaBreachesByConcurso, SlaBreach, SLA_THRESHOLDS,
 } from "@/titan/alerts/slaAlerts";
+import { IngestMonitorCard } from "./IngestMonitorCard";
+
 
 const SEV_COLOR: Record<string, string> = {
   info: "#00d4ff", warn: "#ffaa00", error: "#ff6b6b", critical: "#ff2222", ok: "#00ff88",
