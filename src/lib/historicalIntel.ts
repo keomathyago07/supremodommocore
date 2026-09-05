@@ -243,3 +243,95 @@ export function amostrarPonderado(
   }
   return out.sort((a, b) => a - b);
 }
+
+// ============================================================
+// Desvio previsão × concurso real (backtest walk-forward)
+// Reconstrói a previsão histórica usando só os sorteios ANTERIORES
+// a cada concurso e compara com as dezenas realmente sorteadas.
+// ============================================================
+export interface DesvioConcurso {
+  concurso: number;
+  data: string;
+  previsto: number[];
+  real: number[];
+  acertos: number;
+  esperadoAleatorio: number;   // acertos esperados por sorte
+  desvio: number;              // acertos - esperado (ganho do motor)
+  desvioMedioPosicional: number; // distância média entre previsto/real ordenados
+  hitRate: number;             // acertos / dezenas do sorteio (%)
+}
+
+export interface DesvioResumo {
+  loteria: LoteriaSlug;
+  concursos: DesvioConcurso[];
+  mediaAcertos: number;
+  mediaEsperado: number;
+  ganhoMedio: number;          // média do desvio
+  melhor: DesvioConcurso | null;
+  pior: DesvioConcurso | null;
+  aderencia: number;           // 0..100 — quanto o motor supera o aleatório
+}
+
+/** Previsão determinística (top-N por score) a partir de um histórico parcial. */
+function preverTopN(loteria: LoteriaSlug, draws: DrawRow[]): number[] {
+  const intel = computarIntel(loteria, draws);
+  const u = UNIVERSO[loteria];
+  return [...intel.numeros]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, u.qtd)
+    .map((n) => n.numero)
+    .sort((a, b) => a - b);
+}
+
+export async function calcularDesvioPrevisao(
+  loteria: LoteriaSlug,
+  janela = 12,
+  limite = 400,
+): Promise<DesvioResumo | null> {
+  const draws = await carregarHistorico(loteria, limite);
+  if (draws.length < 40) return null;
+  const u = UNIVERSO[loteria];
+  const universoTam = u.max - u.min + 1;
+
+  const concursos: DesvioConcurso[] = [];
+  const inicio = Math.max(30, draws.length - janela);
+  for (let i = inicio; i < draws.length; i++) {
+    const passado = draws.slice(0, i);
+    const alvo = draws[i];
+    const previsto = preverTopN(loteria, passado);
+    const set = new Set(alvo.dezenas);
+    const acertos = previsto.filter((n) => set.has(n)).length;
+    const esperadoAleatorio = Number(((previsto.length * alvo.dezenas.length) / universoTam).toFixed(2));
+    const realOrd = [...alvo.dezenas].sort((a, b) => a - b);
+    const pares = Math.min(previsto.length, realOrd.length);
+    const desvioMedioPosicional = pares
+      ? Number((previsto.slice(0, pares).reduce((s, n, k) => s + Math.abs(n - realOrd[k]), 0) / pares).toFixed(2))
+      : 0;
+    concursos.push({
+      concurso: alvo.concurso,
+      data: alvo.data_apuracao ?? "",
+      previsto,
+      real: realOrd,
+      acertos,
+      esperadoAleatorio,
+      desvio: Number((acertos - esperadoAleatorio).toFixed(2)),
+      desvioMedioPosicional,
+      hitRate: Number(((acertos / Math.max(1, alvo.dezenas.length)) * 100).toFixed(1)),
+    });
+  }
+
+  const mediaAcertos = media(concursos.map((c) => c.acertos));
+  const mediaEsperado = media(concursos.map((c) => c.esperadoAleatorio));
+  const ganhoMedio = mediaAcertos - mediaEsperado;
+  const ordenado = [...concursos].sort((a, b) => b.desvio - a.desvio);
+  return {
+    loteria,
+    concursos,
+    mediaAcertos: Number(mediaAcertos.toFixed(2)),
+    mediaEsperado: Number(mediaEsperado.toFixed(2)),
+    ganhoMedio: Number(ganhoMedio.toFixed(2)),
+    melhor: ordenado[0] ?? null,
+    pior: ordenado[ordenado.length - 1] ?? null,
+    aderencia: Number(Math.max(0, Math.min(100, mediaEsperado > 0 ? (mediaAcertos / mediaEsperado) * 50 : 0)).toFixed(1)),
+  };
+}
