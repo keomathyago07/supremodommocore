@@ -69,6 +69,15 @@ export function IngestMonitorCard() {
         <div style={{ fontSize: 9, color: "#ff6b6b" }}>Não foi possível ler o estado da ingestão.</div>
       ) : (
         <>
+          {snap.alerta30Min && (
+            <div style={{
+              fontSize: 9, fontWeight: 800, color: "#ff6b6b", marginBottom: 6,
+              padding: "6px 8px", borderRadius: 6,
+              background: "rgba(255,107,107,0.08)", border: "1px solid rgba(255,107,107,0.35)",
+            }}>
+              🚨 ALERTA SLA · coleta falhou/atrasou {snap.atrasoMin ?? "?"} min (limite 30 min) — última execução {fmtHora(snap.lastRunAt)}
+            </div>
+          )}
           <div style={{ fontSize: 9, color: "#cbd5e1", marginBottom: 8 }}>{snap.diagnostico}</div>
 
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(108px,1fr))", gap: 6, marginBottom: 8 }}>
@@ -90,6 +99,8 @@ export function IngestMonitorCard() {
                   <th style={{ padding: 4 }}>Loteria</th>
                   <th style={{ padding: 4 }}>Último concurso</th>
                   <th style={{ padding: 4 }}>Apuração</th>
+                  <th style={{ padding: 4 }}>Fonte</th>
+                  <th style={{ padding: 4 }}>Coletado em</th>
                   <th style={{ padding: 4 }}>Atraso</th>
                   <th style={{ padding: 4 }}>Sorteio hoje</th>
                   <th style={{ padding: 4 }}>Histórico</th>
@@ -102,6 +113,8 @@ export function IngestMonitorCard() {
                     <td style={{ padding: 4, fontWeight: 700 }}>{NOMES[l.loteria] ?? l.loteria}</td>
                     <td style={{ padding: 4 }}>#{l.ultimoConcurso}</td>
                     <td style={{ padding: 4 }}>{l.ultimaData || "—"}</td>
+                    <td style={{ padding: 4, color: l.fonte ? "#00d4ff" : "#475569" }}>{l.fonte ?? "—"}</td>
+                    <td style={{ padding: 4, color: "#94a3b8" }}>{l.coletadoEm ? fmtHora(l.coletadoEm) : "—"}</td>
                     <td style={{ padding: 4, color: l.atrasoDias >= INGEST_SLA.atrasoDiasWarn ? "#ffaa00" : "#94a3b8" }}>{l.atrasoDias}d</td>
                     <td style={{ padding: 4, color: l.esperadoHoje ? "#00d4ff" : "#475569" }}>{l.esperadoHoje ? "sim" : "não"}</td>
                     <td style={{ padding: 4 }}>{l.totalHistorico}</td>

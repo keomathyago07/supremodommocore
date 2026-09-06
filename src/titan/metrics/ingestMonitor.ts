@@ -17,6 +17,8 @@ export interface IngestLotteryStat {
   atrasoDias: number;        // dias desde a última apuração coletada
   esperadoHoje: boolean;     // há sorteio hoje pelo calendário
   faltando: boolean;         // sorteio esperado hoje ainda não coletado
+  fonte: string | null;      // fonte oficial usada na última coleta
+  coletadoEm: string | null; // horário (ISO) da última coleta pelo cron
   sev: IngestSev;
 }
 
@@ -31,6 +33,7 @@ export interface IngestSnapshot {
   falhas: number;
   backfill: number;
   atrasoMin: number | null;  // minutos desde a última execução
+  alerta30Min: boolean;      // coleta sem sucesso há mais de 30 minutos
   dentroDaJanela: boolean;   // 20h–00h BRT (janela do cron)
   loterias: IngestLotteryStat[];
   totalColetado: number;
@@ -45,6 +48,7 @@ export const INGEST_SLA = {
   atrasoWarnMin: 25,       // 2 ciclos perdidos
   atrasoErrorMin: 70,      // 7 ciclos perdidos
   atrasoCriticalMin: 24 * 60,
+  alertaFalhaMin: 30,      // alerta obrigatório quando o cron falha >30 min
   falhasWarn: 1,
   falhasError: 3,
   atrasoDiasWarn: 3,
@@ -102,6 +106,16 @@ export async function fetchIngestSnapshot(): Promise<IngestSnapshot> {
     }
   }
 
+  const resumoLoterias = (summary.resumo ?? {}) as Record<string, unknown>;
+  const metaDe = (loteria: string): { fonte: string | null; coletadoEm: string | null } => {
+    const m = resumoLoterias[loteria];
+    if (m && typeof m === "object") {
+      const o = m as Record<string, unknown>;
+      return { fonte: (o.fonte as string) ?? null, coletadoEm: (o.coletado_em as string) ?? lastRunAt };
+    }
+    return { fonte: typeof m === "string" ? m : null, coletadoEm: null };
+  };
+
   const dow = agora.getDay();
   const hojeMeio = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate(), 12).getTime();
 
@@ -116,14 +130,24 @@ export async function fetchIngestSnapshot(): Promise<IngestSnapshot> {
       atrasoDias >= INGEST_SLA.atrasoDiasError || faltando ? "error"
         : atrasoDias >= INGEST_SLA.atrasoDiasWarn ? "warn"
           : "ok";
-    return { loteria, ultimoConcurso: v.ultimo, ultimaData: v.data, totalHistorico: v.total, atrasoDias, esperadoHoje, faltando, sev };
+    const meta = metaDe(loteria);
+    return {
+      loteria, ultimoConcurso: v.ultimo, ultimaData: v.data, totalHistorico: v.total,
+      atrasoDias, esperadoHoje, faltando, fonte: meta.fonte, coletadoEm: meta.coletadoEm, sev,
+    };
   }).sort((a, b) => b.atrasoDias - a.atrasoDias || a.loteria.localeCompare(b.loteria));
 
   const falhas = Number(summary.falhas ?? 0);
   const inseridos = Number(summary.inseridos ?? 0);
   const backfill = Number(summary.backfill ?? 0);
 
+  const alerta30Min =
+    (atrasoMin != null && atrasoMin >= INGEST_SLA.alertaFalhaMin) ||
+    (job.last_status as string) === "error" ||
+    (job.last_status as string) === "failed";
+
   let sev: IngestSev = "ok";
+  if (alerta30Min) sev = pior(sev, "error");
   if (job.paused) sev = "critical";
   if ((job.last_status as string) === "error") sev = pior(sev, "error");
   if (falhas >= INGEST_SLA.falhasError) sev = pior(sev, "error");
@@ -137,7 +161,9 @@ export async function fetchIngestSnapshot(): Promise<IngestSnapshot> {
 
   const faltantes = loterias.filter(l => l.faltando).map(l => l.loteria);
   const diagnostico =
-    job.paused ? `🔴 Ingestão PAUSADA (${(job.pause_reason as string) ?? "sem motivo"}) — retomar o job atlas-ingest-diario.`
+    alerta30Min && !job.paused
+      ? `🔴 Coleta sem sucesso há ${atrasoMin ?? "?"} min (limite 30 min) · status ${(job.last_status as string) ?? "n/d"} — disparar ingestão manual.`
+      : job.paused ? `🔴 Ingestão PAUSADA (${(job.pause_reason as string) ?? "sem motivo"}) — retomar o job atlas-ingest-diario.`
       : faltantes.length ? `🔴 Concurso do dia ainda não coletado: ${faltantes.join(", ")} — disparar ingestão manual.`
         : sev === "error" || sev === "critical" ? `🔴 Cron atrasado (${atrasoMin ?? "?"} min) ou com falhas (${falhas}) — verificar agendamento noturno.`
           : sev === "warn" ? `🟠 Atraso moderado no cron (${atrasoMin ?? "?"} min) · falhas ${falhas} — monitorando próximo ciclo.`
@@ -151,7 +177,7 @@ export async function fetchIngestSnapshot(): Promise<IngestSnapshot> {
     lastStatus: (job.last_status as string) ?? null,
     runsTotal: Number(job.runs_total ?? 0),
     inseridos, falhas, backfill,
-    atrasoMin, dentroDaJanela,
+    atrasoMin, dentroDaJanela, alerta30Min,
     loterias,
     totalColetado: rows.length,
     sev, diagnostico,
