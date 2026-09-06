@@ -62,7 +62,7 @@ export function brtHoraMinuto(d = brtAgora()): string {
 export function loteriasDeHoje(d = brtAgora()): LoteriaNome[] {
   const dow = d.getDay();
   return (Object.keys(CONFIG_LOTERIAS) as LoteriaNome[]).filter(
-    l => (CONFIG_LOTERIAS[l].dias as number[]).includes(dow),
+    l => (CONFIG_LOTERIAS[l].dias as readonly number[]).includes(dow),
   );
 }
 
