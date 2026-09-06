@@ -39,6 +39,15 @@ interface Draw {
   acumulado: boolean;
   valor_proximo: number;
   raw: unknown;
+  fonte?: string;
+}
+
+/** Nome curto da fonte (host) para auditoria/monitoramento. */
+function nomeFonte(url: string): string {
+  if (url.includes("servicebus2.caixa")) return "caixa";
+  if (url.includes("herokuapp")) return "loteriascaixa-api";
+  if (url.includes("guidi.dev.br")) return "guidi";
+  try { return new URL(url).host; } catch { return "desconhecida"; }
 }
 
 function parseDraw(j: any): Draw | null {
@@ -95,7 +104,7 @@ async function fetchDraw(loteria: string, concurso?: number): Promise<Draw | nul
   for (const u of urls) {
     const j = await fetchJson(u);
     const d = j ? parseDraw(j) : null;
-    if (d) return d;
+    if (d) return { ...d, fonte: nomeFonte(u) };
   }
   return null;
 }
@@ -180,7 +189,12 @@ Deno.serve(async (req) => {
         }
       }
 
-      resumo[loteria] = { concurso: ultimo.concurso, data: ultimo.data_apuracao };
+      resumo[loteria] = {
+        concurso: ultimo.concurso,
+        data: ultimo.data_apuracao,
+        fonte: ultimo.fonte ?? "desconhecida",
+        coletado_em: new Date().toISOString(),
+      };
     }
 
     // 4) Circuit breaker: todas as fontes falharam → pausa até nova avaliação

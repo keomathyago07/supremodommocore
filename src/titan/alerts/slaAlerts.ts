@@ -20,6 +20,8 @@ export interface SlaThresholds {
   minSamples: number;          // evita alerta com amostra insuficiente
 }
 
+const LS_THRESHOLDS = "titan.sla.thresholds.v1";
+
 export const SLA_THRESHOLDS: SlaThresholds = {
   p95WarnMs: THRESHOLDS.latencyWarnMs,
   p95ErrorMs: THRESHOLDS.latencyErrorMs,
@@ -31,6 +33,29 @@ export const SLA_THRESHOLDS: SlaThresholds = {
   retryErrorPct: 60,
   minSamples: 3,
 };
+
+const thresholdListeners = new Set<(t: SlaThresholds) => void>();
+
+/** Carrega limiares persistidos (edição institucional). */
+(function hydrateThresholds() {
+  try {
+    const raw = typeof localStorage !== "undefined" ? localStorage.getItem(LS_THRESHOLDS) : null;
+    if (raw) Object.assign(SLA_THRESHOLDS, JSON.parse(raw) as Partial<SlaThresholds>);
+  } catch { /* mantém padrões */ }
+})();
+
+/** Atualiza limiares de SLA em tempo real (aba Institucional). */
+export function setSlaThresholds(patch: Partial<SlaThresholds>): SlaThresholds {
+  Object.assign(SLA_THRESHOLDS, patch);
+  try { localStorage.setItem(LS_THRESHOLDS, JSON.stringify(SLA_THRESHOLDS)); } catch { /* quota */ }
+  thresholdListeners.forEach(l => { try { l(SLA_THRESHOLDS); } catch { /* noop */ } });
+  return SLA_THRESHOLDS;
+}
+
+export function subscribeSlaThresholds(fn: (t: SlaThresholds) => void) {
+  thresholdListeners.add(fn);
+  return () => { thresholdListeners.delete(fn); };
+}
 
 export interface SlaBreach {
   id: string;
