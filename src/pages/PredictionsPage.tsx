@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select";
 import { UNIVERSO, getIntel, rankLoterias, type LoteriaSlug, type LotteryIntel } from "@/lib/historicalIntel";
 import PrevisaoIAPanel from "@/components/PrevisaoIAPanel";
+import AgendaPrevisaoCard from "@/components/AgendaPrevisaoCard";
+import DesvioPrevisaoCard from "@/components/DesvioPrevisaoCard";
 
 const NOMES: Record<LoteriaSlug, string> = {
   megasena: "🍀 Mega-Sena", quina: "🎯 Quina", lotofacil: "🍀 Lotofácil",
@@ -101,7 +103,9 @@ const PredictionsPage: React.FC = () => {
         </div>
       </div>
 
+      <AgendaPrevisaoCard />
       <PrevisaoIAPanel loteria={loteria} qtdSugestoes={3} />
+      <DesvioPrevisaoCard loteria={loteria} janela={12} />
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-primary" /></div>

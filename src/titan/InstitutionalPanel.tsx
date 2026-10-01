@@ -50,7 +50,7 @@ export function InstitutionalPanel() {
   const stats = durableQueue.stats();
 
   function patchPolicy(patch: Partial<TaskPolicy>) {
-    queueConfig.setPolicy(tipo, patch, motivo);
+    queueConfig.update(tipo, patch, motivo);
     flash(`✅ Política "${tipo}" salva (v${queueConfig.get().version})`);
   }
   function salvarSla(patch: Partial<SlaThresholds>) {
@@ -139,7 +139,7 @@ export function InstitutionalPanel() {
           <Toggle l="Auto-reprocessar após falha" v={rules.autoAposFalha} onChange={v => salvarRules({ autoAposFalha: v })} />
         </div>
         <div style={{ fontSize: 8, color: "#475569", marginTop: 8 }}>
-          Fila atual: {stats.pending} pendente(s) · {stats.processing} em processamento · {stats.dlq.length} na DLQ.
+          Fila atual: {stats.pending} pendente(s) · {stats.dead} morta(s) · {stats.dlq.length} na DLQ.
           Reprocessos respeitam a idempotência por loteria+concurso e são gravados na auditoria.
         </div>
       </Box>
