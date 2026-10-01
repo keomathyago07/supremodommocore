@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ msg: "Fora do horário (21h–23h59 BRT)" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
   }
 
-  const { data: apostas, error } = await supabase.from("apostas_confirmadas").select("*").eq("status_verificacao", "aguardando_sorteio");
+  const { data: apostas, error } = await supabase.from("apostas_confirmadas").select("*").eq("status_verificacao", "aguardando_sorteio").eq("user_id", userData.user.id);
 
   if (error) return new Response(JSON.stringify({ erro: error.message }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
 
