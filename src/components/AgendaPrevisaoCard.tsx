@@ -3,7 +3,7 @@
 // No horário definido, o motor envia 1 jogo por loteria do dia
 // direto para "Minhas Apostas" (sincronia total com o pipeline).
 // ============================================================
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Clock, Send, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,7 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import {
-  agendaPrevisao, executarEnvioProgramado, loteriasDeHoje, useAgendadorPrevisoes,
+  agendaPrevisao, executarEnvioProgramado, enviosConfirmados, type EnvioConfirmado, loteriasDeHoje, useAgendadorPrevisoes,
 } from "@/lib/previsaoAgendada";
 import { CONFIG_LOTERIAS } from "@/hooks/useGerarJogo";
 
@@ -21,6 +21,9 @@ export const AgendaPrevisaoCard: React.FC = () => {
   const [hora, setHora] = useState(agenda.horario);
   const [busy, setBusy] = useState(false);
   const hoje = loteriasDeHoje();
+  const [envios, setEnvios] = useState<EnvioConfirmado[]>([]);
+  useEffect(() => { setHora(agenda.horario); }, [agenda.horario]);
+  useEffect(() => { enviosConfirmados(12).then(setEnvios).catch(() => {}); }, [agenda.ultimaExecucao]);
 
   function salvar() {
     agendaPrevisao.set({ horario: hora });
@@ -66,10 +69,24 @@ export const AgendaPrevisaoCard: React.FC = () => {
 
       <p className="text-[10px] text-muted-foreground">
         {agenda.ativo
-          ? `Ativo · próximo envio às ${agenda.horario} BRT · 1 jogo por loteria (sem duplicar no mesmo dia).`
+          ? `Ativo no servidor · envio às ${agenda.horario} BRT (até 15 min depois), mesmo com o app fechado · 1 jogo por loteria.`
           : "Desativado — nenhum envio automático será feito."}
         {agenda.ultimoResumo && <> <br />Último ciclo: {agenda.ultimoResumo}</>}
       </p>
+
+      {envios.length > 0 && (
+        <div className="space-y-1">
+          <p className="text-[10px] font-bold text-foreground">Envios confirmados</p>
+          {envios.map((e) => (
+            <div key={e.created_at + e.loteria} className="text-[10px] flex justify-between gap-2 border-b border-border/50 py-0.5">
+              <span>{e.data_envio} · {CONFIG_LOTERIAS[e.loteria as keyof typeof CONFIG_LOTERIAS]?.nome ?? e.loteria}</span>
+              <span className={e.status === "enviado" ? "text-primary" : "text-destructive"}>
+                {e.status === "enviado" ? "✓ enviado" : "falha"} · {new Date(e.created_at).toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
