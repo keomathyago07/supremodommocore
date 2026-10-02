@@ -14,6 +14,36 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_previsoes: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          horario: string
+          ultima_execucao: string | null
+          ultimo_resumo: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          horario?: string
+          ultima_execucao?: string | null
+          ultimo_resumo?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          horario?: string
+          ultima_execucao?: string | null
+          ultimo_resumo?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_memory: {
         Row: {
           created_at: string
@@ -496,6 +526,42 @@ export type Database = {
           timeout_mcmc_ms?: number
           timeout_stacking_ms?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      envio_previsoes_log: {
+        Row: {
+          aposta_id: string | null
+          created_at: string
+          data_envio: string
+          detalhe: string | null
+          id: string
+          loteria: string
+          numeros: number[] | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          aposta_id?: string | null
+          created_at?: string
+          data_envio: string
+          detalhe?: string | null
+          id?: string
+          loteria: string
+          numeros?: number[] | null
+          status: string
+          user_id: string
+        }
+        Update: {
+          aposta_id?: string | null
+          created_at?: string
+          data_envio?: string
+          detalhe?: string | null
+          id?: string
+          loteria?: string
+          numeros?: number[] | null
+          status?: string
+          user_id?: string
         }
         Relationships: []
       }
