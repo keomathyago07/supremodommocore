@@ -26,6 +26,7 @@ import AnalyticalEnginePage from "./pages/AnalyticalEnginePage";
 import MotorAnaliticoPage from "./pages/MotorAnaliticoPage";
 import InstallPage from "./pages/InstallPage";
 import PredictionsPage from "./pages/PredictionsPage";
+import EstrategiasPage from "./pages/EstrategiasPage";
 import NotFound from "./pages/NotFound";
 // New v10 pages
 import MinhaApostaPage from "./pages/MinhaApostaPage";
@@ -116,6 +117,7 @@ const App = () => (
                 <Route path="score-ultra" element={<ScoreUltraPage />} />
                 <Route path="alertas" element={<AlertasAtrasoPage />} />
                 <Route path="previsoes" element={<PredictionsPage />} />
+                <Route path="estrategias" element={<EstrategiasPage />} />
                 <Route path="conferidor-v23" element={<ConferidorV23Page />} />
                 <Route path="god-eye" element={<GodEyePage />} />
                 <Route path="god-eye-v6" element={<GodEyePainel />} />
