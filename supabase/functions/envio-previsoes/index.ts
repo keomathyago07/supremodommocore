@@ -78,6 +78,9 @@ Deno.serve(async (req) => {
       for (const l of hoje) {
         const { data: ja } = await db.from("envio_previsoes_log").select("id").eq("user_id", ag.user_id).eq("data_envio", t.ymd).eq("loteria", l).maybeSingle();
         if (ja) { ignoradas.push(l); continue; }
+        const inicioDia = new Date(`${t.ymd}T03:00:00Z`).toISOString();
+        const { data: jaPend } = await db.from("apostas_pendentes").select("id").eq("user_id", ag.user_id).eq("loteria", l).gte("horario_envio", inicioDia).limit(1);
+        if (jaPend?.length) { ignoradas.push(l); continue; }
         const c = CFG[l];
         const numeros = l === "supersete"
           ? Array.from({ length: 7 }, () => Math.floor(Math.random() * 10))

@@ -5,7 +5,7 @@
 // "Minhas Apostas" (apostas_pendentes) + notificação no app.
 // Sincronia total: usa o mesmo pipeline de geração já configurado.
 // ============================================================
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { CONFIG_LOTERIAS, gerarJogoIAHistorico, type ApostaGerada } from "@/hooks/useGerarJogo";
 
@@ -46,9 +46,35 @@ function commit(next: Partial<AgendaPrevisao>) {
 
 export const agendaPrevisao = {
   get: (): AgendaPrevisao => state,
-  set: (patch: Partial<AgendaPrevisao>) => commit(patch),
+  set: (patch: Partial<AgendaPrevisao>) => { commit(patch); void sincronizarServidor(); },
   subscribe(fn: (a: AgendaPrevisao) => void) { listeners.add(fn); return () => { listeners.delete(fn); }; },
 };
+
+/** Grava o horário no servidor: o envio acontece mesmo com o app fechado. */
+async function sincronizarServidor() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  await supabase.from("agenda_previsoes" as never).upsert({
+    user_id: user.id, ativo: state.ativo, horario: state.horario,
+  } as never, { onConflict: "user_id" });
+}
+
+/** Lê do servidor o horário salvo e o último envio confirmado. */
+export async function carregarAgendaServidor() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+  const { data } = await supabase.from("agenda_previsoes" as never).select("*").eq("user_id", user.id).maybeSingle();
+  const a = data as { ativo: boolean; horario: string; ultima_execucao: string | null; ultimo_resumo: string | null } | null;
+  if (a) commit({ ativo: a.ativo, horario: a.horario, ultimaExecucao: a.ultima_execucao, ultimoResumo: a.ultimo_resumo });
+  else void sincronizarServidor();
+}
+
+export interface EnvioConfirmado { data_envio: string; loteria: string; numeros: number[]; status: string; created_at: string }
+export async function enviosConfirmados(limite = 20): Promise<EnvioConfirmado[]> {
+  const { data } = await supabase.from("envio_previsoes_log" as never).select("data_envio, loteria, numeros, status, created_at")
+    .order("created_at", { ascending: false }).limit(limite);
+  return (data ?? []) as EnvioConfirmado[];
+}
 
 export function brtAgora(): Date {
   return new Date(new Date().toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
@@ -154,27 +180,14 @@ export async function executarEnvioProgramado(forcar = false): Promise<Resultado
   return { enviadas, ignoradas, falhas, resumo };
 }
 
-/** Loop 24/7 do envio programado (checa a cada 30s, executa uma vez por dia). */
+/** Estado do agendamento (o envio é feito pelo servidor, mesmo com o app fechado). */
 export function useAgendadorPrevisoes() {
   const [agenda, setAgenda] = useState<AgendaPrevisao>(agendaPrevisao.get());
-  const execRef = useRef("");
-
   useEffect(() => agendaPrevisao.subscribe(setAgenda), []);
-
   useEffect(() => {
-    const tick = async () => {
-      const a = agendaPrevisao.get();
-      if (!a.ativo) return;
-      const agora = brtAgora();
-      const chave = `${agora.toISOString().slice(0, 10)}_${a.horario}`;
-      if (brtHoraMinuto(agora) !== a.horario || execRef.current === chave) return;
-      execRef.current = chave;
-      await executarEnvioProgramado();
-    };
-    const it = setInterval(() => { void tick(); }, 30_000);
-    void tick();
+    void carregarAgendaServidor();
+    const it = setInterval(() => { void carregarAgendaServidor(); }, 60_000);
     return () => clearInterval(it);
   }, []);
-
   return agenda;
 }
