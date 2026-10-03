@@ -158,6 +158,8 @@ export function VerificadorSorteios() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
+      // Conferência oficial gravada no servidor
+      await supabase.functions.invoke('conferidor-v23', { body: {} }).catch(() => null);
 
       const { data: apostas } = await supabase
         .from('apostas_confirmadas')
@@ -210,57 +212,7 @@ export function VerificadorSorteios() {
         const premiado = ac1 >= cfg.minAcertos || (ac2 !== undefined && ac2 >= cfg.minAcertos);
         const dentroPadrao = ac1 >= cfg.minAcertos;
 
-        // Update in DB
-        await supabase.from('apostas_confirmadas').update({
-          status_verificacao: 'verificada',
-          pontos_acertados: ac1,
-          numeros_sorteados: sor1,
-          concurso_verificado: raw.numero ?? raw.numeroConcurso,
-          data_sorteio: raw.dataApuracao,
-          descricao_faixa: f1,
-        }).eq('id', ap.id);
-
-        // Save to verificacoes_sorteio
-        await supabase.from('verificacoes_sorteio' as any).insert({
-          user_id: user.id,
-          aposta_id: ap.id,
-          loteria,
-          concurso: raw.numero ?? raw.numeroConcurso,
-          data_sorteio: raw.dataApuracao,
-          numeros_sorteados: sor1,
-          numeros_apostados: ap.numeros,
-          acertos_s1: ac1,
-          faixa_s1: f1,
-          acertos_s2: ac2 ?? 0,
-          faixa_s2: f2 ?? null,
-          acertos_total: ac1 + (ac2 ?? 0),
-          premiado,
-          dentro_padrao: dentroPadrao,
-          time_coracao: (ap as any).time_timemania ?? null,
-          time_acertou: timeAcertou,
-          mes_sorte: (ap as any).mes_da_sorte ?? null,
-          mes_acertou: mesAcertou,
-          trevos_sorteados: trevosSort,
-          trevos_acertados: trevosAcertados ?? 0,
-          raw_api: raw,
-        } as any);
-
-        // Register in financeiro if within pattern
-        if (dentroPadrao && f1) {
-          await supabase.from('financeiro_premiacoes').insert({
-            user_id: user.id,
-            aposta_confirmada_id: ap.id,
-            loteria,
-            concurso: raw.numero ?? raw.numeroConcurso,
-            numeros_apostados: ap.numeros as number[],
-            numeros_sorteados: sor1,
-            acertos: ac1,
-            descricao_faixa: f1,
-            valor_bruto: 0,
-            valor_liquido: 0,
-            status_pagamento: 'a_receber',
-          });
-        }
+        // Gravação de resultados/prêmios é feita somente pelo servidor (conferidor-v23).
 
         resultados.push({
           loteria, concurso: raw.numero ?? raw.numeroConcurso,

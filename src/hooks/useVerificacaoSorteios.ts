@@ -137,37 +137,10 @@ async function verificarAposta(
   const premioParcial = calcularPremio(aposta.loteria, acertos, resultado.premiacao);
   const valorPremio = premioParcial?.valor ?? 0;
 
-  await supabase
-    .from("apostas_confirmadas" as any)
-    .update({
-      status_verificacao: "verificada",
-      pontos_acertados: acertos,
-      valor_premio: valorPremio,
-      numeros_sorteados: dezenas,
-      concurso_verificado: resultado.numero,
-      data_sorteio: resultado.dataApuracao,
-      descricao_faixa: premioParcial?.descricao ?? null,
-    })
-    .eq("id", aposta.id);
-
-  const liquido = valorPremio * (1 - TAXA_IR);
-  const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  // Resultados e prêmios são gravados apenas pelo servidor (conferidor-v23).
+  await supabase.functions.invoke("conferidor-v23", { body: {} }).catch(() => null);
 
   if (acertos >= minAcertos && valorPremio > 0) {
-    await supabase.from("financeiro_premiacoes" as any).insert({
-      user_id: aposta.user_id,
-      aposta_confirmada_id: aposta.id,
-      loteria: aposta.loteria,
-      concurso: resultado.numero,
-      numeros_apostados: aposta.numeros,
-      numeros_sorteados: dezenas,
-      acertos,
-      descricao_faixa: premioParcial?.descricao,
-      valor_bruto: valorPremio,
-      valor_liquido: valorPremio * 0.7,
-      data_lancamento: new Date().toISOString(),
-      status_pagamento: "a_receber",
-    });
 
     toast.success(`🏆 PREMIADO — ${aposta.loteria}`, {
       description:
