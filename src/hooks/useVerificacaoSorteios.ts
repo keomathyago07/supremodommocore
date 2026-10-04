@@ -139,6 +139,8 @@ async function verificarAposta(
 
   // Resultados e prêmios são gravados apenas pelo servidor (conferidor-v23).
   await supabase.functions.invoke("conferidor-v23", { body: {} }).catch(() => null);
+  const liquido = valorPremio * (1 - TAXA_IR);
+  const brl = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
 
   if (acertos >= minAcertos && valorPremio > 0) {
 
