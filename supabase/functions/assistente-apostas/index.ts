@@ -4,7 +4,6 @@ import { createClient } from "npm:@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { convertToModelMessages, type UIMessage } from "npm:ai";
 import { createResponsesCall } from "../_shared/responses.ts";
-import { withLovableAiGatewayRunIdHeader, createLovableAiGatewayRunIdFetch } from "../_shared/run-id.ts";
 
 const json = (b: unknown, s: number) =>
   new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
