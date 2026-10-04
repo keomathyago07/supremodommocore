@@ -41,6 +41,32 @@ function amostrar(pesos: Map<number, number>, min: number, max: number, qtd: num
   return out.sort((a, b) => a - b);
 }
 
+// Estratégia equilibrada: soma dentro da faixa histórica (média ± 1 desvio),
+// pares/ímpares balanceados e poucas sequências. Não aumenta a chance de acerto;
+// evita combinações muito jogadas, reduzindo a divisão do prêmio.
+type Faixa = { media: number; dp: number };
+function equilibrado(nums: number[], f: Faixa | undefined, qtd: number): number {
+  const s = nums.reduce((a, b) => a + b, 0);
+  const pares = nums.filter(n => n % 2 === 0).length;
+  let seq = 1, maxSeq = 1;
+  for (let i = 1; i < nums.length; i++) { seq = nums[i] === nums[i - 1] + 1 ? seq + 1 : 1; maxSeq = Math.max(maxSeq, seq); }
+  let pen = 0;
+  if (f && f.dp > 0) pen += Math.max(0, Math.abs(s - f.media) / f.dp - 1);
+  pen += Math.max(0, Math.abs(pares - qtd / 2) - Math.max(1, qtd * 0.15));
+  if (qtd <= 10) pen += Math.max(0, maxSeq - 2);
+  if (qtd <= 10 && nums.every(n => n <= 31)) pen += 1;
+  return pen;
+}
+function melhorJogo(pesos: Map<number, number>, c: { qtd: number; min: number; max: number }, f?: Faixa): number[] {
+  let melhor: number[] = []; let melhorPen = Infinity;
+  for (let i = 0; i < 400; i++) {
+    const j = amostrar(pesos, c.min, c.max, c.qtd);
+    const p = equilibrado(j, f, c.qtd);
+    if (p < melhorPen) { melhor = j; melhorPen = p; if (p === 0) break; }
+  }
+  return melhor;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...corsHeaders, "Content-Type": "application/json" } });
@@ -66,11 +92,18 @@ Deno.serve(async (req) => {
 
     const hoje = Object.keys(CFG).filter(l => CFG[l].dias.includes(t.dow));
     const pesosCache = new Map<string, Map<number, number>>();
+    const faixas = new Map<string, Faixa>();
     for (const l of hoje) {
       const { data: hist } = await db.from("resultados_sorteios").select("dezenas").eq("loteria", l).order("concurso", { ascending: false }).limit(200);
       const p = new Map<number, number>();
       for (const h of hist ?? []) for (const n of (h as any).dezenas ?? []) p.set(n, (p.get(n) ?? 1) + 1);
       pesosCache.set(l, p);
+      const somas = (hist ?? []).map((h: any) => ((h.dezenas ?? []) as number[]).reduce((a, b) => a + Number(b), 0)).filter((x: number) => x > 0);
+      if (somas.length > 10) {
+        const media = somas.reduce((a: number, b: number) => a + b, 0) / somas.length;
+        const dp = Math.sqrt(somas.reduce((a: number, b: number) => a + (b - media) ** 2, 0) / somas.length);
+        faixas.set(l, { media, dp });
+      }
     }
 
     for (const ag of pendentes as any[]) {
@@ -84,12 +117,12 @@ Deno.serve(async (req) => {
         const c = CFG[l];
         const numeros = l === "supersete"
           ? Array.from({ length: 7 }, () => Math.floor(Math.random() * 10))
-          : amostrar(pesosCache.get(l) ?? new Map(), c.min, c.max, c.qtd);
+          : melhorJogo(pesosCache.get(l) ?? new Map(), c, faixas.get(l));
         const { data: conc } = await db.from("proximo_concurso").select("concurso_atual, data_proxima").eq("loteria", l).maybeSingle();
         const { data: ins, error } = await db.from("apostas_pendentes").insert({
           user_id: ag.user_id, loteria: l, numeros, dominancia: 0, precisao: 0, status: "pendente",
           concurso: conc?.concurso_atual ?? null, data_sorteio_alvo: conc?.data_proxima ?? t.ymd,
-          criterios_atendidos: [{ nome: "Origem", valor: "envio_agendado_servidor" }],
+          criterios_atendidos: [{ nome: "Origem", valor: "envio_agendado_servidor" }, { nome: "Estratégia", valor: "histórico + equilíbrio (soma, pares/ímpares, sequências)" }],
           tipo_jogo: l === "lotomania" ? "duplo" : "simples",
           mes_da_sorte: l === "diadesorte" ? MESES[Math.floor(Math.random() * 12)] : null,
           time_timemania: l === "timemania" ? TIMES[Math.floor(Math.random() * TIMES.length)] : null,
