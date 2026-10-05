@@ -24,6 +24,8 @@ export function usePollingResultados(intervalMs = 5 * 60 * 1000) {
       const h = horaBRT();
       if (h < 21 || h > 23) return;
       try {
+        const { data: s } = await supabase.auth.getSession();
+        if (!s.session) return;
         await supabase.functions.invoke("sync-e-confere", { body: {} });
       } catch (e) {
         console.warn("[polling] sync-e-confere falhou", e);
