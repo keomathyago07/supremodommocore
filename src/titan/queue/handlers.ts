@@ -15,6 +15,8 @@ export function registerQueueHandlers() {
   registered = true;
 
   durableQueue.register("sync_e_confere", async () => {
+    const { data: s } = await supabase.auth.getSession();
+    if (!s.session) return; // sem login: ignora em vez de gerar 401
     const { error } = await supabase.functions.invoke("sync-e-confere", { body: {} });
     if (error) throw new Error(`sync-e-confere: ${error.message}`);
     await emitTitanEvent("resultado", { source: "sync-e-confere", at: Date.now() });
