@@ -28,6 +28,7 @@ import InstallPage from "./pages/InstallPage";
 import PredictionsPage from "./pages/PredictionsPage";
 import EstrategiasPage from "./pages/EstrategiasPage";
 import AssistenteApostasPage from "@/pages/AssistenteApostasPage";
+import NucleoPage from "@/pages/NucleoPage";
 import NotFound from "./pages/NotFound";
 // New v10 pages
 import MinhaApostaPage from "./pages/MinhaApostaPage";
@@ -120,6 +121,7 @@ const App = () => (
                 <Route path="previsoes" element={<PredictionsPage />} />
                 <Route path="estrategias" element={<EstrategiasPage />} />
                 <Route path="assistente" element={<AssistenteApostasPage />} />
+                <Route path="nucleo" element={<NucleoPage />} />
                 <Route path="conferidor-v23" element={<ConferidorV23Page />} />
                 <Route path="god-eye" element={<GodEyePage />} />
                 <Route path="god-eye-v6" element={<GodEyePainel />} />
