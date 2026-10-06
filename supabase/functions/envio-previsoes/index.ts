@@ -55,6 +55,16 @@ function equilibrado(nums: number[], f: Faixa | undefined, qtd: number): number 
   pen += Math.max(0, Math.abs(pares - qtd / 2) - Math.max(1, qtd * 0.15));
   if (qtd <= 10) pen += Math.max(0, maxSeq - 2);
   if (qtd <= 10 && nums.every(n => n <= 31)) pen += 1;
+  if (qtd <= 10 && nums.length >= 3) {
+    // Progressão aritmética (ex.: 5-10-15-20) — padrão muito jogado
+    const d = nums[1] - nums[0];
+    if (nums.every((n, i) => i === 0 || n - nums[i - 1] === d)) pen += 2;
+    // Mesmo final repetido (ex.: 3,13,23,33) e concentração numa só dezena
+    const finais = new Map<number, number>(); const dez = new Map<number, number>();
+    nums.forEach(n => { finais.set(n % 10, (finais.get(n % 10) ?? 0) + 1); dez.set(Math.floor(n / 10), (dez.get(Math.floor(n / 10)) ?? 0) + 1); });
+    pen += Math.max(0, Math.max(...finais.values()) - 3) * 0.5;
+    pen += Math.max(0, Math.max(...dez.values()) - Math.ceil(qtd / 2)) * 0.5;
+  }
   return pen;
 }
 function melhorJogo(pesos: Map<number, number>, c: { qtd: number; min: number; max: number }, f?: Faixa): number[] {
