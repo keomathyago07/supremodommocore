@@ -496,6 +496,21 @@ export type Database = {
         }
         Relationships: []
       }
+      cron_keys: {
+        Row: {
+          chave: string
+          nome: string
+        }
+        Insert: {
+          chave?: string
+          nome: string
+        }
+        Update: {
+          chave?: string
+          nome?: string
+        }
+        Relationships: []
+      }
       engine_config_supremo: {
         Row: {
           loteria: string
