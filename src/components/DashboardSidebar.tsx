@@ -19,6 +19,7 @@ const menuItems = [
   { id: 'previsoes', label: '🔮 Previsões Inteligentes', icon: BarChart3, path: '/dashboard/previsoes' },
   { id: 'estrategias', label: '⚖️ Estratégias de Jogo', icon: BarChart3, path: '/dashboard/estrategias' },
   { id: 'assistente', label: '💬 Assistente de Conferência', icon: Bot, path: '/dashboard/assistente' },
+  { id: 'nucleo', label: '🧭 Núcleo (Sincronia)', icon: Sparkles, path: '/dashboard/nucleo' },
   { id: 'dashboard-ia', label: 'Dashboard IA', icon: Sparkles, path: '/dashboard/dashboard-ia' },
   { id: 'score-ultra', label: 'Score Ultra v17', icon: Atom, path: '/dashboard/score-ultra' },
   { id: 'alertas', label: 'Alertas Críticos v18', icon: AlertTriangle, path: '/dashboard/alertas' },
