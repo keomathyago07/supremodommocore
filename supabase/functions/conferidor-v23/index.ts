@@ -136,8 +136,8 @@ Deno.serve(async (req) => {
   // Execução automática do servidor (agendada): valida chave privada guardada no banco.
   const cronKey = req.headers.get("x-cron-key");
   if (cronKey) {
-    const { data: k } = await supabase.from("cron_keys").select("chave").eq("nome", "conferencia").maybeSingle();
-    if (!k || k.chave !== cronKey) return unauthorized();
+    const { data: k, error: kErr } = await supabase.from("cron_keys").select("chave").eq("nome", "conferencia").maybeSingle();
+    if (!k || k.chave !== cronKey) { console.error("cron key mismatch", kErr?.message, !!k); return unauthorized(); }
   } else {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) return unauthorized();
